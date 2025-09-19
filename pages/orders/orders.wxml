@@ -1,0 +1,37 @@
+<!--pages/orders/orders.wxml-->
+<view class="container">
+  <view class="header">
+    <text class="title">我的订单</text>
+  </view>
+
+  <view class="orders-list">
+    <view 
+      class="order-item" 
+      wx:for="{{orders}}" 
+      wx:key="id"
+      data-id="{{item.id}}"
+      bindtap="onOrderDetail"
+    >
+      <view class="order-header">
+        <text class="order-id">订单号: {{item.id}}</text>
+        <text class="order-status">{{item.status}}</text>
+      </view>
+      
+      <view class="order-content">
+        <view class="order-info">
+          <text class="order-type">{{item.type}}服务</text>
+          <text class="device-name">{{item.device}}</text>
+        </view>
+        
+        <view class="order-footer">
+          <text class="create-time">{{item.createTime}}</text>
+          <text class="order-amount">{{item.amount}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{orders.length === 0}}" class="empty">
+    <text>暂无订单</text>
+  </view>
+</view>

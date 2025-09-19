@@ -1,0 +1,31 @@
+<!--pages/messages/messages.wxml-->
+<view class="container">
+  <view class="header">
+    <text class="title">消息中心</text>
+  </view>
+
+  <view class="messages-list">
+    <view 
+      class="message-item {{item.unread ? 'unread' : ''}}" 
+      wx:for="{{messages}}" 
+      wx:key="id"
+      data-id="{{item.id}}"
+      bindtap="onMessageTap"
+    >
+      <view class="message-content">
+        <view class="message-header">
+          <text class="message-title">{{item.title}}</text>
+          <view wx:if="{{item.unread}}" class="unread-dot"></view>
+        </view>
+        
+        <text class="message-text">{{item.content}}</text>
+        
+        <text class="message-time">{{item.time}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{messages.length === 0}}" class="empty">
+    <text>暂无消息</text>
+  </view>
+</view>

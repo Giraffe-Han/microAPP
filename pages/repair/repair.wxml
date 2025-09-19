@@ -1,0 +1,54 @@
+<!--pages/repair/repair.wxml-->
+<view class="container">
+  <view class="header">
+    <text class="title">无人机维修服务</text>
+    <text class="subtitle">专业的大疆过保后维修服务</text>
+  </view>
+
+  <view class="actions">
+    <button class="btn-primary" bindtap="onCreateOrder">创建维修订单</button>
+    <button class="btn-secondary" bindtap="onRefresh">刷新订单</button>
+  </view>
+
+  <view class="orders">
+    <view class="orders-title">我的维修订单</view>
+    
+    <view class="order-list">
+      <view 
+        class="order-item" 
+        wx:for="{{orders}}" 
+        wx:key="id"
+        data-id="{{item.id}}"
+        bindtap="onOrderDetail"
+      >
+        <view class="order-header">
+          <text class="order-id">订单号: {{item.id}}</text>
+          <text class="order-status {{item.statusClass}}">{{item.status}}</text>
+        </view>
+        
+        <view class="order-content">
+          <view class="order-info">
+            <text class="device-name">{{item.device}}</text>
+            <text class="create-time">{{item.createTime}}</text>
+          </view>
+          
+          <view class="order-desc">
+            <text>{{item.description}}</text>
+          </view>
+          
+          <view class="progress-bar">
+            <view class="progress-bg">
+              <view class="progress-fill" style="width: {{item.progress}}%"></view>
+            </view>
+            <text class="progress-text">{{item.progress}}%</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{orders.length === 0}}" class="empty">
+      <text>暂无维修订单</text>
+      <button class="btn-primary" bindtap="onCreateOrder">创建第一个订单</button>
+    </view>
+  </view>
+</view>

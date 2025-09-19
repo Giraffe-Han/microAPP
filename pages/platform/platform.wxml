@@ -1,0 +1,55 @@
+<!--pages/platform/platform.wxml-->
+<view class="container">
+  <view class="header">
+    <view class="user-section">
+      <image class="avatar" src="{{userInfo.avatarUrl || '/images/default-avatar.png'}}" mode="aspectFill"></image>
+      <view class="user-info">
+        <text class="username">{{userInfo.nickName || '未登录'}}</text>
+        <text class="user-desc">欢迎使用云享飞平台</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="statistics">
+    <view class="stats-title">数据概览</view>
+    <view class="stats-grid">
+      <view class="stat-item">
+        <text class="stat-number">{{statistics.totalOrders}}</text>
+        <text class="stat-label">总订单</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-number">{{statistics.completedOrders}}</text>
+        <text class="stat-label">已完成</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-number">{{statistics.pendingOrders}}</text>
+        <text class="stat-label">进行中</text>
+      </view>
+      <view class="stat-item">
+        <text class="stat-number">¥{{statistics.totalAmount}}</text>
+        <text class="stat-label">总金额</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="quick-actions">
+    <view class="actions-title">快捷操作</view>
+    <view class="actions-grid">
+      <view 
+        class="action-item" 
+        wx:for="{{quickActions}}" 
+        wx:key="name"
+        data-action="{{item.action}}"
+        data-path="{{item.path}}"
+        bindtap="onQuickAction"
+      >
+        <image class="action-icon" src="{{item.icon}}" mode="aspectFit"></image>
+        <text class="action-name">{{item.name}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="footer">
+    <button class="btn-secondary" bindtap="onRefresh">刷新数据</button>
+  </view>
+</view>

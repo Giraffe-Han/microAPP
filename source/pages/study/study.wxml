@@ -1,0 +1,10 @@
+<!--pages/study/study.wxml-->
+<view class="container">
+  <view class="header">
+    <text class="title">{{title}}</text>
+    <text class="subtitle">{{subtitle}}</text>
+  </view>
+  <view class="content">
+    <text>���ܿ�����...</text>
+  </view>
+</view>
