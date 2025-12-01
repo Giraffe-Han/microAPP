@@ -62,7 +62,17 @@ const applications = ref([])
 
 const fetchData = async () => {
   try {
-    const res = await axios.get('/api/list')
+    const userStr = localStorage.getItem('user');
+    const user = userStr ? JSON.parse(userStr) : null;
+    
+    // If no user logged in, return empty list (or handle as needed)
+    if (!user) {
+        applications.value = [];
+        return;
+    }
+
+    const params = { userId: user.id };
+    const res = await axios.get('/api/list', { params })
     applications.value = res.data.map(item => ({
       id: item.id,
       applyNo: item.orderNo || item.id,

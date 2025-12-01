@@ -1,125 +1,107 @@
 <template>
   <div class="home-page">
-    <!-- 顶部Banner - 参考时尚科技网站的设计风格 -->
-    <div class="banner-section">
-      <div class="banner-content">
-        <h1 class="banner-title">低空综合服务平台</h1>
-        <p class="banner-subtitle">专业 · 高效 · 安全 · 智能</p>
+    <!-- 顶部区域：定位+搜索 -->
+    <div class="header-section">
+      <div class="location-bar">
+        <span class="location-text">温州市 <van-icon name="arrow-down" size="12" /></span>
+        <div class="weather-info">20°C 晴</div>
       </div>
-      <div class="banner-decoration">
-        <div class="decoration-circle circle-1"></div>
-        <div class="decoration-circle circle-2"></div>
-        <div class="decoration-circle circle-3"></div>
+      <div class="search-bar">
+        <van-search placeholder="搜索服务/案例" shape="round" background="transparent" />
       </div>
     </div>
 
-    <!-- 快捷服务入口 -->
-    <div class="quick-access">
-      <div class="quick-grid">
+    <!-- 功能金刚区 - 支付宝风格 -->
+    <div class="main-functions">
+      <div class="function-grid">
         <div 
           v-for="item in quickServices" 
           :key="item.id"
-          class="quick-item"
+          class="function-item"
           @click="goToService(item.id)"
         >
-          <div class="quick-icon" :style="{ background: item.gradient }">
-            <van-icon :name="item.icon" size="28" color="#fff" />
+          <div class="function-icon-wrapper">
+            <van-icon :name="item.icon" size="28" :color="item.color" />
           </div>
-          <span class="quick-name">{{ item.name }}</span>
-          <span class="quick-tag" v-if="item.hot">热门</span>
+          <span class="function-name">{{ item.name }}</span>
+        </div>
+        <!-- 添加一些占位功能以凑齐8个 -->
+        <div class="function-item" @click="$router.push('/services')">
+          <div class="function-icon-wrapper">
+            <van-icon name="apps-o" size="28" color="#1677ff" />
+          </div>
+          <span class="function-name">全部服务</span>
         </div>
       </div>
     </div>
 
-    <!-- 服务分类 -->
-    <div class="service-section">
-      <div class="section-header">
-        <h2 class="section-title">全部服务</h2>
-        <span class="more-link" @click="$router.push('/services')">
-          查看全部 <van-icon name="arrow" />
-        </span>
+    <!-- 消息通知栏 -->
+    <div class="notice-bar-section">
+      <van-notice-bar
+        left-icon="volume-o"
+        :scrollable="false"
+      >
+        <van-swipe
+          vertical
+          class="notice-swipe"
+          :autoplay="3000"
+          :touchable="false"
+          :show-indicators="false"
+        >
+          <van-swipe-item>交享点无人机外卖配送正式上线</van-swipe-item>
+          <van-swipe-item>新开通江心屿无人机外卖配送</van-swipe-item>
+        </van-swipe>
+      </van-notice-bar>
+    </div>
+
+    <!-- 核心服务卡片区 -->
+    <div class="content-area">
+      <!-- 无人机外卖 - 突出展示 -->
+      <div class="feature-card delivery-card" @click="goToDelivery">
+        <div class="card-info">
+          <h3>无人机外卖</h3>
+          
+          <div class="tags">
+            <span class="tag">热门</span>
+            
+          </div>
+        </div>
+        <div class="card-image">
+          <van-icon name="logistics" size="64" color="#fff" style="opacity: 0.9;" />
+        </div>
       </div>
 
-      <div class="service-list">
+      <!-- 左右分栏推荐 -->
+      <div class="recommend-grid">
+        <div class="recommend-card blue-card" @click="$router.push('/cases')">
+          <h4>精选案例</h4>
+          <p>行业应用示范</p>
+          <van-icon name="video-o" size="32" class="card-icon" />
+        </div>
+        <div class="recommend-card orange-card" @click="$router.push('/services')">
+          <h4>服务大厅</h4>
+          <p>一站式办理</p>
+          <van-icon name="service-o" size="32" class="card-icon" />
+        </div>
+      </div>
+
+      <!-- 为你推荐 (服务列表) -->
+      <div class="service-feed">
+        <div class="section-title">为你推荐</div>
         <div 
           v-for="service in displayServices" 
           :key="service.id"
-          class="service-card"
+          class="feed-card"
           @click="goToDetail(service.id)"
         >
-          <div class="service-icon" :style="{ background: service.color }">
-            <van-icon :name="service.icon" size="24" color="#fff" />
+          <div class="feed-icon" :style="{ background: service.bgLight }">
+            <van-icon :name="service.icon" size="24" :color="service.color" />
           </div>
-          <div class="service-info">
-            <h3 class="service-name">{{ service.name }}</h3>
-            <p class="service-desc">{{ service.description }}</p>
+          <div class="feed-content">
+            <div class="feed-title">{{ service.name }}</div>
+            <div class="feed-desc">{{ service.description }}</div>
           </div>
-          <van-icon name="arrow" color="#c8c9cc" />
-        </div>
-
-        <!-- 更多服务按钮 -->
-        <div class="more-service-btn" @click="$router.push('/services')">
-          <van-icon name="apps-o" size="20" color="#667eea" />
-          <span>查看更多服务</span>
-          <van-icon name="arrow" size="16" color="#969799" />
-        </div>
-      </div>
-    </div>
-
-    <!-- 案例展示 -->
-    <div class="cases-section">
-      <div class="section-header">
-        <h2 class="section-title">精选案例</h2>
-        <span class="more-link" @click="$router.push('/cases')">
-          查看全部 <van-icon name="arrow" />
-        </span>
-      </div>
-      <div class="cases-banner" @click="$router.push('/cases')">
-        <div class="banner-content">
-          <van-icon name="video-o" size="40" color="#fff" />
-          <div class="banner-text">
-            <h3>精彩案例集锦</h3>
-            <p>图片·视频·轮播展示</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 无人机外卖配送 -->
-    <div class="delivery-section">
-      <div class="section-header">
-        <h2 class="section-title">特色服务</h2>
-      </div>
-      <div class="delivery-card" @click="goToDelivery">
-        <div class="delivery-icon">
-          <van-icon name="shopping-cart-o" size="48" color="#fff" />
-        </div>
-        <div class="delivery-content">
-          <h3 class="delivery-title">无人机外卖配送</h3>
-          <p class="delivery-desc">快速配送 · 安全可靠 · 即时送达</p>
-          <div class="delivery-tag">
-            <span class="tag-hot">🔥 热门</span>
-            <span class="tag-new">✨ 在线下单</span>
-          </div>
-        </div>
-        <div class="delivery-arrow">
-          <van-icon name="arrow" size="20" color="#fff" />
-        </div>
-      </div>
-    </div>
-
-    <!-- 平台优势 -->
-    <div class="advantages-section">
-      <div class="section-header">
-        <h2 class="section-title">平台优势</h2>
-      </div>
-      <div class="advantage-grid">
-        <div v-for="(adv, index) in advantages" :key="index" class="advantage-item">
-          <div class="advantage-icon">
-            <van-icon :name="adv.icon" size="32" :color="adv.color" />
-          </div>
-          <h4 class="advantage-title">{{ adv.title }}</h4>
-          <p class="advantage-desc">{{ adv.description }}</p>
+          <van-button size="mini" round :color="service.color" plain>去办理</van-button>
         </div>
       </div>
     </div>
@@ -132,39 +114,38 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
-// 快捷服务 - 4个重点服务
+// 快捷服务 - 模仿支付宝首页图标
 const quickServices = ref([
-  { id: 1, name: '无人机物流', icon: 'send-gift-o', hot: true, gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }, // 物流配送
-  { id: 2, name: '政务巡检', icon: 'eye-o', hot: true, gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' }, // 巡检监控
-  { id: 3, name: '无人机托管', icon: 'shop-o', hot: true, gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' }, // 托管服务
-  { id: 4, name: '无人机吊运', icon: 'upgrade', hot: true, gradient: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' } // 吊运上升
+  { id: 1, name: '物流配送', icon: 'logistics', color: '#1677ff' },
+  { id: 2, name: '政务巡检', icon: 'eye-o', color: '#ff9c6e' },
+  { id: 3, name: '机库托管', icon: 'shop-o', color: '#52c41a' },
+  { id: 4, name: '设备吊运', icon: 'upgrade', color: '#722ed1' },
+  { id: 6, name: '无人机培训', icon: 'certificate', color: '#faad14' },
+  { id: 9, name: '低空研学', icon: 'records', color: '#eb2f96' },
+  { id: 8, name: '外卖配送', icon: 'shopping-cart-o', color: '#f5222d' },
+  // { id: 8, name: '全部服务', icon: 'apps-o', color: '#1677ff' } // Handled manually
 ])
 
-// 主要展示服务 - 只显示4项重点服务
+// 推荐服务列表
 const displayServices = ref([
-  { id: 1, name: '无人机物流服务', description: '城市配送、紧急物资运输', icon: 'send-gift-o', color: '#667eea' }, // 物流配送
-  { id: 2, name: '政务巡检服务', description: '环保监测、安全巡查', icon: 'eye-o', color: '#f5576c' }, // 巡检监控
-  { id: 3, name: '无人机托管服务', description: '专业托管、保养维护', icon: 'shop-o', color: '#00f2fe' }, // 托管服务
-  { id: 4, name: '无人机吊运服务', description: '高空吊运、建筑施工', icon: 'upgrade', color: '#38f9d7' } // 吊运上升
-])
-
-// 平台优势
-const advantages = ref([
-  { icon: 'shield-o', color: '#667eea', title: '专业可靠', description: '持证飞手，专业设备' },
-  { icon: 'clock-o', color: '#f5576c', title: '快速响应', description: '24小时在线服务' },
-  { icon: 'diamond-o', color: '#00f2fe', title: '优质服务', description: '一站式解决方案' },
-  { icon: 'medal-o', color: '#38f9d7', title: '安全保障', description: '全程保险覆盖' }
+  { id: 1, name: '无人机物流', description: '城市极速配送，解决最后一公里难题', icon: 'logistics', color: '#1677ff', bgLight: '#e6f7ff' },
+  { id: 2, name: '政务巡检', description: '高效环保监测、交通疏导、安全巡查', icon: 'eye-o', color: '#ff9c6e', bgLight: '#fff7e6' },
+  { id: 3, name: '无人机托管', description: '专业机库托管，定期维护保养', icon: 'shop-o', color: '#52c41a', bgLight: '#f6ffed' },
+  { id: 4, name: '高空吊运', description: '建筑材料、基站设备高空精准吊运', icon: 'upgrade', color: '#722ed1', bgLight: '#f9f0ff' }
 ])
 
 const goToService = (id) => {
-  router.push(`/service-detail/${id}`)
+  if (id === 8) {
+    goToDelivery()
+  } else {
+    router.push(`/service-detail/${id}`)
+  }
 }
 
 const goToDetail = (id) => {
   router.push(`/service-detail/${id}`)
 }
 
-// 跳转到无人机外卖配送页面
 const goToDelivery = () => {
   window.location.href = 'https://app.wzsjy.com:8446/h5/#/pages/diy/diy?pageId=130&title=%E6%97%A0%E4%BA%BA%E6%9C%BA%E5%A4%96%E5%8D%96%E9%85%8D%E9%80%81&jyauthcode='
 }
@@ -172,432 +153,239 @@ const goToDelivery = () => {
 
 <style scoped>
 .home-page {
-  padding-bottom: 20px;
+  background-color: #f5f5f5;
+  min-height: 100vh;
+  padding-bottom: 60px;
 }
 
-/* Banner区域 - 参考时尚科技网站的紫色渐变 */
-.banner-section {
-  position: relative;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 50px 20px 60px;
-  overflow: hidden;
-}
-
-.banner-content {
-  position: relative;
-  z-index: 2;
-  text-align: center;
+/* 顶部区域 */
+.header-section {
+  background: linear-gradient(180deg, #1677ff 0%, #ffffff 100%);
+  padding: 12px 16px 20px;
   color: #fff;
 }
 
-.banner-title {
-  font-size: 28px;
-  font-weight: bold;
-  margin-bottom: 12px;
-  text-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-.banner-subtitle {
-  font-size: 14px;
-  opacity: 0.95;
-}
-
-.banner-decoration {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 1;
-}
-
-.decoration-circle {
-  position: absolute;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.circle-1 {
-  width: 200px;
-  height: 200px;
-  top: -50px;
-  right: -50px;
-}
-
-.circle-2 {
-  width: 150px;
-  height: 150px;
-  bottom: -30px;
-  left: -30px;
-}
-
-.circle-3 {
-  width: 100px;
-  height: 100px;
-  top: 50%;
-  left: 20%;
-}
-
-/* 快捷服务 */
-.quick-access {
-  margin: -40px 16px 16px;
-  background: #fff;
-  border-radius: 16px;
-  padding: 20px 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  position: relative;
-  z-index: 3;
-}
-
-.quick-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-}
-
-.quick-item {
-  position: relative;
+.location-bar {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-}
-
-.quick-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s;
-}
-
-.quick-item:active .quick-icon {
-  transform: scale(0.95);
-}
-
-.quick-name {
-  font-size: 12px;
-  color: #323233;
-  text-align: center;
-}
-
-.quick-tag {
-  position: absolute;
-  top: -4px;
-  right: 4px;
-  background: #ff976a;
-  color: #fff;
-  font-size: 10px;
-  padding: 2px 6px;
-  border-radius: 8px;
-}
-
-/* 服务列表 */
-.service-section {
-  margin: 16px;
-  background: #fff;
-  border-radius: 12px;
-  padding: 16px;
-}
-
-.section-header {
-  display: flex;
-  align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
-}
-
-.section-title {
-  font-size: 18px;
-  font-weight: bold;
-  color: #323233;
-}
-
-.more-link {
+  align-items: center;
+  margin-bottom: 12px;
   font-size: 14px;
-  color: #969799;
+}
+
+.location-text {
   display: flex;
   align-items: center;
   gap: 4px;
-  cursor: pointer;
 }
 
-.service-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.service-card {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px;
-  background: #f7f8fa;
+.search-bar :deep(.van-search) {
+  padding: 0;
+  background: #fff;
   border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-.service-card:active {
-  background: #ebedf0;
+.search-bar :deep(.van-search__content) {
+  background: #f7f8fa;
 }
 
-.service-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.service-info {
-  flex: 1;
-}
-
-.service-name {
-  font-size: 15px;
-  font-weight: 500;
+.search-bar :deep(.van-field__control) {
   color: #323233;
-  margin-bottom: 4px;
 }
 
-.service-desc {
-  font-size: 12px;
+.search-bar :deep(.van-icon) {
   color: #969799;
 }
 
-/* 更多服务按钮 */
-.more-service-btn {
+.search-bar :deep(input::placeholder) {
+  color: #969799;
+}
+
+/* 功能金刚区 */
+.main-functions {
+  background: #fff;
+  padding: 16px 0;
+  margin-bottom: 10px;
+}
+
+.function-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  row-gap: 16px;
+}
+
+.function-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.function-icon-wrapper {
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 16px 12px;
-  background: linear-gradient(135deg, #f7f8fa 0%, #e8eaf6 100%);
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s;
-  margin-top: 8px;
+  border-radius: 12px;
+  background: #f7f8fa;
 }
 
-.more-service-btn:active {
-  background: linear-gradient(135deg, #ebedf0 0%, #d1d5e8 100%);
-  transform: scale(0.98);
+.function-name {
+  font-size: 12px;
+  color: #333;
 }
 
-.more-service-btn span {
-  font-size: 14px;
-  color: #667eea;
-  font-weight: 500;
-}
-
-/* 案例展示 */
-.cases-section {
-  margin: 16px;
+/* 消息通知 */
+.notice-bar-section {
+  margin-bottom: 10px;
   background: #fff;
+}
+
+.notice-swipe {
+  height: 40px;
+  line-height: 40px;
+}
+
+/* 内容区域 */
+.content-area {
+  padding: 0 12px;
+}
+
+/* 特色卡片 */
+.feature-card {
   border-radius: 12px;
-  padding: 16px;
-}
-
-.cases-banner {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 12px;
-  padding: 24px;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.cases-banner:active {
-  transform: scale(0.98);
-}
-
-.banner-content {
+  padding: 20px;
+  margin-bottom: 12px;
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 16px;
   color: #fff;
-}
-
-.banner-text h3 {
-  font-size: 18px;
-  font-weight: 600;
-  margin-bottom: 4px;
-}
-
-.banner-text p {
-  font-size: 13px;
-  opacity: 0.9;
-}
-
-/* 无人机外卖配送 */
-.delivery-section {
-  margin: 16px;
-  background: #fff;
-  border-radius: 12px;
-  padding: 16px;
-}
-
-.delivery-card {
-  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 50%, #f06595 100%);
-  border-radius: 16px;
-  padding: 24px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  cursor: pointer;
-  transition: all 0.3s;
-  box-shadow: 0 4px 20px rgba(255, 107, 107, 0.25);
   position: relative;
   overflow: hidden;
 }
 
-.delivery-card::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  right: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
-  animation: pulse 3s ease-in-out infinite;
+.delivery-card {
+  background: linear-gradient(135deg, #1677ff 0%, #4096ff 100%);
 }
 
-@keyframes pulse {
-  0%, 100% {
-    opacity: 0.5;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.1);
-  }
-}
-
-.delivery-card:active {
-  transform: scale(0.98);
-  box-shadow: 0 2px 12px rgba(255, 107, 107, 0.3);
-}
-
-.delivery-icon {
-  flex-shrink: 0;
-  width: 70px;
-  height: 70px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(10px);
-  position: relative;
-  z-index: 1;
-}
-
-.delivery-content {
-  flex: 1;
-  color: #fff;
-  position: relative;
-  z-index: 1;
-}
-
-.delivery-title {
+.card-info h3 {
   font-size: 20px;
   font-weight: bold;
   margin-bottom: 8px;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.delivery-desc {
+.card-info p {
   font-size: 13px;
-  opacity: 0.95;
-  margin-bottom: 10px;
-  line-height: 1.5;
+  opacity: 0.9;
+  margin-bottom: 1px;
 }
 
-.delivery-tag {
+.tags {
   display: flex;
   gap: 8px;
-  flex-wrap: wrap;
 }
 
-.delivery-tag span {
-  display: inline-block;
-  padding: 4px 10px;
-  background: rgba(255, 255, 255, 0.25);
-  border-radius: 12px;
+.tag {
+  background: rgba(255,255,255,0.2);
+  padding: 2px 8px;
+  border-radius: 4px;
   font-size: 11px;
-  font-weight: 500;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-.tag-hot {
-  animation: shimmer 2s ease-in-out infinite;
+.recommend-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
 }
 
-@keyframes shimmer {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.8;
-  }
-}
-
-.delivery-arrow {
-  flex-shrink: 0;
-  width: 40px;
-  height: 40px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.recommend-card {
+  padding: 16px;
+  border-radius: 12px;
   position: relative;
-  z-index: 1;
+  height: 100px;
 }
 
-/* 平台优势 */
-.advantages-section {
-  margin: 16px;
+.blue-card {
+  background: linear-gradient(135deg, #e6f7ff 0%, #bae7ff 100%);
+  color: #0050b3;
+}
+
+.orange-card {
+  background: linear-gradient(135deg, #fff7e6 0%, #ffd591 100%);
+  color: #d46b08;
+}
+
+.recommend-card h4 {
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.recommend-card p {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.card-icon {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  opacity: 0.5;
+}
+
+/* 推荐列表 */
+.service-feed {
   background: #fff;
   border-radius: 12px;
   padding: 16px;
 }
 
-.advantage-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
+.section-title {
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 16px;
+  color: #333;
 }
 
-.advantage-item {
-  text-align: center;
-  padding: 16px;
-  background: #f7f8fa;
+.feed-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.feed-card:last-child {
+  border-bottom: none;
+}
+
+.feed-icon {
+  width: 48px;
+  height: 48px;
   border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.advantage-icon {
-  margin-bottom: 8px;
+.feed-content {
+  flex: 1;
 }
 
-.advantage-title {
-  font-size: 14px;
+.feed-title {
+  font-size: 15px;
   font-weight: 500;
-  color: #323233;
+  color: #333;
   margin-bottom: 4px;
 }
 
-.advantage-desc {
+.feed-desc {
   font-size: 12px;
-  color: #969799;
+  color: #999;
 }
 </style>
 

@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { showFailToast } from 'vant'
 
 const routes = [
   {
@@ -36,8 +37,14 @@ const routes = [
   {
     path: '/login',
     name: 'Login',
-    component: () => import('@/views/auth/Login.vue'),
+    component: () => import('@/views/login/Index.vue'),
     meta: { title: '登录' }
+  },
+  {
+    path: '/register',
+    name: 'Register',
+    component: () => import('@/views/register/Index.vue'),
+    meta: { title: '注册账号' }
   },
   {
     path: '/service-detail/:id',
@@ -72,6 +79,27 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   document.title = to.meta.title || '低空综合服务平台'
+  
+  // Admin route protection
+  if (to.path.startsWith('/admin')) {
+    const userStr = localStorage.getItem('user')
+    if (!userStr) {
+      next('/login')
+      return
+    }
+    try {
+      const user = JSON.parse(userStr)
+      if (user.role !== 'admin') {
+        showFailToast('无管理权限，请使用管理员账号登录')
+        next('/login')
+        return
+      }
+    } catch (e) {
+      next('/login')
+      return
+    }
+  }
+  
   next()
 })
 

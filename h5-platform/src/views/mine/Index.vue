@@ -4,32 +4,32 @@
 
     <!-- 用户信息卡片 -->
     <div class="user-card">
-      <div class="user-header" @click="$router.push('/login')">
+      <div class="user-header" @click="handleUserClick">
         <van-image
           round
           width="60"
           height="60"
-          src="https://fastly.jsdelivr.net/npm/@vant/assets/cat.jpeg"
+          :src="user?.avatar || 'https://fastly.jsdelivr.net/npm/@vant/assets/cat.jpeg'"
         />
         <div class="user-info">
-          <h2 class="user-name">点击登录</h2>
-          <p class="user-phone">手机号未绑定</p>
+          <h2 class="user-name">{{ user?.name || '点击登录' }}</h2>
+          <p class="user-phone">{{ user?.phone || '登录后享受更多服务' }}</p>
         </div>
-        <van-icon name="arrow" size="16" color="#fff" />
+        <van-icon name="arrow" size="16" color="#fff" v-if="!user" />
       </div>
 
       <!-- 统计数据 -->
       <div class="stats-grid">
         <div class="stat-item">
-          <div class="stat-value">0</div>
+          <div class="stat-value">{{ totalCount }}</div>
           <div class="stat-label">总申请</div>
         </div>
         <div class="stat-item">
-          <div class="stat-value">0</div>
+          <div class="stat-value">{{ processingCount }}</div>
           <div class="stat-label">处理中</div>
         </div>
         <div class="stat-item">
-          <div class="stat-value">0</div>
+          <div class="stat-value">{{ completedCount }}</div>
           <div class="stat-label">已完成</div>
         </div>
       </div>
@@ -95,13 +95,13 @@
       </van-cell-group>
     </div>
 
-    <div class="menu-section">
+    <div class="menu-section" v-if="user">
       <van-cell-group inset>
         <van-cell
-          title="设置"
-          icon="setting-o"
+          title="退出登录"
+          icon="close"
           is-link
-          @click="showToast('功能开发中')"
+          @click="handleLogout"
         />
       </van-cell-group>
     </div>
@@ -109,7 +109,73 @@
 </template>
 
 <script setup>
-import { showDialog, showToast } from 'vant'
+import { ref, onMounted } from 'vue'
+import { showDialog, showToast, showFailToast, showConfirmDialog } from 'vant'
+import axios from 'axios'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+const totalCount = ref(0)
+const processingCount = ref(0)
+const completedCount = ref(0)
+const user = ref(null)
+
+const fetchStats = async (userId) => {
+  if (!userId) {
+      totalCount.value = 0;
+      processingCount.value = 0;
+      completedCount.value = 0;
+      return;
+  }
+  try {
+    const res = await axios.get('/api/list', { params: { userId } })
+    const list = res.data || []
+    
+    totalCount.value = list.length
+    processingCount.value = list.filter(item => item.status === '处理中').length
+    completedCount.value = list.filter(item => item.status === '已完成').length
+  } catch (error) {
+    console.error('Failed to fetch stats:', error)
+    // showFailToast('获取数据失败') // Optional: suppress error toast on mine page to avoid annoyance
+  }
+}
+
+const handleUserClick = () => {
+  if (!user.value) {
+    router.push('/login')
+  }
+}
+
+const handleLogout = () => {
+  showConfirmDialog({
+    title: '提示',
+    message: '确定要退出登录吗？',
+  })
+    .then(() => {
+      localStorage.removeItem('user')
+      user.value = null
+      fetchStats(null) // Reset stats
+      showToast('已退出登录')
+    })
+    .catch(() => {
+      // on cancel
+    })
+}
+
+onMounted(() => {
+  const userStr = localStorage.getItem('user')
+  if (userStr) {
+    try {
+      user.value = JSON.parse(userStr)
+      fetchStats(user.value.id)
+    } catch (e) {
+      console.error(e)
+      fetchStats(null)
+    }
+  } else {
+      fetchStats(null)
+  }
+})
 
 const showGuide = () => {
   showDialog({
@@ -135,7 +201,7 @@ const showContact = () => {
 const showAbout = () => {
   showDialog({
     title: '关于我们',
-    message: '低空综合服务平台\n版本：v1.0.0\n\n专注于提供专业、高效、安全的低空服务'
+    message: '低空综合服务平台\n开发主体：温州低空经济发展有限公司\n版本：v1.1.0\n\n专注于提供专业、高效、安全的低空服务'
   })
 }
 </script>

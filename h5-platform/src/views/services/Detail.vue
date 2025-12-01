@@ -74,7 +74,7 @@ const serviceData = {
     name: '无人机物流服务',
     slogan: '快速配送 · 安全可靠 · 覆盖全城',
     icon: 'send-gift-o', // 物流配送
-    color: '#667eea',
+    color: '#1677ff',
     intro: '无人机物流服务利用先进的无人机技术，为城市和偏远地区提供快速、高效的物资配送服务。',
     projects: [
       { name: '城市配送', icon: 'shopping-cart-o' }, // 购物车配送
@@ -88,7 +88,7 @@ const serviceData = {
     name: '政务巡检服务',
     slogan: '智能巡检 · 降本增效 · 精准监测',
     icon: 'eye-o', // 巡检监控
-    color: '#f5576c',
+    color: '#ff9c6e',
     intro: '专业提供政务巡检服务，包括环保监测、安全巡查、设施检查等，助力智慧城市建设。',
     projects: [
       { name: '环保监测', icon: 'cluster-o' }, // 环境聚类
@@ -102,7 +102,7 @@ const serviceData = {
     name: '无人机托管服务',
     slogan: '专业托管 · 安全放心 · 省心省力',
     icon: 'shop-o', // 托管商店
-    color: '#00f2fe',
+    color: '#52c41a',
     intro: '提供专业的无人机托管服务，包括保养维护、安全存储、代飞服务等一站式解决方案。',
     projects: [
       { name: '专业维护', icon: 'setting-o' }, // 设置维护
@@ -116,7 +116,7 @@ const serviceData = {
     name: '无人机吊运服务',
     slogan: '高空作业 · 精准操控 · 安全高效',
     icon: 'upgrade', // 吊运上升
-    color: '#38f9d7',
+    color: '#722ed1',
     intro: '提供专业的无人机吊运服务，适用于高空作业、建筑施工、设备安装等场景。',
     projects: [
       { name: '高空吊运', icon: 'arrow-up' }, // 上升箭头
@@ -130,7 +130,7 @@ const serviceData = {
     name: '航空表演服务',
     slogan: '震撼视觉 · 创意编排 · 精彩呈现',
     icon: 'fire-o',
-    color: '#da77f2',
+    color: '#eb2f96',
     intro: '提供专业的航空表演服务，包括无人机编队飞行、灯光秀、创意表演等，为各类活动增添精彩亮点。',
     projects: [
       { name: '编队飞行', icon: 'friends-o' },
@@ -144,7 +144,7 @@ const serviceData = {
     name: '无人机培训服务',
     slogan: '专业培训 · 证书认证 · 实操教学',
     icon: 'certificate',
-    color: '#20c997',
+    color: '#faad14',
     intro: '提供专业的无人机培训服务，包括CAAC执照培训、技能提升、行业应用培训等，助力无人机人才培养。',
     projects: [
       { name: 'CAAC执照', icon: 'certificate' },
@@ -158,7 +158,7 @@ const serviceData = {
     name: '无人机租赁服务',
     slogan: '灵活租赁 · 多种机型 · 专业服务',
     icon: 'coupon-o',
-    color: '#4c6ef5',
+    color: '#13c2c2',
     intro: '提供专业的无人机租赁服务，多种机型可选，灵活租赁方式，满足不同场景的使用需求。',
     projects: [
       { name: '设备租赁', icon: 'bag-o' },
@@ -172,7 +172,7 @@ const serviceData = {
     name: '无人机外卖配送',
     slogan: '即时配送 · 快速送达 · 安全可靠',
     icon: 'shopping-cart-o',
-    color: '#ff6b6b',
+    color: '#f5222d',
     intro: '提供专业的无人机外卖配送服务，实现城市即时配送，快速安全，为用户带来全新的外卖体验。',
     projects: [
       { name: '即时配送', icon: 'logistics' },
@@ -186,7 +186,7 @@ const serviceData = {
     name: '低空研学服务',
     slogan: '科普教育 · 实践体验 · 创新培养',
     icon: 'records',
-    color: '#9c27b0',
+    color: '#722ed1',
     intro: '提供专业的低空研学服务，面向青少年开展无人机科普教育、飞行体验、创新实践等活动，激发科技兴趣，培养创新能力。',
     projects: [
       { name: '科普讲座', icon: 'records' },
@@ -200,7 +200,7 @@ const serviceData = {
     name: '无人机二手交易',
     slogan: '诚信交易 · 专业检测 · 以旧换新',
     icon: 'exchange',
-    color: '#ff9800',
+    color: '#fa8c16',
     intro: '提供专业的无人机二手交易平台，支持设备买卖、以旧换新、专业检测等服务，让闲置设备发挥价值。',
     projects: [
       { name: '设备买卖', icon: 'shop-o' },
@@ -214,7 +214,7 @@ const serviceData = {
     name: '无人机金融服务',
     slogan: '设备保险 · 飞行护航 · 专业理赔',
     icon: 'balance-o',
-    color: '#00bcd4',
+    color: '#1677ff',
     intro: '提供专业的无人机金融保险服务，涵盖设备险、责任险、飞手险等多种保险产品，为您的飞行保驾护航。',
     projects: [
       { name: '设备保险', icon: 'shield-o' },
@@ -295,7 +295,7 @@ const onApply = () => {
   color: #323233;
   margin-bottom: 16px;
   padding-left: 12px;
-  border-left: 4px solid #667eea;
+  border-left: 4px solid #1677ff;
 }
 
 .section-text {

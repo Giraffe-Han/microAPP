@@ -10,3 +10,11 @@ package-lock.json
 # local env files
 .env.local
 .env.*.local
+
+# Uploads
+server/public/uploads/*
+!server/public/uploads/.gitkeep
+
+# Documentation
+*.md
+!README.md

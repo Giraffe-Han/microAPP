@@ -648,6 +648,23 @@ const formRef = ref(null)
 // pattern: /^1\d{10}$/
 
 const onSubmit = async () => {
+  // Check if user is logged in
+  const userStr = localStorage.getItem('user');
+  if (!userStr) {
+      showDialog({
+          title: '提示',
+          message: '您当前未登录，请先登录或注册账号后再提交申请。',
+          confirmButtonText: '去登录',
+          showCancelButton: true
+      }).then((action) => {
+          if (action === 'confirm') {
+              router.push('/login');
+          }
+      });
+      return;
+  }
+  const user = JSON.parse(userStr);
+
   showLoadingToast({
     message: '提交中...',
     forbidClick: true,
@@ -669,7 +686,8 @@ const onSubmit = async () => {
       serviceName: serviceName.value,
       orderNo,
       applyTime,
-      status: '待处理'
+      status: '待处理',
+      userId: user.id // Add User ID
     };
 
     await axios.post('/api/submit', submitData);

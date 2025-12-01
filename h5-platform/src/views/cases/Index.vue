@@ -10,16 +10,23 @@
 
     <div class="page-content">
       <!-- 案例分类tabs -->
-      <van-tabs v-model:active="activeCategory" sticky offset-top="46" color="#667eea">
+      <van-tabs v-model:active="activeCategory" sticky offset-top="46" color="#667eea" @change="onTabChange">
         <van-tab
           v-for="category in categories"
           :key="category.id"
           :title="category.name"
         >
           <div class="cases-container">
+            <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
+            <van-list
+              v-model:loading="loadingMore"
+              :finished="finished"
+              finished-text="没有更多了"
+              @load="onLoad"
+            >
             <!-- 案例列表 -->
             <div 
-              v-for="caseItem in filteredCases" 
+              v-for="caseItem in cases" 
               :key="caseItem.id"
               class="case-card"
               @click="showCaseDetail(caseItem)"
@@ -32,8 +39,19 @@
                   :alt="caseItem.title"
                 />
                 <div v-else class="video-cover">
-                  <img :src="caseItem.cover" :alt="caseItem.title" />
-                  <van-icon name="play-circle-o" class="play-icon" size="48" color="#fff" />
+                  <video 
+                    :src="caseItem.cover" 
+                    muted 
+                    loop 
+                    playsinline
+                    webkit-playsinline
+                    x5-playsinline
+                    preload="metadata"
+                    style="width: 100%; height: 100%; object-fit: cover;"
+                  ></video>
+                  <div class="play-icon">
+                    <van-icon name="play" size="24" />
+                  </div>
                 </div>
                 
                 <!-- 类型标签 -->
@@ -60,10 +78,12 @@
                 </div>
               </div>
             </div>
+            </van-list>
+            </van-pull-refresh>
 
             <!-- 空状态 -->
             <van-empty
-              v-if="filteredCases.length === 0"
+              v-if="!loadingMore && !refreshing && cases.length === 0"
               description="暂无案例"
               image="search"
             />
@@ -86,7 +106,8 @@
         
         <!-- 媒体轮播 -->
         <van-swipe
-          :autoplay="3000"
+          ref="swipeRef"
+          :autoplay="autoplayDuration"
           :loop="true"
           indicator-color="#667eea"
           class="media-swiper"
@@ -102,10 +123,13 @@
               <video
                 :src="media.url"
                 controls
-                :poster="media.poster"
+                preload="metadata"
                 playsinline
                 webkit-playsinline
                 x5-playsinline
+                @play="onPlay"
+                @pause="onPause"
+                @ended="onEnded"
               >
                 您的浏览器不支持视频播放
               </video>
@@ -152,182 +176,105 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import axios from 'axios'
+import { showFailToast } from 'vant'
 
 // 分类
 const categories = ref([
   { id: 0, name: '全部案例' },
   { id: 1, name: '无人机物流' },
-  { id: 2, name: '政务巡检' },
-  { id: 3, name: '无人机托管' },
   { id: 4, name: '无人机吊运' },
-  { id: 5, name: '航空表演' },
-  { id: 8, name: '无人机外卖' }
+  { id: 5, name: '航空表演' }
 ])
 
 const activeCategory = ref(0)
 
-// 案例数据（示例数据，实际应从后端获取）
-const cases = ref([
-  {
-    id: 1,
-    categoryId: 1,
-    title: '城市医疗物资紧急配送',
-    description: '为某市医院紧急配送药品30分钟完成10公里配送任务',
-    service: '无人机物流服务',
-    location: '浙江省温州市',
-    date: '2024-12-15',
-    views: '1.2k',
-    coverType: 'image',
-    cover: 'https://wenzhoumall-prod.oss-cn-shanghai.aliyuncs.com/test/shop/20250930/0fa02eb2dc8b4a6382784fedc0b44dc0.jpg?Expires=3337231191&OSSAccessKeyId=LTAI5tSbLByCMG16D3eoErCU&Signature=Zk8QXbZAJhw08908Er3iuy9dKg0%3D',
-    media: [
-      { type: 'image', url: 'https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=800' },
-      { type: 'image', url: 'https://images.unsplash.com/photo-1527977966376-1c8408f9f108?w=800' },
-      { type: 'video', url: 'https://videos.pexels.com/video-files/3045163/3045163-hd_1920_1080_24fps.mp4', poster: 'https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=800' }
-    ],
-    fullDescription: '本次任务为某三甲医院紧急配送药品，传统地面交通预计需要90分钟，使用无人机物流仅用30分钟完成配送，为患者争取了宝贵的抢救时间。',
-    highlights: [
-      '快速响应，15分钟内起飞',
-      '全程GPS跟踪，实时监控',
-      '节省时间60分钟，提高救援效率200%'
-    ]
-  },
-  {
-    id: 2,
-    categoryId: 2,
-    title: '环保监测智能巡检项目',
-    description: '某工业园区环保巡检，覆盖20平方公里，发现3处违规排放点',
-    service: '政务巡检服务',
-    location: '上海市浦东新区',
-    date: '2024-11-28',
-    views: '856',
-    coverType: 'video',
-    cover: 'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=800',
-    media: [
-      { type: 'video', url: 'https://videos.pexels.com/video-files/2324349/2324349-hd_1920_1080_30fps.mp4', poster: 'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=800' },
-      { type: 'image', url: 'https://images.unsplash.com/photo-1508614589041-895b88991e3e?w=800' },
-      { type: 'image', url: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800' }
-    ],
-    fullDescription: '利用无人机搭载高清摄像头和气体检测传感器，对工业园区进行全方位环保巡检，成功发现3处违规排放点，为环保部门提供了有力的执法依据。',
-    highlights: [
-      '覆盖面积广，效率提升5倍',
-      '高清影像采集，证据确凿',
-      '实时数据分析，AI智能识别',
-      '成本降低70%，准确率达98%'
-    ]
-  },
-  {
-    id: 3,
-    categoryId: 5,
-    title: '新年灯光秀编队表演',
-    description: '500架无人机编队表演，呈现震撼灯光秀，点亮城市夜空',
-    service: '航空表演服务',
-    location: '温州市泰顺县',
-    date: '2025-01-01',
-    views: '5.6k',
-    coverType: 'video',
-    cover: 'https://images.unsplash.com/photo-1451847251646-8a6c0dd1510c?w=800',
-    media: [
-      { type: 'video', url: 'https://videos.pexels.com/video-files/3191955/3191955-hd_1920_1080_25fps.mp4', poster: 'https://images.unsplash.com/photo-1451847251646-8a6c0dd1510c?w=800' },
-      { type: 'image', url: 'https://images.unsplash.com/photo-1451847251646-8a6c0dd1510c?w=800' },
-      { type: 'image', url: 'https://images.unsplash.com/photo-1533928298208-27ff66555d8d?w=800' }
-    ],
-    fullDescription: '新年跨年夜，500架无人机在城市上空编队表演，呈现"新年快乐"、生肖图案、城市地标等多个图案，为市民带来震撼视觉盛宴。',
-    highlights: [
-      '500架无人机精准编队',
-      '16种变换图案，创意十足',
-      '全程无事故，安全可靠',
-      '现场观众超10万人，网络直播观看超百万'
-    ]
-  },
-  {
-    id: 4,
-    categoryId: 4,
-    title: '山区基站设备吊装',
-    description: '偏远山区通信基站设备吊装，解决传统吊装无法到达的难题',
-    service: '无人机吊运服务',
-    location: '四川省凉山州',
-    date: '2024-09-15',
-    views: '1.8k',
-    coverType: 'video',
-    cover: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=800',
-    media: [
-      { type: 'video', url: 'https://videos.pexels.com/video-files/1743318/1743318-hd_1920_1080_30fps.mp4', poster: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=800' },
-      { type: 'video', url: 'https://videos.pexels.com/video-files/855564/855564-hd_1920_1080_24fps.mp4', poster: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=800' }
-    ],
-    fullDescription: '在海拔3000米的偏远山区，道路崎岖，传统吊装设备无法到达。使用大型吊运无人机，成功将重达50kg的基站设备运送至指定位置并完成安装。',
-    highlights: [
-      '突破地形限制，吊运能力强',
-      '精准定位，误差小于10cm',
-      '降低成本40%，缩短工期60%',
-      '零安全事故，施工人员零风险'
-    ]
-  },
-  {
-    id: 5,
-    categoryId: 3,
-    title: '企业无人机托管服务',
-    description: '为某物流企业提供20架无人机的全方位托管服务',
-    service: '无人机托管服务',
-    location: '杭州市滨江区',
-    date: '2024-08-10',
-    views: '654',
-    coverType: 'image',
-    cover: 'https://images.unsplash.com/photo-1508444845599-5c89863b1c44?w=800',
-    media: [
-      { type: 'image', url: 'https://images.unsplash.com/photo-1508444845599-5c89863b1c44?w=800' },
-      { type: 'image', url: 'https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=800' }
-    ],
-    fullDescription: '为客户提供无人机存储、维护保养、飞手代飞、保险购买等一站式托管服务，让客户省心省力，专注核心业务。',
-    highlights: [
-      '专业恒温恒湿存储环境',
-      '定期维护保养，设备状态优良',
-      '7x24小时托管，随时可用',
-      '客户满意度98%，续约率100%'
-    ]
-  },
-  {
-    id: 6,
-    categoryId: 8,
-    title: '午餐高峰期外卖配送',
-    description: '商圈午餐高峰期，无人机外卖配送30分钟送达，保温保鲜',
-    service: '无人机外卖配送',
-    location: '北京市海淀区',
-    date: '2025-01-20',
-    views: '3.2k',
-    coverType: 'video',
-    cover: 'https://images.unsplash.com/photo-1526367790999-0150786686a2?w=800',
-    media: [
-      { type: 'video', url: 'https://videos.pexels.com/video-files/4434242/4434242-hd_1920_1080_24fps.mp4', poster: 'https://images.unsplash.com/photo-1526367790999-0150786686a2?w=800' },
-      { type: 'image', url: 'https://images.unsplash.com/photo-1526367790999-0150786686a2?w=800' },
-      { type: 'image', url: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800' }
-    ],
-    fullDescription: '在午餐高峰期，利用无人机外卖配送系统，为写字楼用户提供快速配送服务。从餐厅取餐到送达用户手中，全程30分钟，保温箱确保食品温度，用户通过APP实时追踪配送进度。',
-    highlights: [
-      '30分钟快速送达，准时率99%',
-      '智能保温箱，食品温度保持恒定',
-      'GPS实时追踪，配送过程透明',
-      '无接触配送，安全卫生'
-    ]
-  }
-])
+// 案例数据
+const cases = ref([])
+const page = ref(1)
+const loadingMore = ref(false)
+const finished = ref(false)
+const refreshing = ref(false)
 
-// 当前选中案例
-const currentCase = ref(null)
-const showDetail = ref(false)
+const fetchCases = async () => {
+  try {
+    const categoryId = categories.value[activeCategory.value].id
+    const res = await axios.get('/api/cases', {
+        params: {
+            page: page.value,
+            limit: 10,
+            categoryId
+        }
+    })
+    const data = res.data.data || [] // Assuming server returns { data: [], ... }
+    
+    if (refreshing.value) {
+        cases.value = data
+        refreshing.value = false
+    } else {
+        cases.value = [...cases.value, ...data]
+    }
 
-// 过滤案例
-const filteredCases = computed(() => {
-  if (activeCategory.value === 0) {
-    return cases.value
+    loadingMore.value = false
+
+    if (data.length < 10) {
+        finished.value = true
+    } else {
+        page.value++
+    }
+  } catch (error) {
+    console.error('Failed to fetch cases:', error)
+    showFailToast('获取案例数据失败')
+    loadingMore.value = false
+    refreshing.value = false
+    finished.value = true
   }
-  return cases.value.filter(c => c.categoryId === categories.value[activeCategory.value].id)
-})
+}
+
+const onLoad = () => {
+    if (refreshing.value) return
+    fetchCases()
+}
+
+const onRefresh = () => {
+    finished.value = false
+    loadingMore.value = true // Prevent onLoad triggering while refreshing? 
+    // Actually van-pull-refresh handles refreshing state.
+    // We should reset page
+    page.value = 1
+    onLoad() // trigger load
+}
+
+const onTabChange = () => {
+    cases.value = []
+    page.value = 1
+    finished.value = false
+    loadingMore.value = true // set loading
+    onLoad()
+}
 
 // 显示案例详情
 const showCaseDetail = (caseItem) => {
   currentCase.value = caseItem
   showDetail.value = true
+}
+
+// 视频播放控制
+const swipeRef = ref(null)
+const autoplayDuration = ref(3000)
+
+const onPlay = () => {
+  autoplayDuration.value = 0 // 停止轮播
+}
+
+const onPause = () => {
+  autoplayDuration.value = 3000 // 恢复轮播
+}
+
+const onEnded = () => {
+  autoplayDuration.value = 3000 // 恢复轮播
+  swipeRef.value?.next() // 播放结束立即切换下一张
 }
 </script>
 

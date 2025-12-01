@@ -1,0 +1,20 @@
+[
+  {
+    "id": "1",
+    "phone": "wzdkjjfzyxgs",
+    "password": "admin",
+    "name": "wzdkjjfzyxgs",
+    "role": "admin",
+    "avatar": "",
+    "createTime": "2025-11-27T01:20:54.251Z"
+  },
+  {
+    "id": "1764206954630",
+    "phone": "13819729175",
+    "password": "Wz-85987989",
+    "name": "test ",
+    "role": "user",
+    "avatar": "",
+    "createTime": "2025-11-27T01:29:14.630Z"
+  }
+]
