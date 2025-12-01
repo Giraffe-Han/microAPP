@@ -1,0 +1,29 @@
+无人机服务平台图标文件清单
+================================
+
+主要服务图标 (100rpx × 100rpx):
+1. repair.png - 无人机维修服务
+2. rental.png - 无人机租赁服务  
+3. training.png - 飞手培训服务
+4. platform.png - 平台中心
+
+次要服务图标 (80rpx × 80rpx):
+5. trusteeship.png - 无人机托管服务
+6. performance.png - 无人机表演服务
+7. governance.png - 城市治理服务
+8. sharing.png - 共享无人机服务
+9. insurance.png - 无人机保险服务
+10. study.png - 研学服务
+11. secondhand.png - 二手交易服务
+12. more.png - 更多服务
+
+快捷功能卡片图标 (80rpx × 80rpx):
+13. repair-card.png - 维修服务卡片
+14. training-card.png - 培训服务卡片
+
+通用图标:
+15. search.png - 搜索图标 (32rpx × 32rpx)
+16. more-info.png - 更多图标 (24rpx × 24rpx)
+
+
+

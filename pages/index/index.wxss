@@ -1,0 +1,284 @@
+/**pages/index/index.wxss**/
+.container {
+  padding: 0;
+  background-color: transparent;
+  min-height: 100vh;
+  position: relative;
+}
+
+.background-image {
+  position: fixed;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  width: 100%;
+  height: 60vh;
+  z-index: -999;
+  opacity: 0.8;
+  object-fit: cover;
+}
+
+/* 顶部导航栏 */
+.top-bar {
+  display: flex;
+  align-items: center;
+  padding: 20rpx 30rpx;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10rpx);
+  border-bottom: 1rpx solid rgba(229, 229, 229, 0.5);
+}
+
+.logo-section {
+  display: flex;
+  align-items: center;
+  margin-right: 20rpx;
+}
+
+.company-logo {
+  width: 400rpx;
+  height: 150rpx;
+}
+
+.search-bar {
+  flex: 1;
+}
+
+.search-input {
+  display: flex;
+  align-items: center;
+  background: rgba(245, 245, 245, 0.8);
+  backdrop-filter: blur(5rpx);
+  border-radius: 25rpx;
+  padding: 15rpx 20rpx;
+}
+
+.search-icon {
+  font-size: 28rpx;
+  margin-right: 10rpx;
+}
+
+.search-placeholder {
+  font-size: 30rpx;
+  color: #999;
+}
+
+/* 主要服务区域 */
+.main-services {
+  padding: 20rpx 30rpx;
+  margin: 0;
+}
+
+.main-services-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 30rpx;
+}
+
+.main-service-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.main-service-icon {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 24rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 15rpx;
+  background: #f8f9fa;
+}
+
+.main-icon-emoji {
+  font-size: 60rpx;
+}
+
+.main-service-name {
+  font-size: 28rpx;
+  color: #fff;
+  text-align: center;
+}
+
+.services-title {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333;
+  text-align: center;
+  margin-bottom: 30rpx;
+}
+
+/* 次要服务区域 */
+.secondary-services {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10rpx);
+  padding: 30rpx;
+  margin: 20rpx;
+  border-radius: 16rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+}
+
+.secondary-services-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 20rpx;
+}
+
+.secondary-service-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.secondary-service-icon {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12rpx;
+  background: #f8f9fa;
+}
+
+.secondary-icon-emoji {
+  font-size: 40rpx;
+}
+
+.secondary-service-name {
+  font-size: 22rpx;
+  color: #333;
+  text-align: center;
+}
+
+/* 资讯公告区域 */
+.info-section {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10rpx);
+  padding: 30rpx;
+  margin: 20rpx;
+  border-radius: 16rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+}
+
+.info-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.info-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.info-more {
+  font-size: 26rpx;
+  color: #007aff;
+}
+
+.info-content {
+  display: flex;
+  flex-direction: column;
+  gap: 15rpx;
+}
+
+.info-item {
+  font-size: 26rpx;
+  color: #666;
+  line-height: 1.4;
+  padding: 15rpx 0;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.info-item:last-child {
+  border-bottom: none;
+}
+
+/* 快捷功能卡片 */
+.quick-cards {
+  display: flex;
+  gap: 20rpx;
+  padding: 0 30rpx;
+  margin: 20rpx;
+  margin-bottom: 30rpx;
+}
+
+.card-item {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10rpx);
+  border-radius: 16rpx;
+  padding: 30rpx;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.1);
+}
+
+.card-icon {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 20rpx;
+  background: #f8f9fa;
+}
+
+.card-icon-emoji {
+  font-size: 40rpx;
+}
+
+.card-content {
+  flex: 1;
+}
+
+.card-title {
+  display: block;
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 8rpx;
+}
+
+.card-subtitle {
+  display: block;
+  font-size: 24rpx;
+  color: #666;
+}
+
+/* 底部信息 */
+.footer {
+  text-align: center;
+  padding: 20rpx;
+  margin: 20rpx;
+  color: #999;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10rpx);
+  border-radius: 16rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+}
+
+.footer-logo {
+  margin-bottom: 20rpx;
+}
+
+.footer-logo-img {
+  width: 250rpx;
+  height: 80rpx;
+}
+
+.footer-text {
+  display: block;
+  font-size: 24rpx;
+  margin-bottom: 10rpx;
+}
+
+.footer-version {
+  display: block;
+  font-size: 20rpx;
+}

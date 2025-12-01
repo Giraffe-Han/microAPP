@@ -1,0 +1,29 @@
+/**pages/insurance/insurance.wxss**/
+.container {
+  padding: 40rpx;
+  text-align: center;
+}
+
+.header {
+  margin-bottom: 40rpx;
+}
+
+.title {
+  display: block;
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 10rpx;
+}
+
+.subtitle {
+  display: block;
+  font-size: 28rpx;
+  color: #666;
+}
+
+.content {
+  padding: 100rpx 0;
+  color: #999;
+  font-size: 28rpx;
+}
