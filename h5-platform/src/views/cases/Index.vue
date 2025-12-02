@@ -189,9 +189,71 @@ const categories = ref([
 ])
 
 const activeCategory = ref(0)
+const showDetail = ref(false)
+const currentCase = ref(null)
+
+// 预置静态案例数据 (确保即使API失败也能显示)
+const staticCases = [
+  {
+    id: 1764231459722,
+    categoryId: 5,
+    title: '泰顺无人机表演',
+    description: '5月20日晚，泰顺县文祥湖公园的夜空被1999架无人机点亮，一场以“欢顺520”为主题的无人机灯光秀在此震撼上演。',
+    location: '泰顺县文祥湖公园',
+    date: '2025-05-20',
+    views: '2.3k',
+    service: '航空表演',
+    coverType: 'image',
+    cover: '/uploads/taishun-perf-cover.jpg',
+    media: [
+       { type: 'video', url: '/uploads/taishun-perf-video.mp4' }
+    ],
+    fullDescription: '这场由温州交运集团所属低空公司、浙江顺翼泰翔低空经济有限公司联合泰顺县文化和广电旅游体育局共同打造的视觉盛宴，以天为幕、以光为笔，在高空书写了一封跨越半个多世纪的"时光情书"，用动态光影演绎"执子之手，与子偕老"的深情承诺，为这座浙南山城增添了一抹动人心魄的浪漫注脚。',
+    highlights: ['1999架无人机编队', '文祥湖夜空首秀', '欢顺520主题']
+  },
+  {
+    id: 1,
+    categoryId: 1,
+    title: '江心屿无人机外卖配送',
+    description: '江心屿无人机外卖航线，极速送达，空投德克士、永和豆浆等多家外卖',
+    location: '江心屿',
+    date: '2025-10-01',
+    views: '1.2k',
+    service: '无人机物流服务',
+    coverType: 'image',
+    cover: '/uploads/jiangxinyu-cover.jpg',
+    media: [
+      { type: 'image', url: '/uploads/jiangxinyu-cover.jpg' },
+      { type: 'image', url: '/uploads/jiangxinyu-1.jpg' },
+      { type: 'video', url: '/uploads/jiangxinyu-video.mp4', poster: '/uploads/jiangxinyu-cover.jpg' }
+    ],
+    fullDescription: '为缓解假期游客密集导致的就餐难等问题，温州交运集团所属低空公司在江心屿创新推出无人机外卖配送服务，以“宋街起飞、九曲桥草坪降落”的双节点布局，在景区内打造“低空物流”内循环。“相比传统地面配送，无人机配送效率提升了近70%，单次能装下2—3份餐食，有效解决配送慢、取餐难等问题。”低空公司一位负责人说，此次在江心屿推出无人机外卖配送服务，进一步探索了“低空物流+景区内循环”的可复制场景，为景区服务增添科技温度。',
+    highlights: ['10分钟极速送达，效率提升300%', '精准定位空投柜，取餐更方便', '覆盖永和豆浆、德克士等种商品', '无接触配送，科技感十足']
+  },
+  {
+    id: 4,
+    categoryId: 4,
+    title: '泰顺杨梅采摘',
+    description: '偏远山区农产品无人机空运，解决传统运输方式运输难题',
+    location: '泰顺山区',
+    date: '2025-06-24',
+    views: '1.8k',
+    service: '无人机吊运服务',
+    coverType: 'image',
+    cover: '/uploads/taishun-bayberry-cover.jpg',
+    media: [
+      { type: 'image', url: '/uploads/taishun-bayberry-cover.jpg' },
+      { type: 'image', url: '/uploads/taishun-bayberry-1.jpg' },
+      { type: 'image', url: '/uploads/taishun-bayberry-2.jpg' },
+      { type: 'video', url: '/uploads/taishun-bayberry-video.mp4' }
+    ],
+    fullDescription: '偏远山区，道路崎岖，传统载具运输困难。使用大型吊运无人机，成功杨梅进行吊装配送',
+    highlights: ['突破地形限制，吊运能力强', '精准定位，误差小于10cm', '降低成本40%，缩短工期60%', '零安全事故，施工人员零风险']
+  }
+]
 
 // 案例数据
-const cases = ref([])
+const cases = ref([...staticCases]) // 初始显示静态数据
 const page = ref(1)
 const loadingMore = ref(false)
 const finished = ref(false)
@@ -200,6 +262,15 @@ const refreshing = ref(false)
 const fetchCases = async () => {
   try {
     const categoryId = categories.value[activeCategory.value].id
+    
+    // 过滤静态数据
+    let currentStaticCases = []
+    if (categoryId === 0) {
+        currentStaticCases = staticCases
+    } else {
+        currentStaticCases = staticCases.filter(c => c.categoryId === categoryId)
+    }
+
     const res = await axios.get('/api/cases', {
         params: {
             page: page.value,
@@ -207,25 +278,45 @@ const fetchCases = async () => {
             categoryId
         }
     })
-    const data = res.data.data || [] // Assuming server returns { data: [], ... }
+    let data = res.data.data || [] 
+
+    // 去重：移除已经存在于 staticCases 中的数据 (避免重复显示)
+    // 优先使用本地 staticCases 配置的资源路径
+    const staticIds = new Set(currentStaticCases.map(c => c.id))
+    data = data.filter(item => !staticIds.has(item.id))
     
     if (refreshing.value) {
-        cases.value = data
+        // 刷新时：重置为 静态数据 + 过滤后的API数据
+        cases.value = [...currentStaticCases, ...data]
         refreshing.value = false
     } else {
-        cases.value = [...cases.value, ...data]
+        // 加载更多时：追加 API 数据
+        // 注意：如果是第一页且不是刷新（初始化），我们要确保静态数据只在最前面
+        if (page.value === 1) {
+             cases.value = [...currentStaticCases, ...data]
+        } else {
+             cases.value = [...cases.value, ...data]
+        }
     }
 
     loadingMore.value = false
 
-    if (data.length < 10) {
+    // 判断是否结束：使用原始返回长度判断
+    if ((res.data.data || []).length < 10) {
         finished.value = true
     } else {
         page.value++
     }
   } catch (error) {
     console.error('Failed to fetch cases:', error)
-    showFailToast('获取案例数据失败')
+    // 即使API失败，也要保留静态数据
+    const categoryId = categories.value[activeCategory.value].id
+    if (categoryId === 0) {
+        cases.value = staticCases
+    } else {
+        cases.value = staticCases.filter(c => c.categoryId === categoryId)
+    }
+    
     loadingMore.value = false
     refreshing.value = false
     finished.value = true
@@ -239,23 +330,22 @@ const onLoad = () => {
 
 const onRefresh = () => {
     finished.value = false
-    loadingMore.value = true // Prevent onLoad triggering while refreshing? 
-    // Actually van-pull-refresh handles refreshing state.
-    // We should reset page
+    loadingMore.value = true 
     page.value = 1
-    onLoad() // trigger load
+    onLoad() 
 }
 
 const onTabChange = () => {
     cases.value = []
     page.value = 1
     finished.value = false
-    loadingMore.value = true // set loading
+    loadingMore.value = true 
     onLoad()
 }
 
 // 显示案例详情
 const showCaseDetail = (caseItem) => {
+  console.log('Clicked case item:', caseItem);
   currentCase.value = caseItem
   showDetail.value = true
 }

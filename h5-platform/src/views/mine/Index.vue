@@ -39,6 +39,13 @@
     <div class="menu-section">
       <van-cell-group inset>
         <van-cell
+          v-if="user && user.role === 'admin'"
+          title="后台管理"
+          icon="setting-o"
+          is-link
+          @click="$router.push('/admin')"
+        />
+        <van-cell
           title="我的申请"
           icon="records"
           is-link

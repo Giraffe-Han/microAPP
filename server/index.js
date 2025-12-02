@@ -7,7 +7,7 @@ const XLSX = require('xlsx');
 const multer = require('multer'); // Import multer
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000; //读取 process.env.PORT
 const DB_FILE = path.join(__dirname, 'data.json');
 const CASES_FILE = path.join(__dirname, 'cases.json');
 const USERS_FILE = path.join(__dirname, 'users.json');
@@ -17,7 +17,7 @@ app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 
 // Serve static files
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Multer Storage Configuration
 const storage = multer.diskStorage({
@@ -447,6 +447,23 @@ app.post('/api/cases/update', (req, res) => {
         // But user might want to add cases later. Let's support simple update for now.
         res.status(404).json({ success: false, message: 'Case not found' });
     }
+});
+
+// Handle SPA routing: Serve index.html for all non-API routes
+app.get('*', (req, res) => {
+    // If it's an API request that wasn't handled above, return 404
+    if (req.path.startsWith('/api/')) {
+        return res.status(404).json({ success: false, message: 'API not found' });
+    }
+    
+    // If it looks like a static file (has extension) but wasn't found in public/, return 404
+    // This prevents returning index.html for missing js/css files
+    if (req.path.includes('.')) {
+        return res.status(404).send('Not Found');
+    }
+
+    // Otherwise serve index.html for client-side routing (Vue Router)
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 app.listen(PORT, () => {
