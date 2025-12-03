@@ -25,13 +25,6 @@
           </div>
           <span class="function-name">{{ item.name }}</span>
         </div>
-        <!-- 添加一些占位功能以凑齐8个 -->
-        <div class="function-item" @click="$router.push('/services')">
-          <div class="function-icon-wrapper">
-            <van-icon name="apps-o" size="28" color="#1677ff" />
-          </div>
-          <span class="function-name">全部服务</span>
-        </div>
       </div>
     </div>
 
@@ -116,14 +109,14 @@ const router = useRouter()
 
 // 快捷服务 - 模仿支付宝首页图标
 const quickServices = ref([
+  { id: 'flight', name: '飞行服务', icon: 'send-gift-o', color: '#1677ff' },
+  { id: 8, name: '外卖配送', icon: 'shopping-cart-o', color: '#f5222d' },
   { id: 1, name: '物流配送', icon: 'logistics', color: '#1677ff' },
-  { id: 2, name: '政务巡检', icon: 'eye-o', color: '#ff9c6e' },
-  { id: 3, name: '机库托管', icon: 'shop-o', color: '#52c41a' },
   { id: 4, name: '设备吊运', icon: 'upgrade', color: '#722ed1' },
   { id: 6, name: '无人机培训', icon: 'certificate', color: '#faad14' },
   { id: 9, name: '低空研学', icon: 'records', color: '#eb2f96' },
-  { id: 8, name: '外卖配送', icon: 'shopping-cart-o', color: '#f5222d' },
-  // { id: 8, name: '全部服务', icon: 'apps-o', color: '#1677ff' } // Handled manually
+  { id: 2, name: '政务巡检', icon: 'eye-o', color: '#ff9c6e' },
+  { id: 'more', name: '更多服务', icon: 'apps-o', color: '#8c8c8c' }
 ])
 
 // 推荐服务列表
@@ -135,8 +128,13 @@ const displayServices = ref([
 ])
 
 const goToService = (id) => {
-  if (id === 8) {
+  if (id === 'flight') {
+    window.location.href = 'https://gw.zndkfx.com/sso/cxwz'
+  } else if (id === 8) {
     goToDelivery()
+  } else if (id === 'more') {
+    // 切换到服务列表 Tab (假设Tabbar中有这个路径，或者跳转到列表页)
+    router.push('/services')
   } else {
     router.push(`/service-detail/${id}`)
   }
@@ -280,7 +278,7 @@ const goToDelivery = () => {
 .card-info p {
   font-size: 13px;
   opacity: 0.9;
-  margin-bottom: 1px;
+  margin-bottom: 12px;
 }
 
 .tags {
