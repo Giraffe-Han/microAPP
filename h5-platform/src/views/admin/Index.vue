@@ -161,6 +161,15 @@
         <div class="detail-content" v-if="currentCase">
             <van-form @submit="onSaveCase">
                 <van-cell-group title="基本信息">
+                    <van-field name="categoryId" label="所属分类" required>
+                        <template #input>
+                            <van-radio-group v-model="currentCase.categoryId" direction="horizontal">
+                                <van-radio :name="1">物流</van-radio>
+                                <van-radio :name="4">吊运</van-radio>
+                                <van-radio :name="5">表演</van-radio>
+                            </van-radio-group>
+                        </template>
+                    </van-field>
                     <van-field v-model="currentCase.title" label="标题" placeholder="请输入标题" required />
                     <van-field v-model="currentCase.description" label="简介" type="textarea" rows="2" placeholder="请输入简介" />
                     <van-field v-model="currentCase.location" label="地点" placeholder="请输入地点" />
@@ -243,7 +252,8 @@
                 </van-cell-group>
 
                 <div style="margin: 16px; padding-bottom: 30px;">
-                    <van-button round block type="primary" native-type="submit">保存修改</van-button>
+                    <van-button round block type="primary" native-type="submit" style="margin-bottom: 12px;">保存修改</van-button>
+                    <van-button v-if="currentCase.id" round block type="danger" native-type="button" @click="onDeleteCase">删除案例</van-button>
                 </div>
             </van-form>
         </div>
@@ -254,7 +264,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
-import { showToast, showFailToast, showSuccessToast, showLoadingToast, closeToast } from 'vant';
+import { showToast, showFailToast, showSuccessToast, showLoadingToast, closeToast, showConfirmDialog } from 'vant';
 
 const list = ref([]);
 const cases = ref([]);
@@ -502,6 +512,30 @@ const onSaveCase = async () => {
         showFailToast('保存失败');
         console.error(error);
     }
+};
+
+const onDeleteCase = () => {
+    showConfirmDialog({
+        title: '确认删除',
+        message: '确定要删除这个案例吗？删除后无法恢复。',
+    })
+    .then(async () => {
+        try {
+            await axios.post('/api/cases/delete', { id: currentCase.value.id });
+            const index = cases.value.findIndex(c => c.id === currentCase.value.id);
+            if (index !== -1) {
+                cases.value.splice(index, 1);
+            }
+            showSuccessToast('删除成功');
+            showCaseEditPopup.value = false;
+        } catch (error) {
+            showFailToast('删除失败');
+            console.error(error);
+        }
+    })
+    .catch(() => {
+        // cancel
+    });
 };
 
 onMounted(() => {

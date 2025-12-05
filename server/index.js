@@ -449,6 +449,24 @@ app.post('/api/cases/update', (req, res) => {
     }
 });
 
+// Delete Case
+app.post('/api/cases/delete', (req, res) => {
+    const { id } = req.body;
+    let cases = readCasesDB();
+    const index = cases.findIndex(c => c.id == id);
+
+    if (index !== -1) {
+        cases.splice(index, 1);
+        if (writeCasesDB(cases)) {
+            res.json({ success: true });
+        } else {
+            res.status(500).json({ success: false, message: 'Failed to write to database' });
+        }
+    } else {
+        res.status(404).json({ success: false, message: 'Case not found' });
+    }
+});
+
 // Handle SPA routing: Serve index.html for all non-API routes
 app.get('*', (req, res) => {
     // If it's an API request that wasn't handled above, return 404
