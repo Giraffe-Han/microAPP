@@ -278,7 +278,10 @@ const fetchCases = async () => {
             categoryId
         }
     })
-    let data = res.data.data || [] 
+    
+    // 兼容处理：如果返回的是数组，直接用；如果是分页对象，取 .data
+    let data = Array.isArray(res.data) ? res.data : (res.data.data || [])
+    console.log('Cases API response:', res.data, 'Parsed data:', data)
 
     // 去重：移除已经存在于 staticCases 中的数据 (避免重复显示)
     // 优先使用本地 staticCases 配置的资源路径
@@ -301,8 +304,8 @@ const fetchCases = async () => {
 
     loadingMore.value = false
 
-    // 判断是否结束：使用原始返回长度判断
-    if ((res.data.data || []).length < 10) {
+    // 判断是否结束：使用解析后的 data 长度判断
+    if (data.length < 10) {
         finished.value = true
     } else {
         page.value++
