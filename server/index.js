@@ -291,7 +291,7 @@ app.post('/api/submit', (req, res) => {
 app.post('/api/update', (req, res) => {
     const { id, status } = req.body;
     let db = readDB();
-    const index = db.findIndex(item => item.id === id);
+    const index = db.findIndex(item => item.id == id);
 
     if (index !== -1) {
         db[index].status = status;
@@ -433,7 +433,7 @@ app.post('/api/cases/create', (req, res) => {
 app.post('/api/cases/update', (req, res) => {
     const updatedCase = req.body;
     let cases = readCasesDB();
-    const index = cases.findIndex(c => c.id === updatedCase.id);
+    const index = cases.findIndex(c => c.id == updatedCase.id);
 
     if (index !== -1) {
         cases[index] = { ...cases[index], ...updatedCase };
