@@ -73,7 +73,7 @@ const routes = [
 ]
 
 const router = createRouter({
-  history: createWebHistory('/low-altitude/'),
+  history: createWebHistory('/'),
   routes
 })
 
