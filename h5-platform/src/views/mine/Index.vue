@@ -6,11 +6,15 @@
     <div class="user-card">
       <div class="user-header" @click="handleUserClick">
         <van-image
+          v-if="user?.avatar"
           round
           width="60"
           height="60"
-          :src="user?.avatar || 'https://fastly.jsdelivr.net/npm/@vant/assets/cat.jpeg'"
+          :src="user.avatar"
         />
+        <div v-else class="default-avatar">
+          <van-icon name="contact" size="36" color="#bdc3c7" />
+        </div>
         <div class="user-info">
           <h2 class="user-name">{{ user?.name || '点击登录' }}</h2>
           <p class="user-phone">{{ user?.phone || '登录后享受更多服务' }}</p>
@@ -224,6 +228,17 @@ const showAbout = () => {
   padding: 24px 20px;
   border-radius: 16px;
   color: #fff;
+}
+
+.default-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #f5f6fa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(255, 255, 255, 0.3);
 }
 
 .user-header {

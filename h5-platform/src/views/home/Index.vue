@@ -49,20 +49,8 @@
 
     <!-- 核心服务卡片区 -->
     <div class="content-area">
-      <!-- 无人机外卖 - 突出展示 -->
-      <div class="feature-card delivery-card" @click="goToDelivery">
-        <div class="card-info">
-          <h3>无人机外卖</h3>
-          
-          <div class="tags">
-            <span class="tag">热门</span>
-            
-          </div>
-        </div>
-        <div class="card-image">
-          <van-icon name="logistics" size="64" color="#fff" style="opacity: 0.9;" />
-        </div>
-      </div>
+      <!-- 无人机外卖 - 纯图片 Banner -->
+      <div class="feature-card delivery-card" @click="goToDelivery"></div>
 
       <!-- 左右分栏推荐 -->
       <div class="recommend-grid">
@@ -110,10 +98,10 @@ const router = useRouter()
 // 快捷服务 - 模仿支付宝首页图标
 const quickServices = ref([
   { id: 'flight', name: '飞行服务', icon: 'send-gift-o', color: '#1677ff' },
-  { id: 8, name: '外卖配送', icon: 'shopping-cart-o', color: '#f5222d' },
-  { id: 1, name: '物流配送', icon: 'logistics', color: '#1677ff' },
-  { id: 4, name: '设备吊运', icon: 'upgrade', color: '#722ed1' },
-  { id: 6, name: '无人机培训', icon: 'certificate', color: '#faad14' },
+  { id: 8, name: '无人机外卖', icon: 'shopping-cart-o', color: '#f5222d' },
+  { id: 1, name: '无人机物流', icon: 'logistics', color: '#1677ff' },
+  { id: 4, name: '无人机吊运', icon: 'upgrade', color: '#722ed1' },
+  { id: 6, name: '飞手培训', icon: 'certificate', color: '#faad14' },
   { id: 9, name: '低空研学', icon: 'records', color: '#eb2f96' },
   { id: 2, name: '政务巡检', icon: 'eye-o', color: '#ff9c6e' },
   { id: 'more', name: '更多服务', icon: 'apps-o', color: '#8c8c8c' }
@@ -124,7 +112,7 @@ const displayServices = ref([
   { id: 1, name: '无人机物流', description: '城市极速配送，解决最后一公里难题', icon: 'logistics', color: '#1677ff', bgLight: '#e6f7ff' },
   { id: 2, name: '政务巡检', description: '高效环保监测、交通疏导、安全巡查', icon: 'eye-o', color: '#ff9c6e', bgLight: '#fff7e6' },
   { id: 3, name: '无人机托管', description: '专业机库托管，定期维护保养', icon: 'shop-o', color: '#52c41a', bgLight: '#f6ffed' },
-  { id: 4, name: '高空吊运', description: '建筑材料、基站设备高空精准吊运', icon: 'upgrade', color: '#722ed1', bgLight: '#f9f0ff' }
+  { id: 4, name: '无人机吊运', description: '建筑材料、基站设备高空精准吊运', icon: 'upgrade', color: '#722ed1', bgLight: '#f9f0ff' }
 ])
 
 const goToService = (id) => {
@@ -266,31 +254,12 @@ const goToDelivery = () => {
 }
 
 .delivery-card {
-  background: linear-gradient(135deg, #1677ff 0%, #4096ff 100%);
-}
-
-.card-info h3 {
-  font-size: 20px;
-  font-weight: bold;
-  margin-bottom: 8px;
-}
-
-.card-info p {
-  font-size: 13px;
-  opacity: 0.9;
-  margin-bottom: 12px;
-}
-
-.tags {
-  display: flex;
-  gap: 8px;
-}
-
-.tag {
-  background: rgba(255,255,255,0.2);
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 11px;
+  height: 160px;
+  background-image: url('https://wenzhoumall-prod.oss-cn-shanghai.aliyuncs.com/test/shop/20250930/0fa02eb2dc8b4a6382784fedc0b44dc0.jpg?Expires=3337231191&OSSAccessKeyId=LTAI5tSbLByCMG16D3eoErCU&Signature=Zk8QXbZAJhw08908Er3iuy9dKg0%3D');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  padding: 0;
 }
 
 .recommend-grid {

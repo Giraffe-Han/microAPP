@@ -164,9 +164,9 @@
                     <van-field name="categoryId" label="所属分类" required>
                         <template #input>
                             <van-radio-group v-model="currentCase.categoryId" direction="horizontal">
-                                <van-radio :name="1">物流</van-radio>
-                                <van-radio :name="4">吊运</van-radio>
-                                <van-radio :name="5">表演</van-radio>
+                                <van-radio :name="1">无人机物流</van-radio>
+                                <van-radio :name="4">无人机吊运</van-radio>
+                                <van-radio :name="5">无人机表演</van-radio>
                             </van-radio-group>
                         </template>
                     </van-field>

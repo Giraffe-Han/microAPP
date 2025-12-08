@@ -20,11 +20,11 @@ export default defineConfig({
     allowedHosts: true, // Allow ngrok/localtunnel hosts
     proxy: {
       '/api': {
-        target: 'http://127.0.0.1:3000',
+        target: 'http://39.172.120.254', // Use Nginx reverse proxy
         changeOrigin: true
       },
       '/uploads': {
-        target: 'http://127.0.0.1:3000',
+        target: 'http://39.172.120.254',
         changeOrigin: true
       }
     },

@@ -308,7 +308,7 @@
             />
           </template>
 
-          <!-- 无人机培训服务 -->
+          <!-- 飞手培训服务 -->
           <template v-if="serviceId === '6'">
             <van-field
               v-model="formData.traineeName"
@@ -409,7 +409,7 @@
         <!-- 提交按钮 -->
         <div style="margin: 24px 16px;">
           <van-button round block type="primary" native-type="button" @click="manualSubmit">
-            提交申请
+            {{ submitButtonText }}
           </van-button>
         </div>
       </van-form>
@@ -438,34 +438,47 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast, showDialog, showLoadingToast, closeToast, showFailToast } from 'vant'
 import axios from 'axios'
 
 const route = useRoute()
 const router = useRouter()
-const serviceId = ref(route.params.id)
+// 使用 computed 获取路由参数，保持响应式
+const serviceId = computed(() => String(route.params.id))
 
-// 所有11项服务名称
+// 所有11项服务名称 (ID 8是外卖，ID flight在列表页直接跳转)
 const serviceNames = {
-  '1': '无人机物流服务',
-  '2': '政务巡检服务',
-  '3': '无人机托管服务',
-  '4': '无人机吊运服务',
-  '5': '航空表演服务',
-  '6': '无人机培训服务',
-  '7': '无人机租赁服务',
-  '8': '无人机外卖配送',
-  '9': '低空研学服务',
+  '1': '无人机物流',
+  '2': '政务巡检',
+  '3': '无人机托管',
+  '4': '无人机吊运',
+  '5': '无人机表演',
+  '6': '飞手培训',
+  '7': '无人机租赁',
+  '8': '无人机外卖',
+  '9': '低空研学',
   '10': '无人机二手交易',
   '11': '无人机金融服务'
 }
 
-const serviceName = ref(serviceNames[serviceId.value] || '服务')
+const serviceName = computed(() => serviceNames[serviceId.value] || '服务')
+
+const submitButtonText = computed(() => {
+  // 物流、吊运 -> 下单
+  if (['1', '4', '8'].includes(serviceId.value)) {
+    return '立即下单'
+  }
+  // 培训、研学 -> 报名
+  if (['6', '9'].includes(serviceId.value)) {
+    return '参与报名'
+  }
+  return '提交申请'
+})
 
 // 判断服务是否可申请 (只有1-4号和6号服务在一期开放申请)
-const isServiceAvailable = ref(['1', '2', '3', '4', '6'].includes(serviceId.value))
+const isServiceAvailable = computed(() => ['1', '2', '3', '4', '6'].includes(serviceId.value))
 
 // 表单数据
 const formData = ref({

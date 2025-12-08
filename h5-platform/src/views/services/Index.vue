@@ -37,12 +37,12 @@ const allServices = ref([
   { id: 2, name: '政务巡检', description: '环保监测、安全巡查', icon: 'eye-o', color: '#ff9c6e' }, // 巡检监控
   { id: 3, name: '无人机托管', description: '专业托管、保养维护', icon: 'shop-o', color: '#52c41a' }, // 托管商店
   { id: 4, name: '无人机吊运', description: '高空吊运、设备安装', icon: 'upgrade', color: '#722ed1' }, // 吊运上升
-  { id: 5, name: '航空表演', description: '活动表演、编队飞行', icon: 'fire-o', color: '#eb2f96' }, // 烟花表演
-  { id: 6, name: '无人机培训', description: 'CAAC执照、技能培训', icon: 'certificate', color: '#faad14' }, // 证书培训
+  { id: 5, name: '无人机表演', description: '活动表演、编队飞行', icon: 'fire-o', color: '#eb2f96' }, // 烟花表演
+  { id: 6, name: '飞手培训', description: 'CAAC执照、技能培训', icon: 'certificate', color: '#faad14' }, // 证书培训
   { id: 7, name: '无人机租赁', description: '设备租赁、配件租赁', icon: 'coupon-o', color: '#13c2c2' }, // 租赁券
   { id: 9, name: '低空研学', description: '科普教育、实践体验', icon: 'records', color: '#eb2f96' }, // 研学记录
-  { id: 10, name: '二手交易', description: '设备买卖、以旧换新', icon: 'exchange', color: '#fa8c16' }, // 交易兑换
-  { id: 11, name: '金融服务', description: '设备保险、飞行护航', icon: 'balance-o', color: '#1677ff' } // 金融天平
+  { id: 10, name: '无人机二手交易', description: '设备买卖、以旧换新', icon: 'exchange', color: '#fa8c16' }, // 交易兑换
+  { id: 11, name: '无人机金融服务', description: '设备保险、飞行护航', icon: 'balance-o', color: '#1677ff' } // 金融天平
 ])
 
 const goToDetail = (id) => {

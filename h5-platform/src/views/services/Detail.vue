@@ -45,15 +45,22 @@
           </div>
         </div>
       </div>
+
+      <!-- 联系客服 -->
+      <div class="section-card contact-card">
+        <h2 class="section-title">联系客服</h2>
+        <div class="contact-info">
+          <p>如有疑问，请咨询客服热线：</p>
+          <a href="tel:0577-12345678" class="phone-link">0577-12345678</a>
+          <p class="work-time">工作时间：工作日 8:30-17:30</p>
+        </div>
+      </div>
     </div>
 
     <!-- 底部操作栏 -->
     <div class="action-bar">
-      <van-button icon="service-o" plain type="primary">
-        咨询客服
-      </van-button>
       <van-button type="primary" block @click="onApply">
-        立即申请
+        {{ actionButtonText }}
       </van-button>
     </div>
   </div>
@@ -141,11 +148,11 @@ const serviceData = {
     advantages: ['创意编排', '震撼效果', '安全可控', '定制化服务']
   },
   '6': {
-    name: '无人机培训服务',
+    name: '飞手培训服务',
     slogan: '专业培训 · 证书认证 · 实操教学',
     icon: 'certificate',
     color: '#faad14',
-    intro: '提供专业的无人机培训服务，包括CAAC执照培训、技能提升、行业应用培训等，助力无人机人才培养。',
+    intro: '提供专业的飞手培训服务，包括CAAC执照培训、技能提升、行业应用培训等，助力无人机人才培养。',
     projects: [
       { name: 'CAAC执照', icon: 'certificate' },
       { name: '技能培训', icon: 'award-o' },
@@ -235,6 +242,18 @@ const serviceColor = ref(currentService.color)
 const serviceIntro = ref(currentService.intro)
 const serviceProjects = ref(currentService.projects)
 const serviceAdvantages = ref(currentService.advantages)
+
+const actionButtonText = computed(() => {
+  // 物流(1)、吊运(4)、外卖(8)
+  if (['1', '4', '8'].includes(String(serviceId))) {
+    return '立即下单'
+  }
+  // 培训(6)、研学(9)
+  if (['6', '9'].includes(String(serviceId))) {
+    return '参与报名'
+  }
+  return '立即办理'
+})
 
 const onApply = () => {
   // 无人机外卖服务跳转到外部配送平台
@@ -351,6 +370,31 @@ const onApply = () => {
 
 .action-bar :deep(.van-button) {
   flex: 1;
+}
+
+.contact-card {
+  text-align: center;
+  padding: 24px 16px;
+}
+
+.contact-info p {
+  color: #646566;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.phone-link {
+  display: block;
+  font-size: 24px;
+  font-weight: bold;
+  color: #1677ff;
+  margin: 12px 0;
+  text-decoration: none;
+}
+
+.work-time {
+  font-size: 12px;
+  color: #969799;
 }
 </style>
 
