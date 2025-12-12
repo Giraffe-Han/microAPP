@@ -399,6 +399,7 @@ const onEnded = () => {
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-line-clamp: 1;
+  line-clamp: 1;
   -webkit-box-orient: vertical;
   line-height: 1.4;
 }
@@ -412,6 +413,7 @@ const onEnded = () => {
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   height: 44px; /* 固定高度保持对齐 */
 }

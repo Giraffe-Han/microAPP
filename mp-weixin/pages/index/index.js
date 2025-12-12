@@ -1,7 +1,7 @@
 Page({
   data: {
     // Replace this with your actual HTTPS URL
-    url: 'https://microapp.wzdkfx.com/'
+    url: 'http://172.16.158.58:5173/'
   },
   onLoad(options) {
     // Enable this if you need to handle shared links or parameters

@@ -231,7 +231,7 @@
             />
           </template>
 
-          <!-- 政务巡检服务 -->
+          <!-- 政务服务 -->
           <template v-if="serviceId === '2'">
             <van-field
               v-model="formData.inspectionType"
@@ -393,9 +393,74 @@
             </van-popup>
           </template>
 
-          <!-- 通用备注（物流和政务巡检已有备注，其他服务显示） -->
+          <!-- 无人机维修服务 -->
+          <template v-if="serviceId === '12'">
+            <van-field name="maintenanceType" label="服务类型">
+              <template #input>
+                <van-radio-group v-model="formData.maintenanceType" direction="horizontal">
+                  <van-radio name="repair">故障维修</van-radio>
+                  <van-radio name="care">定期保养</van-radio>
+                </van-radio-group>
+              </template>
+            </van-field>
+
+            <van-field
+              v-model="formData.droneModel"
+              label="无人机型号"
+              placeholder="请输入无人机型号"
+              :rules="[{ required: true, message: '请输入无人机型号' }]"
+            />
+
+            <van-field name="isWarranty" label="是否在保">
+              <template #input>
+                <van-radio-group v-model="formData.isWarranty" direction="horizontal">
+                  <van-radio name="yes">在保修期内</van-radio>
+                  <van-radio name="no">已过保</van-radio>
+                </van-radio-group>
+              </template>
+            </van-field>
+
+            <van-field
+              v-model="formData.purchaseDate"
+              label="购买日期"
+              placeholder="请选择购买日期（选填）"
+              is-link
+              readonly
+              @click="showDatePicker = true"
+            />
+
+            <van-field
+              v-model="formData.remark"
+              label="故障/需求描述"
+              type="textarea"
+              placeholder="请详细描述设备故障情况或保养需求"
+              rows="3"
+              show-word-limit
+              maxlength="200"
+              :rules="[{ required: true, message: '请描述故障或需求' }]"
+            />
+
+            <!-- 故障图片上传 -->
+            <van-field name="uploader" label="设备照片">
+              <template #input>
+                <van-uploader 
+                  v-model="formData.fileList" 
+                  :max-count="5"
+                  :after-read="afterRead"
+                  accept="image/*"
+                >
+                  <div class="upload-slot">
+                    <van-icon name="photograph" size="24" color="#dcdee0" />
+                    <span>上传照片</span>
+                  </div>
+                </van-uploader>
+              </template>
+            </van-field>
+          </template>
+
+          <!-- 通用备注（物流、政务服务、维修已有备注，其他服务显示） -->
           <van-field
-            v-if="serviceId !== '1' && serviceId !== '2'"
+            v-if="serviceId !== '1' && serviceId !== '2' && serviceId !== '12'"
             v-model="formData.remark"
             type="textarea"
             label="需求说明"
@@ -451,7 +516,7 @@ const serviceId = computed(() => String(route.params.id))
 // 所有11项服务名称 (ID 8是外卖，ID flight在列表页直接跳转)
 const serviceNames = {
   '1': '无人机物流',
-  '2': '政务巡检',
+  '2': '政务服务',
   '3': '无人机托管',
   '4': '无人机吊运',
   '5': '无人机表演',
@@ -460,7 +525,8 @@ const serviceNames = {
   '8': '无人机外卖',
   '9': '低空研学',
   '10': '无人机二手交易',
-  '11': '无人机金融服务'
+  '11': '无人机金融服务',
+  '12': '无人机维修服务'
 }
 
 const serviceName = computed(() => serviceNames[serviceId.value] || '服务')
@@ -521,6 +587,10 @@ const formData = ref({
   liftItemWeight: '',
   workLocation: '',
   liftHeight: '',
+  // 维修
+  maintenanceType: 'repair',
+  isWarranty: 'yes',
+  purchaseDate: '',
   // 通用
   remark: ''
 })
@@ -613,7 +683,13 @@ const durationOptions = [
 
 const onDateConfirm = (value) => {
   const date = new Date(value)
-  formData.value.inspectionDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+  const formatted = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+  
+  if (serviceId.value === '12') {
+    formData.value.purchaseDate = formatted
+  } else {
+    formData.value.inspectionDate = formatted
+  }
   showDatePicker.value = false
 }
 

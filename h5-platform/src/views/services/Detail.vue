@@ -12,7 +12,7 @@
       <!-- 服务图标 -->
       <div class="service-header">
         <div class="service-icon-big" :style="{ background: serviceColor }">
-          <van-icon :name="serviceIcon" size="48" color="#fff" />
+          <van-icon :name="serviceIcon" size="48" color="#ffffff" />
         </div>
         <h1 class="service-name">{{ serviceName }}</h1>
         <p class="service-slogan">{{ serviceSlogan }}</p>
@@ -20,16 +20,16 @@
 
       <!-- 服务介绍 -->
       <div class="section-card">
-        <h2 class="section-title">服务介绍</h2>
+        <h2 class="section-title" :style="{ borderLeftColor: serviceMainColor }">服务介绍</h2>
         <p class="section-text">{{ serviceIntro }}</p>
       </div>
 
       <!-- 服务项目 -->
       <div class="section-card">
-        <h2 class="section-title">服务项目</h2>
+        <h2 class="section-title" :style="{ borderLeftColor: serviceMainColor }">服务项目</h2>
         <div class="project-grid">
           <div v-for="(item, index) in serviceProjects" :key="index" class="project-item">
-            <van-icon :name="item.icon" size="24" :color="serviceColor" />
+            <van-icon :name="item.icon" size="24" :color="serviceMainColor" />
             <span>{{ item.name }}</span>
           </div>
         </div>
@@ -37,7 +37,7 @@
 
       <!-- 服务优势 -->
       <div class="section-card">
-        <h2 class="section-title">服务优势</h2>
+        <h2 class="section-title" :style="{ borderLeftColor: serviceMainColor }">服务优势</h2>
         <div class="advantage-list">
           <div v-for="(adv, index) in serviceAdvantages" :key="index" class="advantage-item">
             <van-icon name="success" size="16" color="#07c160" />
@@ -48,10 +48,10 @@
 
       <!-- 联系客服 -->
       <div class="section-card contact-card">
-        <h2 class="section-title">联系客服</h2>
+        <h2 class="section-title" :style="{ borderLeftColor: serviceMainColor }">联系客服</h2>
         <div class="contact-info">
           <p>如有疑问，请咨询客服热线：</p>
-          <a href="tel:0577-12345678" class="phone-link">0577-12345678</a>
+          <a href="tel:0577-12345678" class="phone-link" :style="{ color: serviceMainColor }">0577-12345678</a>
           <p class="work-time">工作时间：工作日 8:30-17:30</p>
         </div>
       </div>
@@ -59,7 +59,7 @@
 
     <!-- 底部操作栏 -->
     <div class="action-bar">
-      <van-button type="primary" block @click="onApply">
+      <van-button type="primary" block @click="onApply" :color="serviceColor">
         {{ actionButtonText }}
       </van-button>
     </div>
@@ -80,8 +80,9 @@ const serviceData = {
   '1': {
     name: '无人机物流服务',
     slogan: '快速配送 · 安全可靠 · 覆盖全城',
-    icon: 'send-gift-o', // 物流配送
-    color: '#1677ff',
+    icon: '/icons/logistics-drone.svg', // 物流配送
+    color: 'linear-gradient(135deg, #06b6d4 0%, #2563eb 100%)',
+    mainColor: '#1677ff',
     intro: '无人机物流服务利用先进的无人机技术，为城市和偏远地区提供快速、高效的物资配送服务。',
     projects: [
       { name: '城市配送', icon: 'shopping-cart-o' }, // 购物车配送
@@ -92,11 +93,12 @@ const serviceData = {
     advantages: ['2小时快速响应', '全程GPS跟踪', '专业团队操作', '全程保险覆盖']
   },
   '2': {
-    name: '政务巡检服务',
+    name: '政务服务',
     slogan: '智能巡检 · 降本增效 · 精准监测',
     icon: 'eye-o', // 巡检监控
-    color: '#ff9c6e',
-    intro: '专业提供政务巡检服务，包括环保监测、安全巡查、设施检查等，助力智慧城市建设。',
+    color: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
+    mainColor: '#722ed1',
+    intro: '专业提供政务服务，包括环保监测、安全巡查、设施检查等，助力智慧城市建设。',
     projects: [
       { name: '环保监测', icon: 'cluster-o' }, // 环境聚类
       { name: '安全巡查', icon: 'shield-o' }, // 安全盾牌
@@ -108,8 +110,9 @@ const serviceData = {
   '3': {
     name: '无人机托管服务',
     slogan: '专业托管 · 安全放心 · 省心省力',
-    icon: 'shop-o', // 托管商店
-    color: '#52c41a',
+    icon: '/icons/maintenance.svg', // 托管商店
+    color: 'linear-gradient(135deg, #4ade80 0%, #16a34a 100%)',
+    mainColor: '#52c41a',
     intro: '提供专业的无人机托管服务，包括保养维护、安全存储、代飞服务等一站式解决方案。',
     projects: [
       { name: '专业维护', icon: 'setting-o' }, // 设置维护
@@ -122,8 +125,9 @@ const serviceData = {
   '4': {
     name: '无人机吊运服务',
     slogan: '高空作业 · 精准操控 · 安全高效',
-    icon: 'upgrade', // 吊运上升
-    color: '#722ed1',
+    icon: '/icons/lifting.svg', // 吊运上升
+    color: 'linear-gradient(135deg, #fbbf24 0%, #ea580c 100%)',
+    mainColor: '#faad14',
     intro: '提供专业的无人机吊运服务，适用于高空作业、建筑施工、设备安装等场景。',
     projects: [
       { name: '高空吊运', icon: 'arrow-up' }, // 上升箭头
@@ -136,8 +140,9 @@ const serviceData = {
   '5': {
     name: '航空表演服务',
     slogan: '震撼视觉 · 创意编排 · 精彩呈现',
-    icon: 'fire-o',
-    color: '#eb2f96',
+    icon: '/icons/drone-show-v2.svg',
+    color: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
+    mainColor: '#eb2f96',
     intro: '提供专业的航空表演服务，包括无人机编队飞行、灯光秀、创意表演等，为各类活动增添精彩亮点。',
     projects: [
       { name: '编队飞行', icon: 'friends-o' },
@@ -150,8 +155,9 @@ const serviceData = {
   '6': {
     name: '飞手培训服务',
     slogan: '专业培训 · 证书认证 · 实操教学',
-    icon: 'certificate',
-    color: '#faad14',
+    icon: '/icons/training-v2.svg',
+    color: 'linear-gradient(135deg, #fbbf24 0%, #ea580c 100%)',
+    mainColor: '#faad14',
     intro: '提供专业的飞手培训服务，包括CAAC执照培训、技能提升、行业应用培训等，助力无人机人才培养。',
     projects: [
       { name: 'CAAC执照', icon: 'certificate' },
@@ -165,7 +171,8 @@ const serviceData = {
     name: '无人机租赁服务',
     slogan: '灵活租赁 · 多种机型 · 专业服务',
     icon: 'coupon-o',
-    color: '#13c2c2',
+    color: 'linear-gradient(135deg, #38bdf8 0%, #3b82f6 100%)',
+    mainColor: '#13c2c2',
     intro: '提供专业的无人机租赁服务，多种机型可选，灵活租赁方式，满足不同场景的使用需求。',
     projects: [
       { name: '设备租赁', icon: 'bag-o' },
@@ -178,8 +185,9 @@ const serviceData = {
   '8': {
     name: '无人机外卖配送',
     slogan: '即时配送 · 快速送达 · 安全可靠',
-    icon: 'shopping-cart-o',
-    color: '#f5222d',
+    icon: '/icons/delivery.svg',
+    color: 'linear-gradient(135deg, #38bdf8 0%, #3b82f6 100%)',
+    mainColor: '#f5222d',
     intro: '提供专业的无人机外卖配送服务，实现城市即时配送，快速安全，为用户带来全新的外卖体验。',
     projects: [
       { name: '即时配送', icon: 'logistics' },
@@ -192,8 +200,9 @@ const serviceData = {
   '9': {
     name: '低空研学服务',
     slogan: '科普教育 · 实践体验 · 创新培养',
-    icon: 'records',
-    color: '#722ed1',
+    icon: '/icons/study.svg',
+    color: 'linear-gradient(135deg, #06b6d4 0%, #2563eb 100%)',
+    mainColor: '#722ed1',
     intro: '提供专业的低空研学服务，面向青少年开展无人机科普教育、飞行体验、创新实践等活动，激发科技兴趣，培养创新能力。',
     projects: [
       { name: '科普讲座', icon: 'records' },
@@ -207,7 +216,8 @@ const serviceData = {
     name: '无人机二手交易',
     slogan: '诚信交易 · 专业检测 · 以旧换新',
     icon: 'exchange',
-    color: '#fa8c16',
+    color: 'linear-gradient(135deg, #fbbf24 0%, #ea580c 100%)',
+    mainColor: '#fa8c16',
     intro: '提供专业的无人机二手交易平台，支持设备买卖、以旧换新、专业检测等服务，让闲置设备发挥价值。',
     projects: [
       { name: '设备买卖', icon: 'shop-o' },
@@ -220,8 +230,9 @@ const serviceData = {
   '11': {
     name: '无人机金融服务',
     slogan: '设备保险 · 飞行护航 · 专业理赔',
-    icon: 'balance-o',
-    color: '#1677ff',
+    icon: '/icons/finance.svg',
+    color: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
+    mainColor: '#1677ff',
     intro: '提供专业的无人机金融保险服务，涵盖设备险、责任险、飞手险等多种保险产品，为您的飞行保驾护航。',
     projects: [
       { name: '设备保险', icon: 'shield-o' },
@@ -230,6 +241,21 @@ const serviceData = {
       { name: '快速理赔', icon: 'gold-coin-o' }
     ],
     advantages: ['全面保障覆盖', '快速理赔服务', '专业风险评估', '优惠保费政策']
+  },
+  '12': {
+    name: '无人机维修服务',
+    slogan: '专业维修 · 原厂配件 · 焕然一新',
+    icon: 'setting-o',
+    color: 'linear-gradient(135deg, #38bdf8 0%, #3b82f6 100%)',
+    mainColor: '#2f54eb',
+    intro: '提供全方位的无人机维修与保养服务，拥有官方授权的专业技术团队和原厂配件库，解决各类硬件故障与软件问题，延长设备使用寿命。',
+    projects: [
+      { name: '故障维修', icon: 'warning-o' },
+      { name: '定期保养', icon: 'like-o' },
+      { name: '配件更换', icon: 'replay' },
+      { name: '系统升级', icon: 'down' }
+    ],
+    advantages: ['官方授权认证', '原厂正品配件', '资深技师团队', '维修质保承诺']
   }
 }
 
@@ -239,6 +265,7 @@ const serviceName = ref(currentService.name)
 const serviceSlogan = ref(currentService.slogan)
 const serviceIcon = ref(currentService.icon)
 const serviceColor = ref(currentService.color)
+const serviceMainColor = ref(currentService.mainColor)
 const serviceIntro = ref(currentService.intro)
 const serviceProjects = ref(currentService.projects)
 const serviceAdvantages = ref(currentService.advantages)
@@ -287,6 +314,11 @@ const onApply = () => {
   justify-content: center;
   margin: 0 auto 16px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+/* 强制 SVG 图片图标变白 */
+.service-icon-big :deep(.van-icon__image) {
+  filter: brightness(0) invert(1);
 }
 
 .service-name {
