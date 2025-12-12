@@ -1,18 +1,13 @@
 <template>
   <div class="home-page">
     <van-pull-refresh v-model="loading" @refresh="onRefresh">
-      <!-- 沉浸式视频背景 (固定定位) -->
+      <!-- 沉浸式背景 (固定定位) -->
       <div class="video-header">
-        <video 
+        <img 
           class="bg-video"
-          :src="currentVideoSrc"
-          autoplay 
-          muted 
-          playsinline
-          webkit-playsinline
-          x5-video-player-type="h5-page"
-          @ended="handleVideoEnded"
-        ></video>
+          src="https://www-cdn.djiits.com/cms/uploads/4d6128a30991074b6bad20e7e13a0c62.png"
+          alt="background"
+        />
         <div class="video-mask"></div>
       </div>
 
@@ -130,18 +125,6 @@ import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 
 const router = useRouter()
-
-// 背景视频轮播逻辑
-const videoList = [
-  '/video/杨梅吊运.mp4',
-  '/video/泰顺.mp4'
-]
-const currentVideoIndex = ref(0)
-const currentVideoSrc = computed(() => videoList[currentVideoIndex.value])
-
-const handleVideoEnded = () => {
-  currentVideoIndex.value = (currentVideoIndex.value + 1) % videoList.length
-}
 
 // 下拉刷新
 const loading = ref(false)
