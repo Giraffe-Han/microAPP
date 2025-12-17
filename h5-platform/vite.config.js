@@ -1,9 +1,14 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
 // import basicSsl from '@vitejs/plugin-basic-ssl'
 import { fileURLToPath, URL } from 'node:url'
 
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  // Load env file based on `mode` in the current working directory.
+  // Set the third parameter to '' to load all env regardless of the `VITE_` prefix.
+  const env = loadEnv(mode, process.cwd(), '')
+
+  return {
   base: '/',
   plugins: [
     vue(),
@@ -20,11 +25,11 @@ export default defineConfig({
     allowedHosts: true, // Allow ngrok/localtunnel hosts
     proxy: {
       '/api': {
-        target: 'http://39.172.120.254', // Use Nginx reverse proxy
+        target: env.VITE_API_TARGET || 'http://localhost:3000',
         changeOrigin: true
       },
       '/uploads': {
-        target: 'http://39.172.120.254',
+        target: env.VITE_API_TARGET || 'http://localhost:3000',
         changeOrigin: true
       }
     },
@@ -35,5 +40,5 @@ export default defineConfig({
       'X-XSS-Protection': '1; mode=block'
     }
   }
-})
+}})
 

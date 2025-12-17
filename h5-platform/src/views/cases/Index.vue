@@ -185,7 +185,7 @@ const categories = ref([
   { id: 0, name: '全部案例' },
   { id: 1, name: '无人机物流' },
   { id: 4, name: '无人机吊运' },
-  { id: 5, name: '航空表演' }
+  { id: 5, name: '无人机表演' }
 ])
 
 const activeCategory = ref(0)

@@ -19,13 +19,13 @@
       </div>
 
       <!-- 服务介绍 -->
-      <div class="section-card">
+      <div class="section-card" v-if="serviceId !== '6'">
         <h2 class="section-title" :style="{ borderLeftColor: serviceMainColor }">服务介绍</h2>
         <p class="section-text">{{ serviceIntro }}</p>
       </div>
 
       <!-- 服务项目 -->
-      <div class="section-card">
+      <div class="section-card" v-if="serviceId !== '6'">
         <h2 class="section-title" :style="{ borderLeftColor: serviceMainColor }">服务项目</h2>
         <div class="project-grid">
           <div v-for="(item, index) in serviceProjects" :key="index" class="project-item">
@@ -36,7 +36,7 @@
       </div>
 
       <!-- 服务优势 -->
-      <div class="section-card">
+      <div class="section-card" v-if="serviceId !== '6'">
         <h2 class="section-title" :style="{ borderLeftColor: serviceMainColor }">服务优势</h2>
         <div class="advantage-list">
           <div v-for="(adv, index) in serviceAdvantages" :key="index" class="advantage-item">
@@ -46,14 +46,109 @@
         </div>
       </div>
 
+      <!-- 飞手培训专属内容 -->
+      <template v-if="serviceId === '6'">
+        <!-- 报名条件 -->
+        <div class="section-card">
+          <h2 class="section-title" :style="{ borderLeftColor: serviceMainColor }">报名条件</h2>
+          <div class="training-list">
+            <div class="training-item">(一)、中华人民共和国公民;</div>
+            <div class="training-item">(二)、年满16周岁以上，70周岁以下;</div>
+            <div class="training-item">(三)、初中以上文化程度;</div>
+            <div class="training-item">(四)、遵纪守法，无不良行为，五年内无犯罪记录;</div>
+            <div class="training-item">(五)、身体健康;矫正视力1.0以上，无色盲、色弱，无传染性疾病，无脑血管及精神类疾病，肢体无残疾，无不良嗜好;</div>
+            <div class="training-item">(六)、具有适应无人机操控需要的基本知识和操作能力。</div>
+          </div>
+        </div>
+
+        <!-- 培训费用 -->
+        <div class="section-card">
+          <h2 class="section-title" :style="{ borderLeftColor: serviceMainColor }">培训费用</h2>
+          <div class="price-list">
+            <div class="price-item">
+              <span class="label">小型无人机-多旋翼-视距内</span>
+              <span class="price">8800元/人</span>
+            </div>
+            <div class="price-item">
+              <span class="label">小型无人机-多旋翼-超视距</span>
+              <span class="price">12800元/人</span>
+            </div>
+            <div class="price-item">
+              <span class="label">中型无人机-多旋翼-视距内</span>
+              <span class="price">10800元/人</span>
+            </div>
+            <div class="price-item">
+              <span class="label">中型无人机-多旋翼-超视距</span>
+              <span class="price">15800元/人</span>
+            </div>
+            <div class="price-item">
+              <span class="label">U-BOX3.0</span>
+              <span class="price">490元/套 <span class="tip">（自愿购买）</span></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 培训特色 -->
+        <div class="section-card">
+          <h2 class="section-title" :style="{ borderLeftColor: serviceMainColor }">教学特色</h2>
+          <div class="feature-list">
+            <div class="feature-item">
+              <div class="feature-title">权威认证</div>
+              <div class="feature-desc">御风航空多次荣获中国AOPA年度优秀训练机构称号;学员通过培训可获得中国民用航空局发放的无人机操控员执照。</div>
+            </div>
+            <div class="feature-item">
+              <div class="feature-title">全面课程</div>
+              <div class="feature-desc">涵盖无人机基础知识、飞行操作、维护保养、法律法规等；提供丰富的实操机会，确保学员熟练掌握飞行技巧。</div>
+            </div>
+            <div class="feature-item">
+              <div class="feature-title">灵活教学</div>
+              <div class="feature-desc">每班人数有限，确保每位学员都能得到充分指导;提供周末班、晚班等多种选择，适应不同学员需求。</div>
+            </div>
+            <div class="feature-item">
+              <div class="feature-title">资深老牌</div>
+              <div class="feature-desc">御风航空深耕无人机培训7年，积累丰富经验，专业教员团队，个性化教程，精准施教。</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 公司简介 -->
+        <div class="section-card">
+          <h2 class="section-title" :style="{ borderLeftColor: serviceMainColor }">公司简介</h2>
+          <div class="company-intro">
+            <div class="intro-title">浙江御风航空科技有限公司</div>
+            <p class="section-text">系温州交运集团所属低空公司的控股子公司，公司成立于2018年，致力于无人机专业培训，为行业客户提供专业的解决方案和人才培养，为院校搭建A1无人机教学实验室，建立金字塔式的综合教学。作为国内早期开展无人机驾驶员资格培训的机构之一，是浙南闽北地区最早一家具备民航局认定的CAAC执照培训资质的机构，并具备合法合规的空域飞行权。</p>
+          </div>
+        </div>
+
+        <!-- 执照功能 -->
+        <div class="section-card">
+          <h2 class="section-title" :style="{ borderLeftColor: serviceMainColor }">执照功能</h2>
+          <div class="license-intro">
+            <p class="section-text">CAAC是中国民用航空局的英文缩写，相应的无人机驾驶航空器操控员执照是由中国民航局飞行标准司直接签发的，含金量极高!是无人机行业从业者入行必备的敲门砖，具有权威的法律效力!取得该执照可申报空域、申请航线、从事无人机相关的商业活动等。</p>
+            <div class="law-quote">《无人驾驶航空器飞行管理暂行条例》中规定:操控小型、中型、大型民用无人驾驶航空器飞行的人员应当向国务院民用航空主管部门申请取得相应民用无人驾驶航空操控员执照(CAAC)。</div>
+          </div>
+        </div>
+      </template>
+
       <!-- 联系客服 -->
-      <div class="section-card contact-card">
+      <div class="section-card contact-card" :class="{'training-contact': serviceId === '6'}">
         <h2 class="section-title" :style="{ borderLeftColor: serviceMainColor }">联系客服</h2>
+        <template v-if="serviceId === '6'">
+           <div class="contact-info">
+            <p>联系电话：</p>
+            <a href="tel:0577-55558188" class="phone-link" :style="{ color: serviceMainColor }">0577-55558188</a>
+            <a href="tel:0577-88360168" class="phone-link" :style="{ color: serviceMainColor }">0577-88360168</a>
+            <p>邮箱: wzdkjjgs@163.com</p>
+            <p class="address">温州低空经济发展有限公司<br />浙江御风航空科技有限公司<br />(温州市鹿城区牛山北路52号)</p>
+          </div>
+        </template>
+        <template v-else>
         <div class="contact-info">
           <p>如有疑问，请咨询客服热线：</p>
-          <a href="tel:0577-12345678" class="phone-link" :style="{ color: serviceMainColor }">0577-12345678</a>
+          <a href="tel:0577-55558188" class="phone-link" :style="{ color: serviceMainColor }">0577-55558188</a>
           <p class="work-time">工作时间：工作日 8:30-17:30</p>
         </div>
+        </template>
       </div>
     </div>
 
@@ -138,12 +233,12 @@ const serviceData = {
     advantages: ['专业吊运设备', '精准操控技术', '严格安全规范', '经验丰富团队']
   },
   '5': {
-    name: '航空表演服务',
+    name: '无人机表演服务',
     slogan: '震撼视觉 · 创意编排 · 精彩呈现',
     icon: '/icons/drone-show-v2.svg',
     color: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
     mainColor: '#eb2f96',
-    intro: '提供专业的航空表演服务，包括无人机编队飞行、灯光秀、创意表演等，为各类活动增添精彩亮点。',
+    intro: '提供专业的无人机表演服务，包括无人机编队飞行、灯光秀、创意表演等，为各类活动增添精彩亮点。',
     projects: [
       { name: '编队飞行', icon: 'friends-o' },
       { name: '灯光秀', icon: 'fire-o' },
@@ -427,6 +522,92 @@ const onApply = () => {
 .work-time {
   font-size: 12px;
   color: #969799;
+}
+
+/* 培训专属样式 */
+.training-list {
+  font-size: 14px;
+  color: #646566;
+  line-height: 1.6;
+}
+.training-item {
+  margin-bottom: 8px;
+}
+
+.price-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px dashed #ebedf0;
+}
+.price-item:last-child {
+  border-bottom: none;
+}
+.price-item .label {
+  font-size: 14px;
+  color: #323233;
+}
+.price-item .price {
+  font-size: 16px;
+  font-weight: bold;
+  color: #ee0a24;
+}
+.price-item .tip {
+  font-size: 12px;
+  font-weight: normal;
+  color: #969799;
+}
+
+.feature-item {
+  margin-bottom: 16px;
+}
+.feature-title {
+  font-size: 15px;
+  font-weight: bold;
+  color: #323233;
+  margin-bottom: 4px;
+  position: relative;
+  padding-left: 10px;
+}
+.feature-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: #323233;
+}
+.feature-desc {
+  font-size: 13px;
+  color: #646566;
+  line-height: 1.6;
+  padding-left: 10px;
+}
+
+.intro-title {
+  font-size: 15px;
+  font-weight: bold;
+  color: #323233;
+  margin-bottom: 8px;
+}
+
+.law-quote {
+  margin-top: 12px;
+  padding: 12px;
+  background: #f7f8fa;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #646566;
+  line-height: 1.6;
+}
+
+.training-contact .contact-info .address {
+  margin-top: 12px;
+  line-height: 1.6;
 }
 </style>
 
