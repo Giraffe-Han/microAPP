@@ -66,6 +66,32 @@ if (!fs.existsSync(USERS_FILE)) {
     fs.writeFileSync(USERS_FILE, JSON.stringify(defaultUsers, null, 2));
 }
 
+// Ensure DSL admin and standard admin exist (Patch)
+const ensureAdminUsers = () => {
+    let users = readUsersDB();
+    let modified = false;
+
+    // Check DSLadmin
+    if (!users.find(u => u.phone === 'DSLadmin')) {
+        users.push({
+            id: 'dsl_admin_id',
+            phone: 'DSLadmin',
+            password: 'dkjjfwy2026DSL',
+            name: 'DSL管理员',
+            role: 'dsl_admin',
+            avatar: '',
+            createTime: new Date().toISOString()
+        });
+        modified = true;
+    }
+
+    if (modified) {
+        writeUsersDB(users);
+        console.log('Admin users patched/ensured.');
+    }
+};
+ensureAdminUsers();
+
 // Initialize Cases DB with default data if not exists
 if (!fs.existsSync(CASES_FILE)) {
     const defaultCases = [
