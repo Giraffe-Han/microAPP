@@ -67,7 +67,7 @@ if (!fs.existsSync(USERS_FILE)) {
 }
 
 // Ensure DSL admin and standard admin exist (Patch)
-const ensureAdminUsers = () => {
+function ensureAdminUsers() {
     let users = readUsersDB();
     let modified = false;
 
@@ -89,8 +89,7 @@ const ensureAdminUsers = () => {
         writeUsersDB(users);
         console.log('Admin users patched/ensured.');
     }
-};
-ensureAdminUsers();
+}
 
 // Initialize Cases DB with default data if not exists
 if (!fs.existsSync(CASES_FILE)) {
@@ -543,5 +542,6 @@ app.get('*', (req, res) => {
 });
 
 app.listen(PORT, () => {
+    ensureAdminUsers();
     console.log('Server is running on http://localhost:' + PORT);
 });
