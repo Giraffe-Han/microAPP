@@ -12,13 +12,15 @@
         </template>
     </van-nav-bar>
 
-    <div class="filter-section" v-if="activeTab === 0">
+    <div class="filter-section" v-if="activeTab === 0 || activeTab === 3">
       <van-cell title="选择日期范围" :value="dateRange" is-link @click="showCalendar = true" />
       <van-calendar v-model:show="showCalendar" type="range" @confirm="onConfirmDate" />
       
       <div class="action-buttons">
         <van-button type="primary" size="small" block @click="fetchData">查询</van-button>
-        <van-button type="success" size="small" block @click="handleExport" style="margin-top: 8px;">导出Excel</van-button>
+        <van-button type="success" size="small" block @click="handleExport" style="margin-top: 8px;">
+          导出{{ activeTab === 3 ? '赛事' : '' }}Excel
+        </van-button>
       </div>
     </div>
 
@@ -97,6 +99,56 @@
                 </van-cell-group>
             </div>
         </van-tab>
+        <van-tab title="赛事管理">
+            <div class="competition-admin">
+                <!-- 角色筛选 -->
+                <div class="role-filter" style="padding: 12px; background: #fff; margin-bottom: 10px;">
+                    <van-dropdown-menu>
+                        <van-dropdown-item v-model="selectedRole" :options="roleFilterOptions" @change="onFilterChange" />
+                        <van-dropdown-item v-model="selectedStatus" :options="statusFilterOptions" @change="onFilterChange" />
+                    </van-dropdown-menu>
+                </div>
+
+                <!-- 赛事统计卡片 -->
+                <div class="stats-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 12px;">
+                    <div class="stat-card" style="background: #fff; padding: 12px; border-radius: 8px; text-align: center; grid-column: span 3;">
+                        <div style="font-size: 12px; color: #969799;">总报名人数</div>
+                        <div style="font-size: 24px; font-weight: bold; color: #1677ff;">{{ competitionStats.total }}</div>
+                    </div>
+                    <div class="stat-card" style="background: #fff; padding: 12px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 11px; color: #969799;">运动员</div>
+                        <div style="font-size: 18px; font-weight: bold; color: #ee0a24;">{{ competitionStats.athlete }}</div>
+                    </div>
+                    <div class="stat-card" style="background: #fff; padding: 12px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 11px; color: #969799;">教练员</div>
+                        <div style="font-size: 18px; font-weight: bold; color: #ff976a;">{{ competitionStats.coach }}</div>
+                    </div>
+                    <div class="stat-card" style="background: #fff; padding: 12px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 11px; color: #969799;">裁判员</div>
+                        <div style="font-size: 18px; font-weight: bold; color: #07c160;">{{ competitionStats.referee }}</div>
+                    </div>
+                    <div class="stat-card" style="background: #fff; padding: 12px; border-radius: 8px; text-align: center; grid-column: span 3;">
+                        <div style="font-size: 11px; color: #969799;">俱乐部</div>
+                        <div style="font-size: 18px; font-weight: bold; color: #722ed1;">{{ competitionStats.club }}</div>
+                    </div>
+                </div>
+
+                <van-cell-group inset title="报名列表">
+                    <van-cell 
+                        v-for="item in competitionList" 
+                        :key="item.id" 
+                        :title="(item.name || item.companyName || '未知姓名') + ' - ' + (item.competitionRoleText || '未知角色')" 
+                        :label="formatDate(item.createTime)"
+                        is-link
+                        @click="showDetail(item)"
+                    >
+                        <template #value>
+                            <span :class="getStatusClass(item.status)">{{ item.status || '待处理' }}</span>
+                        </template>
+                    </van-cell>
+                </van-cell-group>
+            </div>
+        </van-tab>
     </van-tabs>
 
     <!-- Detail Popup -->
@@ -114,6 +166,10 @@
                   <van-cell title="姓名" :value="itemValue(currentItem.traineeName)" />
                   <van-cell title="联系电话" :value="itemValue(currentItem.traineePhone)" />
                 </template>
+                <template v-else-if="currentItem.serviceId === '13'">
+                  <van-cell title="姓名/单位" :value="itemValue(currentItem.name || currentItem.companyName)" />
+                  <van-cell title="联系电话" :value="itemValue(currentItem.phone || currentItem.managerPhone || currentItem.contactPhone)" />
+                </template>
                 <template v-else>
                   <van-cell title="联系人" :value="itemValue(currentItem.contactName)" />
                   <van-cell title="联系电话" :value="itemValue(currentItem.contactPhone)" />
@@ -123,8 +179,33 @@
             <van-cell-group title="服务详情">
                 <van-cell title="服务类型" :value="itemValue(currentItem.serviceName)" />
                 
-                <!-- 培训服务详情 -->
-                <template v-if="currentItem.serviceId === '6'">
+                <!-- 无人机赛事报名详情 -->
+                <template v-if="currentItem.serviceId === '13'">
+                    <van-cell title="注册号" :value="itemValue(currentItem.regNo)" />
+                    <van-cell title="报名角色" :value="itemValue(currentItem.competitionRoleText)" />
+                    <template v-if="currentItem.competitionRole === 'club'">
+                        <van-cell title="单位简称" :value="itemValue(currentItem.companyShortName)" />
+                        <van-cell title="负责人" :value="itemValue(currentItem.manager)" />
+                        <van-cell title="负责人电话" :value="itemValue(currentItem.managerPhone)" />
+                        <van-cell title="主要对接人" :value="itemValue(currentItem.contactPerson)" />
+                        <van-cell title="对接人电话" :value="itemValue(currentItem.contactPhone)" />
+                    </template>
+                    <template v-else>
+                        <van-cell title="性别" :value="currentItem.gender === 'male' ? '男' : '女'" />
+                        <van-cell title="证件号" :value="itemValue(currentItem.idCard)" />
+                        <van-cell title="组别" :value="itemValue(currentItem.competitionGroup || currentItem.athleteGroup)" />
+                        <van-cell v-if="currentItem.competitionProject" title="参赛项目" :value="itemValue(currentItem.competitionProject)" />
+                        <van-cell 
+                            :title="currentItem.competitionRole === 'referee' ? '裁判员等级' : (currentItem.competitionRole === 'coach' ? '教练员等级' : '等级')" 
+                            :value="itemValue(currentItem.level)" 
+                        />
+                        <van-cell v-if="currentItem.validDate" title="有效期" :value="itemValue(currentItem.validDate)" />
+                        <van-cell title="电子邮箱" :value="itemValue(currentItem.email)" />
+                    </template>
+                </template>
+
+                <!-- 飞手培训服务详情 -->
+                <template v-else-if="currentItem.serviceId === '6'">
                     <van-cell title="性别" :value="currentItem.traineeGender === 'male' ? '男' : '女'" />
                     <van-cell title="出生日期" :value="itemValue(currentItem.traineeBirthday)" />
                     <van-cell title="身份证号" :value="itemValue(currentItem.traineeIdCard)" />
@@ -279,6 +360,51 @@ const currentCase = ref(null);
 const showStatusPicker = ref(false);
 const activeTab = ref(0);
 
+const selectedRole = ref('all');
+const selectedStatus = ref('all');
+
+const roleFilterOptions = [
+    { text: '全部角色', value: 'all' },
+    { text: '运动员', value: 'athlete' },
+    { text: '教练员', value: 'coach' },
+    { text: '裁判员', value: 'referee' },
+    { text: '俱乐部', value: 'club' }
+];
+
+const statusFilterOptions = [
+    { text: '全部状态', value: 'all' },
+    { text: '待处理', value: '待处理' },
+    { text: '处理中', value: '处理中' },
+    { text: '已完成', value: '已完成' },
+    { text: '已取消', value: '已取消' }
+];
+
+const onFilterChange = () => {
+    // 触发重新计算
+};
+
+const competitionList = computed(() => {
+    return list.value.filter(item => {
+        const isCompetition = item.serviceId === '13';
+        const matchesRole = selectedRole.value === 'all' || item.competitionRole === selectedRole.value;
+        const matchesStatus = selectedStatus.value === 'all' || item.status === selectedStatus.value;
+        return isCompetition && matchesRole && matchesStatus;
+    });
+});
+
+const competitionStats = computed(() => {
+    const stats = { total: 0, athlete: 0, coach: 0, referee: 0, club: 0 };
+    // 使用所有赛事数据进行统计，不受当前筛选影响
+    list.value.filter(item => item.serviceId === '13').forEach(item => {
+        stats.total++;
+        if (item.competitionRole === 'athlete') stats.athlete++;
+        else if (item.competitionRole === 'coach') stats.coach++;
+        else if (item.competitionRole === 'referee') stats.referee++;
+        else if (item.competitionRole === 'club') stats.club++;
+    });
+    return stats;
+});
+
 const statusOptions = [
   { text: '待处理', value: '待处理' },
   { text: '处理中', value: '处理中' },
@@ -371,7 +497,15 @@ const toggleUserRole = async (user) => {
 const handleExport = () => {
     let url = '/api/export?';
     if (startDate.value) url += `startDate=${startDate.value.toISOString()}&`;
-    if (endDate.value) url += `endDate=${endDate.value.toISOString()}`;
+    if (endDate.value) url += `endDate=${endDate.value.toISOString()}&`;
+    
+    // 如果在赛事管理页导出，添加赛事特定筛选
+    if (activeTab.value === 3) {
+        url += `serviceId=13&`;
+        if (selectedRole.value !== 'all') url += `competitionRole=${selectedRole.value}&`;
+        if (selectedStatus.value !== 'all') url += `status=${selectedStatus.value}`;
+    }
+    
     window.open(url, '_blank');
 };
 

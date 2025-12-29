@@ -55,7 +55,8 @@ const rawServices = [
   { id: 9, name: '低空研学', description: '科普教育、实践体验', icon: '/icons/study.svg', color: 'linear-gradient(135deg, #06b6d4 0%, #2563eb 100%)' },
   { id: 10, name: '二手交易', description: '设备买卖、以旧换新', icon: 'exchange', color: 'linear-gradient(135deg, #fbbf24 0%, #ea580c 100%)' },
   { id: 11, name: '金融服务', description: '设备保险、飞行护航', icon: '/icons/finance.svg', color: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)' },
-  { id: 12, name: '维修服务', description: '故障维修、定期保养', icon: 'setting-o', color: 'linear-gradient(135deg, #38bdf8 0%, #3b82f6 100%)' }
+  { id: 12, name: '维修服务', description: '故障维修、定期保养', icon: 'setting-o', color: 'linear-gradient(135deg, #38bdf8 0%, #3b82f6 100%)' },
+  { id: 13, name: '无人机赛事', description: '竞技比赛、赛事组织', icon: '/icons/competition.svg', color: 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)' }
 ]
 
 // 定义分组结构
@@ -68,7 +69,7 @@ const groupsConfig = [
   {
     title: '商业应用',
     subtitle: 'Business Application',
-    ids: [4, 5, 3, 7]
+    ids: [4, 5, 3, 7, 13]
   },
   {
     title: '教育培训',

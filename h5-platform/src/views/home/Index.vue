@@ -167,6 +167,7 @@ const quickServices = ref([
   { id: 8, name: '无人机外卖', icon: '/icons/delivery.svg', color: 'linear-gradient(135deg, #38bdf8 0%, #3b82f6 100%)' }, // 淡蓝色
   { id: 1, name: '无人机物流', icon: '/icons/logistics-drone.svg', color: 'linear-gradient(135deg, #06b6d4 0%, #2563eb 100%)' }, // 海蓝色
   { id: 4, name: '无人机吊运', icon: '/icons/lifting.svg', color: 'linear-gradient(135deg, #fbbf24 0%, #ea580c 100%)' }, // 橙色
+  { id: 13, name: '无人机赛事', icon: '/icons/competition.svg', color: 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)' }, // 红色渐变
   { id: 6, name: '飞手培训', icon: '/icons/training-v2.svg', color: 'linear-gradient(135deg, #fbbf24 0%, #ea580c 100%)' }, // 橙色
   { id: 9, name: '低空研学', icon: '/icons/study.svg', color: 'linear-gradient(135deg, #06b6d4 0%, #2563eb 100%)' }, // 海蓝色
   { id: 2, name: '政务服务', icon: 'eye-o', color: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)' }, // 蓝紫色
@@ -175,8 +176,7 @@ const quickServices = ref([
   { id: 7, name: '无人机租赁', icon: 'coupon-o', color: 'linear-gradient(135deg, #38bdf8 0%, #3b82f6 100%)' }, // 归类为淡蓝色
   { id: 10, name: '二手交易', icon: 'exchange', color: 'linear-gradient(135deg, #fbbf24 0%, #ea580c 100%)' }, // 归类为橙色
   { id: 11, name: '金融服务', icon: '/icons/finance.svg', color: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)' }, // 归类为蓝紫色
-  { id: 12, name: '维修服务', icon: 'setting-o', color: 'linear-gradient(135deg, #38bdf8 0%, #3b82f6 100%)' }, // 归类为淡蓝色
-  { id: 'contact', name: '联系客服', icon: 'service-o', color: 'linear-gradient(135deg, #fbbf24 0%, #ea580c 100%)' } // 归类为橙色
+  { id: 12, name: '维修服务', icon: 'setting-o', color: 'linear-gradient(135deg, #38bdf8 0%, #3b82f6 100%)' } // 归类为淡蓝色
 ])
 
 // 将服务分组，每页 7 个 + 1 个更多
@@ -211,8 +211,6 @@ const goToService = (id) => {
     window.location.href = 'https://gw.zndkfx.com/sso/cxwz'
   } else if (id === 8) {
     goToDelivery()
-  } else if (id === 'contact') {
-    window.location.href = 'tel:0577-12345678'
   } else if (id === 'more') {
     // 切换到服务列表 Tab (假设Tabbar中有这个路径，或者跳转到列表页)
     router.push('/services')

@@ -1,0 +1,160 @@
+<view class="service-detail-page" wx:if="{{service}}">
+  <view class="service-header">
+    <view class="service-icon-big" style="background: {{service.color}}">
+      <text>{{service.icon}}</text>
+    </view>
+    <view class="service-name">{{service.name}}</view>
+    <view class="service-slogan">{{service.slogan}}</view>
+  </view>
+
+  <view class="section-card" wx:if="{{service.id !== '6'}}">
+    <view class="section-title" style="border-left-color: {{service.mainColor}}">服务介绍</view>
+    <view class="section-text">{{service.intro}}</view>
+  </view>
+
+  <view class="section-card" wx:if="{{service.id !== '6'}}">
+    <view class="section-title" style="border-left-color: {{service.mainColor}}">服务项目</view>
+    <view class="project-grid">
+      <view class="project-item" wx:for="{{service.projects}}" wx:for-item="project" wx:key="name">
+        <view class="project-icon" style="color: {{service.mainColor}}">{{project.icon}}</view>
+        <text>{{project.name}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="section-card" wx:if="{{service.id !== '6'}}">
+    <view class="section-title" style="border-left-color: {{service.mainColor}}">服务优势</view>
+    <view class="advantage-list">
+      <view class="advantage-item" wx:for="{{service.advantages}}" wx:for-item="adv" wx:key="adv">
+        <view class="advantage-dot"></view>
+        <text>{{adv}}</text>
+      </view>
+    </view>
+  </view>
+
+  <block wx:if="{{service.id === '6'}}">
+    <view class="section-card">
+      <view class="section-title" style="border-left-color: {{service.mainColor}}">报名条件</view>
+      <view class="training-list">
+        <text class="training-item">(一)、中华人民共和国公民;</text>
+        <text class="training-item">(二)、年满16周岁以上，70周岁以下;</text>
+        <text class="training-item">(三)、初中以上文化程度;</text>
+        <text class="training-item">(四)、遵纪守法，无不良行为，五年内无犯罪记录;</text>
+        <text class="training-item">(五)、身体健康;矫正视力1.0以上，无色盲、色弱，无传染性疾病，无脑血管及精神类疾病，肢体无残疾，无不良嗜好;</text>
+        <text class="training-item">(六)、具有适应无人机操控需要的基本知识和操作能力。</text>
+      </view>
+    </view>
+
+    <view class="section-card">
+      <view class="section-title" style="border-left-color: {{service.mainColor}}">培训费用</view>
+      <view class="price-list">
+        <view class="price-item">
+          <text class="label">小型无人机-多旋翼-视距内</text>
+          <text class="price">8800元/人</text>
+        </view>
+        <view class="price-item">
+          <text class="label">小型无人机-多旋翼-超视距</text>
+          <text class="price">12800元/人</text>
+        </view>
+        <view class="price-item">
+          <text class="label">中型无人机-多旋翼-视距内</text>
+          <text class="price">10800元/人</text>
+        </view>
+        <view class="price-item">
+          <text class="label">中型无人机-多旋翼-超视距</text>
+          <text class="price">15800元/人</text>
+        </view>
+        <view class="price-item">
+          <text class="label">U-BOX3.0</text>
+          <text class="price">490元/套（自愿购买）</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="section-card">
+      <view class="section-title" style="border-left-color: {{service.mainColor}}">教学特色</view>
+      <view class="feature-list">
+        <view class="feature-item">
+          <view class="feature-title">权威认证</view>
+          <view class="feature-desc">御风航空多次荣获中国AOPA年度优秀训练机构称号;学员通过培训可获得中国民用航空局发放的无人机操控员执照。</view>
+        </view>
+        <view class="feature-item">
+          <view class="feature-title">全面课程</view>
+          <view class="feature-desc">涵盖无人机基础知识、飞行操作、维护保养、法律法规等；提供丰富的实操机会，确保学员熟练掌握飞行技巧。</view>
+        </view>
+        <view class="feature-item">
+          <view class="feature-title">灵活教学</view>
+          <view class="feature-desc">每班人数有限，确保每位学员都能得到充分指导;提供周末班、晚班等多种选择，适应不同学员需求。</view>
+        </view>
+        <view class="feature-item">
+          <view class="feature-title">资深老牌</view>
+          <view class="feature-desc">御风航空深耕无人机培训7年，积累丰富经验，专业教员团队，个性化教程，精准施教。</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="section-card" wx:if="{{trainingShowcase.length}}">
+      <view class="section-title" style="border-left-color: {{service.mainColor}}">图文展示</view>
+      <view class="showcase-grid">
+        <view class="showcase-item" wx:for="{{trainingShowcase}}" wx:for-item="shot" wx:key="title">
+          <view class="showcase-image">
+            <image src="{{shot.image}}" mode="aspectFill" lazy-load="true" />
+          </view>
+          <view class="showcase-info">
+            <view class="showcase-title">{{shot.title}}</view>
+            <view class="showcase-desc">{{shot.desc}}</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="section-card">
+      <view class="section-title" style="border-left-color: {{service.mainColor}}">公司简介</view>
+      <view class="company-intro">
+        <view class="intro-title">浙江御风航空科技有限公司</view>
+        <view class="section-text">
+          系温州交运集团所属低空公司的控股子公司，公司成立于2018年，致力于无人机专业培训，为行业客户提供专业的解决方案和人才培养，为院校搭建A1无人机教学实验室，建立金字塔式的综合教学。作为国内早期开展无人机驾驶员资格培训的机构之一，是浙南闽北地区最早一家具备民航局认定的CAAC执照培训资质的机构，并具备合法合规的空域飞行权。
+        </view>
+      </view>
+    </view>
+
+    <view class="section-card">
+      <view class="section-title" style="border-left-color: {{service.mainColor}}">执照功能</view>
+      <view class="license-intro">
+        <view class="section-text">
+          CAAC是中国民用航空局的英文缩写，相应的无人机驾驶航空器操控员执照是由中国民航局飞行标准司直接签发的，含金量极高!是无人机行业从业者入行必备的敲门砖，具有权威的法律效力!取得该执照可申报空域、申请航线、从事无人机相关的商业活动等。
+        </view>
+        <view class="law-quote">
+          《无人驾驶航空器飞行管理暂行条例》中规定:操控小型、中型、大型民用无人驾驶航空器飞行的人员应当向国务院民用航空主管部门申请取得相应民用无人驾驶航空操控员执照(CAAC)。
+        </view>
+      </view>
+    </view>
+  </block>
+
+  <view class="section-card contact-card" wx:if="{{service.id === '6'}}">
+    <view class="section-title" style="border-left-color: {{service.mainColor}}">联系客服</view>
+    <view class="contact-info">
+      <text>联系电话：</text>
+      <text class="phone-link" style="color: {{service.mainColor}}" bindtap="makeCall" data-phone="057755558188">0577-55558188</text>
+      <text class="phone-link" style="color: {{service.mainColor}}" bindtap="makeCall" data-phone="057788360168">0577-88360168</text>
+      <text>邮箱: wzdkjjgs@163.com</text>
+      <text class="address">温州低空经济发展有限公司 / 浙江御风航空科技有限公司（温州市鹿城区牛山北路52号）</text>
+    </view>
+  </view>
+
+  <view class="section-card contact-card" wx:if="{{service.id !== '6'}}">
+    <view class="section-title" style="border-left-color: {{service.mainColor}}">联系客服</view>
+    <view class="contact-info">
+      <text>如有疑问，请咨询客服热线：</text>
+      <text class="phone-link" style="color: {{service.mainColor}}" bindtap="makeCall" data-phone="057755558188">0577-55558188</text>
+      <text class="work-time">工作时间：工作日 8:30-17:30</text>
+    </view>
+  </view>
+
+  <view class="action-bar">
+    <button class="apply-btn" style="background: {{service.color}}" bindtap="handleApply">
+      {{actionText}}
+    </button>
+  </view>
+</view>
+

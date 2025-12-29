@@ -47,7 +47,7 @@
         <!-- 申请表单 -->
         <van-form ref="formRef" @submit="onSubmit" @failed="onFailed" style="margin-top: 16px;">
         <!-- 基本信息 -->
-        <div class="form-section" v-if="serviceId !== '6'">
+        <div class="form-section" v-if="serviceId !== '6' && serviceId !== '13'">
           <h3 class="form-title">基本信息</h3>
           <van-field
             v-model="formData.contactName"
@@ -70,8 +70,156 @@
 
         <!-- 服务详情 - 根据服务类型显示不同字段 -->
         <div class="form-section">
-          <h3 class="form-title">服务详情</h3>
+          <h3 class="form-title" v-if="serviceId !== '13'">服务详情</h3>
+          <h3 class="form-title" v-else>板块报名</h3>
           
+          <!-- 无人机赛事报名 -->
+          <template v-if="serviceId === '13'">
+            <van-field
+              v-model="formData.competitionRoleText"
+              is-link
+              readonly
+              label="报名类型"
+              placeholder="请选择报名角色"
+              @click="showCompetitionRolePicker = true"
+              @click-input="showCompetitionRolePicker = true"
+              :rules="[{ required: true, message: '请选择报名角色' }]"
+            />
+            <van-popup :show="showCompetitionRolePicker" @update:show="val => showCompetitionRolePicker = val" position="bottom">
+              <van-picker
+                :columns="competitionRoleOptions"
+                @confirm="onCompetitionRoleConfirm"
+                @cancel="showCompetitionRolePicker = false"
+                title="选择报名角色"
+              />
+            </van-popup>
+
+            <!-- 选择角色后展开表单 -->
+            <template v-if="formData.competitionRole">
+              <h3 class="form-title" style="margin-top: 20px;">表单报名</h3>
+              
+              <!-- 裁判员 字段 -->
+              <template v-if="formData.competitionRole === 'referee'">
+                <van-field v-model="formData.companyName" label="单位名称" placeholder="请输入单位名称" :rules="[{ required: true, message: '请输入单位名称' }]" />
+                <van-field v-model="formData.name" label="姓名" placeholder="请输入姓名" :rules="[{ required: true, message: '请输入姓名' }]" />
+                <van-field name="gender" label="性别">
+                  <template #input>
+                    <van-radio-group v-model="formData.gender" direction="horizontal">
+                      <van-radio name="male">男</van-radio>
+                      <van-radio name="female">女</van-radio>
+                    </van-radio-group>
+                  </template>
+                </van-field>
+                <van-field v-model="formData.idCard" label="证件号" placeholder="请输入证件号" :rules="[{ required: true, message: '请输入证件号' }]" />
+                <van-field
+                  v-model="formData.competitionGroup"
+                  is-link
+                  readonly
+                  label="组别"
+                  placeholder="请选择组别（足球/FPV/航拍）"
+                  @click="showGroupPicker = true"
+                  :rules="[{ required: true, message: '请选择组别' }]"
+                />
+                <van-field v-model="formData.phone" type="tel" label="联系电话" placeholder="请输入联系电话" :rules="[{ required: true, message: '请输入电话' }]" />
+                <van-field v-model="formData.email" label="电子邮箱" placeholder="请输入电子邮箱" />
+                <van-field v-model="formData.level" label="裁判员等级" placeholder="请输入等级" />
+                <van-field
+                  v-model="formData.validDate"
+                  is-link
+                  readonly
+                  label="有效期"
+                  placeholder="请选择有效期"
+                  @click="showValidDatePicker = true"
+                />
+              </template>
+
+              <!-- 教练员 字段 -->
+              <template v-if="formData.competitionRole === 'coach'">
+                <van-field v-model="formData.companyName" label="单位名称" placeholder="请输入单位名称" :rules="[{ required: true, message: '请输入单位名称' }]" />
+                <van-field v-model="formData.name" label="姓名" placeholder="请输入姓名" :rules="[{ required: true, message: '请输入姓名' }]" />
+                <van-field name="gender" label="性别">
+                  <template #input>
+                    <van-radio-group v-model="formData.gender" direction="horizontal">
+                      <van-radio name="male">男</van-radio>
+                      <van-radio name="female">女</van-radio>
+                    </van-radio-group>
+                  </template>
+                </van-field>
+                <van-field v-model="formData.idCard" label="证件号" placeholder="请输入证件号" :rules="[{ required: true, message: '请输入证件号' }]" />
+                <van-field
+                  v-model="formData.competitionGroup"
+                  is-link
+                  readonly
+                  label="组别"
+                  placeholder="请选择组别（足球/FPV/航拍）"
+                  @click="showGroupPicker = true"
+                  :rules="[{ required: true, message: '请选择组别' }]"
+                />
+                <van-field v-model="formData.phone" type="tel" label="联系电话" placeholder="请输入联系电话" :rules="[{ required: true, message: '请输入电话' }]" />
+                <van-field v-model="formData.email" label="电子邮箱" placeholder="请输入电子邮箱" />
+                <van-field v-model="formData.level" label="教练员等级" placeholder="请输入等级" />
+                <van-field
+                  v-model="formData.validDate"
+                  is-link
+                  readonly
+                  label="有效期"
+                  placeholder="请选择有效期"
+                  @click="showValidDatePicker = true"
+                />
+              </template>
+
+              <!-- 运动员 -->
+              <template v-if="formData.competitionRole === 'athlete'">
+                <van-field v-model="formData.companyName" label="单位名称" placeholder="请输入单位名称" :rules="[{ required: true, message: '请输入单位名称' }]" />
+                <van-field v-model="formData.name" label="姓名" placeholder="请输入姓名" :rules="[{ required: true, message: '请输入姓名' }]" />
+                <van-field name="gender" label="性别">
+                  <template #input>
+                    <van-radio-group v-model="formData.gender" direction="horizontal">
+                      <van-radio name="male">男</van-radio>
+                      <van-radio name="female">女</van-radio>
+                    </van-radio-group>
+                  </template>
+                </van-field>
+                <van-field v-model="formData.idCard" label="证件号" placeholder="请输入证件号" :rules="[{ required: true, message: '请输入证件号' }]" />
+                <van-field
+                  v-model="formData.athleteGroup"
+                  is-link
+                  readonly
+                  label="组别"
+                  placeholder="请选择组别（成人/中学/小学）"
+                  @click="showAthleteGroupPicker = true"
+                  :rules="[{ required: true, message: '请选择组别' }]"
+                />
+                <van-field
+                  v-model="formData.competitionProject"
+                  is-link
+                  readonly
+                  label="参赛项目"
+                  placeholder="请选择项目（足球/FPV/航拍）"
+                  @click="showProjectPicker = true"
+                  :rules="[{ required: true, message: '请选择参赛项目' }]"
+                />
+                <van-field v-model="formData.phone" type="tel" label="联系电话" placeholder="请输入联系电话" :rules="[{ required: true, message: '请输入电话' }]" />
+                <van-field v-model="formData.level" label="运动员等级" placeholder="请输入运动员等级" />
+              </template>
+
+              <!-- 俱乐部 -->
+              <template v-if="formData.competitionRole === 'club'">
+                <van-field v-model="formData.companyName" label="单位名称" placeholder="请输入单位名称" :rules="[{ required: true, message: '请输入单位名称' }]" />
+                <van-field v-model="formData.companyShortName" label="单位简称" placeholder="请输入单位简称" />
+                <van-field name="logoUploader" label="LOGO">
+                  <template #input>
+                    <van-uploader v-model="formData.logoFileList" :max-count="1" accept="image/*" />
+                  </template>
+                </van-field>
+                <van-field v-model="formData.manager" label="负责人" placeholder="请输入负责人姓名" :rules="[{ required: true, message: '请输入负责人' }]" />
+                <van-field v-model="formData.managerPhone" type="tel" label="联系电话" placeholder="请输入负责人电话" />
+                <van-field v-model="formData.contactPerson" label="主要对接人" placeholder="请输入对接人姓名" :rules="[{ required: true, message: '请输入对接人' }]" />
+                <van-field v-model="formData.contactPhone" type="tel" label="联系电话" placeholder="请输入对接人电话" />
+              </template>
+            </template>
+          </template>
+
           <!-- 无人机物流服务 -->
           <template v-if="serviceId === '1'">
             <!-- 客户类型 -->
@@ -100,8 +248,9 @@
               label="货物类型"
               placeholder="请选择货物类型"
               @click="showCargoTypePicker = true"
+              @click-input="showCargoTypePicker = true"
             />
-            <van-popup v-model:show="showCargoTypePicker" position="bottom">
+            <van-popup :show="showCargoTypePicker" @update:show="val => showCargoTypePicker = val" position="bottom">
               <van-picker
                 :columns="cargoTypeOptions"
                 @confirm="onCargoTypeConfirm"
@@ -179,8 +328,9 @@
               label="运输时效"
               placeholder="请选择运输时效"
               @click="showUrgencyPicker = true"
+              @click-input="showUrgencyPicker = true"
             />
-            <van-popup v-model:show="showUrgencyPicker" position="bottom">
+            <van-popup :show="showUrgencyPicker" @update:show="val => showUrgencyPicker = val" position="bottom">
               <van-picker
                 :columns="urgencyOptions"
                 @confirm="onUrgencyConfirm"
@@ -197,8 +347,9 @@
               label="期望运输时间"
               placeholder="请选择期望运输时间"
               @click="showTimePicker = true"
+              @click-input="showTimePicker = true"
             />
-            <van-popup v-model:show="showTimePicker" position="bottom">
+            <van-popup :show="showTimePicker" @update:show="val => showTimePicker = val" position="bottom">
               <van-date-picker
                 v-model="expectedDate"
                 title="选择日期"
@@ -350,8 +501,9 @@
               label="考试机型"
               placeholder="请选择考试机型"
               @click="showExamModelPicker = true"
+              @click-input="showExamModelPicker = true"
             />
-            <van-popup v-model:show="showExamModelPicker" position="bottom">
+            <van-popup :show="showExamModelPicker" @update:show="val => showExamModelPicker = val" position="bottom">
               <van-picker
                 :columns="examModelOptions"
                 @confirm="onExamModelConfirm"
@@ -366,8 +518,9 @@
               label="证照级别"
               placeholder="请选择证照级别"
               @click="showLicenseLevelPicker = true"
+              @click-input="showLicenseLevelPicker = true"
             />
-            <van-popup v-model:show="showLicenseLevelPicker" position="bottom">
+            <van-popup :show="showLicenseLevelPicker" @update:show="val => showLicenseLevelPicker = val" position="bottom">
               <van-picker
                 :columns="licenseLevelOptions"
                 @confirm="onLicenseLevelConfirm"
@@ -382,8 +535,9 @@
               label="有无基础"
               placeholder="请选择有无基础"
               @click="showExperiencePicker = true"
+              @click-input="showExperiencePicker = true"
             />
-            <van-popup v-model:show="showExperiencePicker" position="bottom">
+            <van-popup :show="showExperiencePicker" @update:show="val => showExperiencePicker = val" position="bottom">
               <van-picker
                 :columns="experienceOptions"
                 @confirm="onExperienceConfirm"
@@ -481,17 +635,16 @@
       </template>
     </div>
 
-    <!-- 选择器弹窗 -->
-    <van-popup v-model:show="showDatePicker" position="bottom">
-      <van-datetime-picker
-        v-model="currentDate"
-        type="date"
+    <van-popup :show="showDatePicker" @update:show="val => showDatePicker = val" position="bottom">
+      <van-date-picker
+        v-model="selectedDateArray"
+        title="选择日期"
         @confirm="onDateConfirm"
         @cancel="showDatePicker = false"
       />
     </van-popup>
 
-    <van-popup v-model:show="showDurationPicker" position="bottom">
+    <van-popup :show="showDurationPicker" @update:show="val => showDurationPicker = val" position="bottom">
       <van-picker
         :columns="durationOptions"
         @confirm="onDurationConfirm"
@@ -499,11 +652,47 @@
         title="选择托管期限"
       />
     </van-popup>
+
+    <van-popup :show="showGroupPicker" @update:show="val => showGroupPicker = val" position="bottom">
+      <van-picker
+        :columns="groupOptions"
+        @confirm="onGroupConfirm"
+        @cancel="showGroupPicker = false"
+        title="选择组别"
+      />
+    </van-popup>
+
+    <van-popup :show="showAthleteGroupPicker" @update:show="val => showAthleteGroupPicker = val" position="bottom">
+      <van-picker
+        :columns="athleteGroupOptions"
+        @confirm="onAthleteGroupConfirm"
+        @cancel="showAthleteGroupPicker = false"
+        title="选择组别"
+      />
+    </van-popup>
+
+    <van-popup :show="showProjectPicker" @update:show="val => showProjectPicker = val" position="bottom">
+      <van-picker
+        :columns="projectOptions"
+        @confirm="onProjectConfirm"
+        @cancel="showProjectPicker = false"
+        title="选择参赛项目"
+      />
+    </van-popup>
+
+    <van-popup :show="showValidDatePicker" @update:show="val => showValidDatePicker = val" position="bottom">
+      <van-date-picker
+        v-model="selectedDateArray"
+        title="选择有效期"
+        @confirm="onValidDateConfirm"
+        @cancel="showValidDatePicker = false"
+      />
+    </van-popup>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast, showDialog, showLoadingToast, closeToast, showFailToast } from 'vant'
 import axios from 'axios'
@@ -512,6 +701,24 @@ const route = useRoute()
 const router = useRouter()
 // 使用 computed 获取路由参数，保持响应式
 const serviceId = computed(() => String(route.params.id))
+
+onMounted(() => {
+  // 处理从详情页带过来的角色参数
+  const queryRole = route.query.role
+  if (serviceId.value === '13' && queryRole) {
+    const roleMap = {
+      'referee': '裁判员',
+      'coach': '教练员',
+      'athlete': '运动员',
+      'club': '俱乐部'
+    }
+    const roleText = roleMap[queryRole]
+    if (roleText) {
+      formData.value.competitionRole = queryRole
+      formData.value.competitionRoleText = roleText
+    }
+  }
+})
 
 // 所有11项服务名称 (ID 8是外卖，ID flight在列表页直接跳转)
 const serviceNames = {
@@ -526,7 +733,8 @@ const serviceNames = {
   '9': '低空研学',
   '10': '无人机二手交易',
   '11': '无人机金融服务',
-  '12': '无人机维修服务'
+  '12': '无人机维修服务',
+  '13': '无人机赛事'
 }
 
 const serviceName = computed(() => serviceNames[serviceId.value] || '服务')
@@ -536,6 +744,10 @@ const submitButtonText = computed(() => {
   if (['1', '4', '8'].includes(serviceId.value)) {
     return '立即下单'
   }
+  // 赛事报名 -> 立即报名
+  if (serviceId.value === '13') {
+    return '立即报名'
+  }
   // 培训、研学 -> 报名
   if (['6', '9'].includes(serviceId.value)) {
     return '参与报名'
@@ -543,8 +755,8 @@ const submitButtonText = computed(() => {
   return '提交申请'
 })
 
-// 判断服务是否可申请 (只有1-4号和6号服务在一期开放申请)
-const isServiceAvailable = computed(() => ['1', '2', '3', '4', '6'].includes(serviceId.value))
+// 判断服务是否可申请 (只有1-4号和6号服务在一期开放申请，新增13号)
+const isServiceAvailable = computed(() => ['1', '2', '3', '4', '6', '13'].includes(serviceId.value))
 
 // 表单数据
 const formData = ref({
@@ -591,6 +803,28 @@ const formData = ref({
   maintenanceType: 'repair',
   isWarranty: 'yes',
   purchaseDate: '',
+  // 赛事报名
+  competitionRole: '',
+  competitionRoleText: '',
+  competitionContent: '',
+  regNo: '',
+  companyName: '',
+  companyShortName: '',
+  name: '',
+  gender: 'male',
+  idCard: '',
+  competitionGroup: '',
+  phone: '',
+  email: '',
+  level: '',
+  validDate: '',
+  athleteGroup: '',
+  competitionProject: '',
+  logoFileList: [],
+  manager: '',
+  managerPhone: '',
+  contactPerson: '',
+  contactPhone: '',
   // 通用
   remark: ''
 })
@@ -601,7 +835,16 @@ const showDurationPicker = ref(false)
 const showCargoTypePicker = ref(false) // 货物类型选择器
 const showUrgencyPicker = ref(false) // 运输时效选择器
 const showTimePicker = ref(false) // 期望时间选择器
-const currentDate = ref(new Date())
+const showCompetitionRolePicker = ref(false)
+const showGroupPicker = ref(false)
+const showAthleteGroupPicker = ref(false)
+const showProjectPicker = ref(false)
+const showValidDatePicker = ref(false)
+const selectedDateArray = ref([
+  String(new Date().getFullYear()),
+  String(new Date().getMonth() + 1).padStart(2, '0'),
+  String(new Date().getDate()).padStart(2, '0')
+])
 const expectedDate = ref([
   String(new Date().getFullYear()),
   String(new Date().getMonth() + 1).padStart(2, '0'),
@@ -614,6 +857,59 @@ const showBirthdayPicker = ref(false)
 const currentBirthday = ref(new Date(1990, 0, 1))
 const minDate = new Date(1950, 0, 1)
 const maxDate = new Date()
+
+// 赛事报名 - 选项数据
+const competitionRoleOptions = [
+  { text: '裁判员', value: 'referee' },
+  { text: '教练员', value: 'coach' },
+  { text: '运动员', value: 'athlete' },
+  { text: '俱乐部', value: 'club' }
+]
+
+const groupOptions = [
+  { text: '足球', value: '足球' },
+  { text: 'FPV', value: 'FPV' },
+  { text: '航拍', value: '航拍' }
+]
+
+const athleteGroupOptions = [
+  { text: '成人', value: '成人' },
+  { text: '中学', value: '中学' },
+  { text: '小学', value: '小学' }
+]
+
+const projectOptions = [
+  { text: '足球', value: '足球' },
+  { text: 'FPV', value: 'FPV' },
+  { text: '航拍', value: '航拍' }
+]
+
+const onCompetitionRoleConfirm = ({ selectedOptions }) => {
+  formData.value.competitionRole = selectedOptions[0].value
+  formData.value.competitionRoleText = selectedOptions[0].text
+  showCompetitionRolePicker.value = false
+}
+
+const onGroupConfirm = ({ selectedOptions }) => {
+  formData.value.competitionGroup = selectedOptions[0].text
+  showGroupPicker.value = false
+}
+
+const onAthleteGroupConfirm = ({ selectedOptions }) => {
+  formData.value.athleteGroup = selectedOptions[0].text
+  showAthleteGroupPicker.value = false
+}
+
+const onProjectConfirm = ({ selectedOptions }) => {
+  formData.value.competitionProject = selectedOptions[0].text
+  showProjectPicker.value = false
+}
+
+const onValidDateConfirm = ({ selectedValues }) => {
+  const [year, month, day] = selectedValues
+  formData.value.validDate = `${year}-${month}-${day}`
+  showValidDatePicker.value = false
+}
 
 // 培训服务 - 选项数据
 const examModelOptions = [
@@ -681,9 +977,9 @@ const durationOptions = [
   { text: '长期托管', value: '长期托管' }
 ]
 
-const onDateConfirm = (value) => {
-  const date = new Date(value)
-  const formatted = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+const onDateConfirm = ({ selectedValues }) => {
+  const [year, month, day] = selectedValues
+  const formatted = `${year}-${month}-${day}`
   
   if (serviceId.value === '12') {
     formData.value.purchaseDate = formatted
@@ -739,7 +1035,14 @@ const formRef = ref(null)
 const onSubmit = async () => {
   // Check if user is logged in
   const userStr = localStorage.getItem('user');
-  if (!userStr) {
+  let user = null;
+  
+  if (userStr) {
+    user = JSON.parse(userStr);
+  }
+
+  // 无人机赛事报名 (ID 13) 不需要登录即可提交
+  if (!user && serviceId.value !== '13') {
       showDialog({
           title: '提示',
           message: '您当前未登录，请先登录或注册账号后再提交申请。',
@@ -752,7 +1055,6 @@ const onSubmit = async () => {
       });
       return;
   }
-  const user = JSON.parse(userStr);
 
   showLoadingToast({
     message: '提交中...',
@@ -776,8 +1078,15 @@ const onSubmit = async () => {
       orderNo,
       applyTime,
       status: '待处理',
-      userId: user.id // Add User ID
+      userId: user ? user.id : 'ANONYMOUS' // Add User ID or mark as Anonymous
     };
+
+    // 无人机赛事报名自动生成注册号
+    if (serviceId.value === '13') {
+      // 假设 openid 存在于 user 对象中，如果不存在则使用 id 作为 fallback
+      const openid = (user && (user.openid || user.id)) || 'GUEST';
+      submitData.regNo = `REG-${openid.substring(0, 8).toUpperCase()}-${now.getTime().toString().slice(-6)}`;
+    }
 
     await axios.post('/api/submit', submitData);
 

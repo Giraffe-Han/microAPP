@@ -28,7 +28,13 @@
       <div class="section-card" v-if="serviceId !== '6'">
         <h2 class="section-title" :style="{ borderLeftColor: serviceMainColor }">服务项目</h2>
         <div class="project-grid">
-          <div v-for="(item, index) in serviceProjects" :key="index" class="project-item">
+          <div 
+            v-for="(item, index) in serviceProjects" 
+            :key="index" 
+            class="project-item"
+            :class="{ 'clickable-project': serviceId === '13' }"
+            @click="onProjectClick(item)"
+          >
             <van-icon :name="item.icon" size="24" :color="serviceMainColor" />
             <span>{{ item.name }}</span>
           </div>
@@ -107,6 +113,26 @@
             <div class="feature-item">
               <div class="feature-title">资深老牌</div>
               <div class="feature-desc">御风航空深耕无人机培训7年，积累丰富经验，专业教员团队，个性化教程，精准施教。</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 图文展示 -->
+        <div class="section-card" v-if="trainingShowcase.length">
+          <h2 class="section-title" :style="{ borderLeftColor: serviceMainColor }">图文展示</h2>
+          <div class="showcase-grid">
+            <div
+              v-for="item in trainingShowcase"
+              :key="item.title"
+              class="showcase-item"
+            >
+              <div class="showcase-image">
+                <img :src="item.image" :alt="item.title" loading="lazy" />
+              </div>
+              <div class="showcase-info">
+                <div class="showcase-item-title">{{ item.title }}</div>
+                <p class="showcase-desc">{{ item.desc }}</p>
+              </div>
             </div>
           </div>
         </div>
@@ -351,9 +377,24 @@ const serviceData = {
       { name: '系统升级', icon: 'down' }
     ],
     advantages: ['官方授权认证', '原厂正品配件', '资深技师团队', '维修质保承诺']
+  },
+  '13': {
+    name: '无人机赛事报名',
+    slogan: '专业竞技 · 精彩纷呈 · 科技魅力',
+    icon: '/icons/competition.svg',
+    color: 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)',
+    mainColor: '#e11d48',
+    intro: '专业的无人机赛事报名通道，支持裁判员、教练员、运动员及俱乐部的在线注册。',
+    projects: [
+      { name: '裁判员', icon: 'manager-o' },
+      { name: '教练员', icon: 'medal-o' },
+      { name: '运动员', icon: 'friends-o' },
+      { name: '俱乐部', icon: 'shop-o' }
+    ],
+    advantages: ['官方权威认证', '便捷在线报名', '专业信息核验', '全方位赛事保障']
   }
 }
-
+                                            
 const currentService = serviceData[serviceId] || serviceData['1']
 
 const serviceName = ref(currentService.name)
@@ -364,11 +405,36 @@ const serviceMainColor = ref(currentService.mainColor)
 const serviceIntro = ref(currentService.intro)
 const serviceProjects = ref(currentService.projects)
 const serviceAdvantages = ref(currentService.advantages)
+const trainingShowcase = ref(
+  serviceId === '6'
+    ? [
+        {
+          title: '实训场地',
+          desc: '3000㎡ 综合实训场地，覆盖起降、编队、特种作业等多种科目，真实环境快速积累飞行经验。',
+          image: '/images/training/practice-field.svg'
+        },
+        {
+          title: '模拟教室',
+          desc: '搭载无人机模拟系统与XR教学屏，提前演练复杂空域任务，理论与实操一体化。',
+          image: '/images/training/simulator-lab.svg'
+        },
+        {
+          title: '取证辅导',
+          desc: '教务团队提供报考、练考、面签全流程指导，结合历年考点精讲，确保稳健通过CAAC考试。',
+          image: '/images/training/certification-support.svg'
+        }
+      ]
+    : []
+)
 
 const actionButtonText = computed(() => {
   // 物流(1)、吊运(4)、外卖(8)
   if (['1', '4', '8'].includes(String(serviceId))) {
     return '立即下单'
+  }
+  // 赛事报名(13)
+  if (String(serviceId) === '13') {
+    return '立即报名'
   }
   // 培训(6)、研学(9)
   if (['6', '9'].includes(String(serviceId))) {
@@ -385,9 +451,39 @@ const onApply = () => {
     router.push(`/service-apply/${serviceId}`)
   }
 }
+
+const onProjectClick = (item) => {
+  if (serviceId === '13') {
+    const roleMap = {
+      '裁判员': 'referee',
+      '教练员': 'coach',
+      '运动员': 'athlete',
+      '俱乐部': 'club'
+    }
+    const role = roleMap[item.name]
+    if (role) {
+      router.push({
+        path: `/service-apply/${serviceId}`,
+        query: { role: role }
+      })
+    }
+  }
+}
 </script>
 
 <style scoped>
+.clickable-project {
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+}
+
+.clickable-project:active {
+  background: #f0f2ff;
+  transform: scale(0.98);
+  border-color: rgba(22, 119, 255, 0.1);
+}
+
 .service-detail-page {
   min-height: 100vh;
   background: #f5f5f5;
@@ -586,6 +682,56 @@ const onApply = () => {
   color: #646566;
   line-height: 1.6;
   padding-left: 10px;
+}
+
+.showcase-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.showcase-item {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #f7f8fa;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.04);
+}
+
+.showcase-image {
+  flex: 0 0 120px;
+  height: 90px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.showcase-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.showcase-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+}
+
+.showcase-item-title {
+  font-size: 15px;
+  font-weight: bold;
+  color: #323233;
+}
+
+.showcase-desc {
+  font-size: 13px;
+  color: #646566;
+  line-height: 1.6;
+  margin: 0;
 }
 
 .intro-title {
