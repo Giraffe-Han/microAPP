@@ -379,19 +379,19 @@ const serviceData = {
     advantages: ['官方授权认证', '原厂正品配件', '资深技师团队', '维修质保承诺']
   },
   '13': {
-    name: '无人机赛事报名',
+    name: 'DSL 预注册',
     slogan: '专业竞技 · 精彩纷呈 · 科技魅力',
     icon: '/icons/competition.svg',
     color: 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)',
     mainColor: '#e11d48',
-    intro: '专业的无人机赛事报名通道，支持裁判员、教练员、运动员及俱乐部的在线注册。',
+    intro: '专业的 DSL 预注册通道，支持裁判员、教练员、运动员及俱乐部的在线注册。',
     projects: [
       { name: '裁判员', icon: 'manager-o' },
       { name: '教练员', icon: 'medal-o' },
       { name: '运动员', icon: 'friends-o' },
       { name: '俱乐部', icon: 'shop-o' }
     ],
-    advantages: ['官方权威认证', '便捷在线报名', '专业信息核验', '全方位赛事保障']
+    advantages: ['官方权威认证', '便捷在线注册', '专业信息核验', '全方位赛事保障']
   }
 }
                                             

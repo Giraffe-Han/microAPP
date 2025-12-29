@@ -1,7 +1,7 @@
 <template>
   <div class="apply-page page-container">
     <van-nav-bar
-      :title="serviceName + '申请'"
+      :title="pageDisplayTitle"
       left-arrow
       @click-left="$router.back()"
       fixed
@@ -79,18 +79,18 @@
               v-model="formData.competitionRoleText"
               is-link
               readonly
-              label="报名类型"
-              placeholder="请选择报名角色"
+              label="注册类型"
+              placeholder="请选择注册角色"
               @click="showCompetitionRolePicker = true"
               @click-input="showCompetitionRolePicker = true"
-              :rules="[{ required: true, message: '请选择报名角色' }]"
+              :rules="[{ required: true, message: '请选择注册角色' }]"
             />
             <van-popup :show="showCompetitionRolePicker" @update:show="val => showCompetitionRolePicker = val" position="bottom">
               <van-picker
                 :columns="competitionRoleOptions"
                 @confirm="onCompetitionRoleConfirm"
                 @cancel="showCompetitionRolePicker = false"
-                title="选择报名角色"
+                title="选择注册角色"
               />
             </van-popup>
 
@@ -110,7 +110,7 @@
                     </van-radio-group>
                   </template>
                 </van-field>
-                <van-field v-model="formData.idCard" label="证件号" placeholder="请输入证件号" :rules="[{ required: true, message: '请输入证件号' }]" />
+                <van-field v-model="formData.idCard" label="证件号" placeholder="请输入证件号" :rules="[{ required: true, message: '请输入证件号' }, { pattern: /^\d{17}[\dXx]$/, message: '证件号必须为18位' }]" />
                 <van-field
                   v-model="formData.competitionGroup"
                   is-link
@@ -120,15 +120,15 @@
                   @click="showGroupPicker = true"
                   :rules="[{ required: true, message: '请选择组别' }]"
                 />
-                <van-field v-model="formData.phone" type="tel" label="联系电话" placeholder="请输入联系电话" :rules="[{ required: true, message: '请输入电话' }]" />
+                <van-field v-model="formData.phone" type="tel" label="联系电话" placeholder="请输入联系电话" :rules="[{ required: true, message: '请输入电话' }, { pattern: /^1\d{10}$/, message: '电话号码必须为11位' }]" />
                 <van-field v-model="formData.email" label="电子邮箱" placeholder="请输入电子邮箱" />
-                <van-field v-model="formData.level" label="裁判员等级" placeholder="请输入等级" />
+                <van-field v-model="formData.level" label="裁判员等级" placeholder="请输入等级（选填）" />
                 <van-field
                   v-model="formData.validDate"
                   is-link
                   readonly
                   label="有效期"
-                  placeholder="请选择有效期"
+                  placeholder="请选择有效期（选填）"
                   @click="showValidDatePicker = true"
                 />
               </template>
@@ -145,7 +145,7 @@
                     </van-radio-group>
                   </template>
                 </van-field>
-                <van-field v-model="formData.idCard" label="证件号" placeholder="请输入证件号" :rules="[{ required: true, message: '请输入证件号' }]" />
+                <van-field v-model="formData.idCard" label="证件号" placeholder="请输入证件号" :rules="[{ required: true, message: '请输入证件号' }, { pattern: /^\d{17}[\dXx]$/, message: '证件号必须为18位' }]" />
                 <van-field
                   v-model="formData.competitionGroup"
                   is-link
@@ -155,22 +155,22 @@
                   @click="showGroupPicker = true"
                   :rules="[{ required: true, message: '请选择组别' }]"
                 />
-                <van-field v-model="formData.phone" type="tel" label="联系电话" placeholder="请输入联系电话" :rules="[{ required: true, message: '请输入电话' }]" />
+                <van-field v-model="formData.phone" type="tel" label="联系电话" placeholder="请输入联系电话" :rules="[{ required: true, message: '请输入电话' }, { pattern: /^1\d{10}$/, message: '电话号码必须为11位' }]" />
                 <van-field v-model="formData.email" label="电子邮箱" placeholder="请输入电子邮箱" />
-                <van-field v-model="formData.level" label="教练员等级" placeholder="请输入等级" />
+                <van-field v-model="formData.level" label="教练员等级" placeholder="请输入等级（选填）" />
                 <van-field
                   v-model="formData.validDate"
                   is-link
                   readonly
                   label="有效期"
-                  placeholder="请选择有效期"
+                  placeholder="请选择有效期（选填）"
                   @click="showValidDatePicker = true"
                 />
               </template>
 
               <!-- 运动员 -->
               <template v-if="formData.competitionRole === 'athlete'">
-                <van-field v-model="formData.companyName" label="单位名称" placeholder="请输入单位名称" :rules="[{ required: true, message: '请输入单位名称' }]" />
+                <van-field v-model="formData.companyName" label="单位名称" placeholder="请输入单位/学校名称" :rules="[{ required: true, message: '请输入单位/学校名称' }]" />
                 <van-field v-model="formData.name" label="姓名" placeholder="请输入姓名" :rules="[{ required: true, message: '请输入姓名' }]" />
                 <van-field name="gender" label="性别">
                   <template #input>
@@ -180,7 +180,7 @@
                     </van-radio-group>
                   </template>
                 </van-field>
-                <van-field v-model="formData.idCard" label="证件号" placeholder="请输入证件号" :rules="[{ required: true, message: '请输入证件号' }]" />
+                <van-field v-model="formData.idCard" label="证件号" placeholder="请输入证件号" :rules="[{ required: true, message: '请输入证件号' }, { pattern: /^\d{17}[\dXx]$/, message: '证件号必须为18位' }]" />
                 <van-field
                   v-model="formData.athleteGroup"
                   is-link
@@ -199,23 +199,32 @@
                   @click="showProjectPicker = true"
                   :rules="[{ required: true, message: '请选择参赛项目' }]"
                 />
-                <van-field v-model="formData.phone" type="tel" label="联系电话" placeholder="请输入联系电话" :rules="[{ required: true, message: '请输入电话' }]" />
-                <van-field v-model="formData.level" label="运动员等级" placeholder="请输入运动员等级" />
+                <van-field v-model="formData.phone" type="tel" label="联系电话" placeholder="请输入联系电话" :rules="[{ required: true, message: '请输入电话' }, { pattern: /^1\d{10}$/, message: '电话号码必须为11位' }]" />
+                <van-field v-model="formData.level" label="运动员等级" placeholder="请输入运动员等级（选填）" />
+                <van-field
+                  v-model="formData.validDate"
+                  is-link
+                  readonly
+                  label="有效期"
+                  placeholder="请选择有效期（选填）"
+                  @click="showValidDatePicker = true"
+                />
               </template>
 
               <!-- 俱乐部 -->
               <template v-if="formData.competitionRole === 'club'">
                 <van-field v-model="formData.companyName" label="单位名称" placeholder="请输入单位名称" :rules="[{ required: true, message: '请输入单位名称' }]" />
                 <van-field v-model="formData.companyShortName" label="单位简称" placeholder="请输入单位简称" />
+                <van-field v-model="formData.location" label="所在地" placeholder="请输入单位所在地" />
                 <van-field name="logoUploader" label="LOGO">
                   <template #input>
                     <van-uploader v-model="formData.logoFileList" :max-count="1" accept="image/*" />
                   </template>
                 </van-field>
                 <van-field v-model="formData.manager" label="负责人" placeholder="请输入负责人姓名" :rules="[{ required: true, message: '请输入负责人' }]" />
-                <van-field v-model="formData.managerPhone" type="tel" label="联系电话" placeholder="请输入负责人电话" />
+                <van-field v-model="formData.managerPhone" type="tel" label="联系电话" placeholder="请输入负责人电话" :rules="[{ required: true, message: '请输入负责人电话' }, { pattern: /^1\d{10}$/, message: '电话号码必须为11位' }]" />
                 <van-field v-model="formData.contactPerson" label="主要对接人" placeholder="请输入对接人姓名" :rules="[{ required: true, message: '请输入对接人' }]" />
-                <van-field v-model="formData.contactPhone" type="tel" label="联系电话" placeholder="请输入对接人电话" />
+                <van-field v-model="formData.contactPhone" type="tel" label="联系电话" placeholder="请输入对接人电话" :rules="[{ pattern: /^1\d{10}$/, message: '电话号码必须为11位' }]" />
               </template>
             </template>
           </template>
@@ -617,8 +626,8 @@
             v-if="serviceId !== '1' && serviceId !== '2' && serviceId !== '12'"
             v-model="formData.remark"
             type="textarea"
-            label="需求说明"
-            placeholder="请描述您的具体需求"
+            :label="serviceId === '13' ? '备注' : '需求说明'"
+            :placeholder="serviceId === '13' ? '请输入备注信息' : '请描述您的具体需求'"
             rows="3"
             maxlength="200"
             show-word-limit
@@ -734,19 +743,25 @@ const serviceNames = {
   '10': '无人机二手交易',
   '11': '无人机金融服务',
   '12': '无人机维修服务',
-  '13': '无人机赛事'
+  '13': 'DSL'
 }
 
 const serviceName = computed(() => serviceNames[serviceId.value] || '服务')
+
+// 页面显示的标题
+const pageDisplayTitle = computed(() => {
+  if (serviceId.value === '13') return 'DSL 预注册'
+  return serviceName.value + '申请'
+})
 
 const submitButtonText = computed(() => {
   // 物流、吊运 -> 下单
   if (['1', '4', '8'].includes(serviceId.value)) {
     return '立即下单'
   }
-  // 赛事报名 -> 立即报名
+  // 赛事报名 -> 提交
   if (serviceId.value === '13') {
-    return '立即报名'
+    return '提交'
   }
   // 培训、研学 -> 报名
   if (['6', '9'].includes(serviceId.value)) {
@@ -810,6 +825,7 @@ const formData = ref({
   regNo: '',
   companyName: '',
   companyShortName: '',
+  location: '',
   name: '',
   gender: 'male',
   idCard: '',
@@ -1088,32 +1104,37 @@ const onSubmit = async () => {
       submitData.regNo = `REG-${openid.substring(0, 8).toUpperCase()}-${now.getTime().toString().slice(-6)}`;
     }
 
-    await axios.post('/api/submit', submitData);
+    const res = await axios.post('/api/submit', submitData);
 
     closeToast();
-    showDialog({
-      title: '✅ 提交成功',
-      className: 'submit-success-dialog',
-      message: `
+    
+    let successMessage = `
 申请单号：${orderNo}
 申请时间：${applyTime}
 处理状态：待处理
-━━━━━━━━━━━━━━━━
-📋 办理流程：
-1️⃣ 提交申请（已完成）
-2️⃣ 客服审核（1个工作日内）
-3️⃣ 方案确认（电话沟通）
-4️⃣ 服务执行
-━━━━━━━━━━━━━━━━
-📞 客服联系方式：
-电话：400-888-8888
-微信：DK-Service
+`;
 
-我们将在1个工作日内与您联系！
-      `,
-      confirmButtonText: '查看我的申请'
+    if (serviceId.value === '13') {
+      successMessage += `注册号：${submitData.regNo}\n`;
+    }
+
+    successMessage += `━━━━━━━━━━━━━━━━
+📞 客服联系方式：
+电话：0577-55558188
+
+我们将在1个工作日内与您联系！`;
+
+    showDialog({
+      title: '✅ 提交成功',
+      className: 'submit-success-dialog',
+      message: successMessage,
+      confirmButtonText: serviceId.value === '13' ? '确认' : '查看我的申请'
     }).then(() => {
-      router.push('/applications')
+      if (serviceId.value === '13') {
+        router.push('/')
+      } else {
+        router.push('/applications')
+      }
     })
   } catch (error) {
     closeToast();

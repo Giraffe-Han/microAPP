@@ -307,11 +307,14 @@ app.post('/api/update', (req, res) => {
 
 // Get Applications (with optional filtering)
 app.get('/api/list', (req, res) => {
-    const { startDate, endDate, userId } = req.query;
+    const { startDate, endDate, userId, role } = req.query;
     let db = readDB();
 
-    // Filter by User ID if provided
-    if (userId) {
+    // DSL管理员权限：仅支持查阅管理无人机赛事(ID 13)信息
+    if (role === 'dsl_admin') {
+        db = db.filter(item => item.serviceId === '13');
+    } else if (userId) {
+        // Filter by User ID if provided (for regular users)
         db = db.filter(item => item.userId === userId);
     }
 
@@ -332,10 +335,19 @@ app.get('/api/list', (req, res) => {
 
 // Export to Excel
 app.get('/api/export', (req, res) => {
-    const { startDate, endDate } = req.query;
+    const { startDate, endDate, ids, role } = req.query;
     let db = readDB();
 
-    if (startDate || endDate) {
+    // DSL管理员权限过滤
+    if (role === 'dsl_admin') {
+        db = db.filter(item => item.serviceId === '13');
+    }
+
+    // 如果指定了IDS，则只导出选中的项
+    if (ids) {
+        const idList = ids.split(',');
+        db = db.filter(item => idList.includes(item.id.toString()));
+    } else if (startDate || endDate) {
         db = db.filter(item => {
             const itemDate = new Date(item.createTime).getTime();
             const start = startDate ? new Date(startDate).getTime() : 0;
@@ -344,32 +356,52 @@ app.get('/api/export', (req, res) => {
         });
     }
     
-    // Flatten data for Excel (handle nested objects if any, or just dump)
+    // Flatten data for Excel
     const excelData = db.map(item => {
-        // Basic flattening for common fields
-        return {
+        const baseData = {
             ID: item.id,
             提交时间: new Date(item.createTime).toLocaleString(),
             服务名称: item.serviceName || '',
+            状态: item.status || '待处理'
+        };
+
+        if (item.serviceId === '13') {
+            return {
+                ...baseData,
+                注册号: item.regNo || '',
+                注册角色: item.competitionRoleText || '',
+                单位名称: item.companyName || '',
+                姓名: item.name || '',
+                性别: item.gender === 'male' ? '男' : '女',
+                证件号: item.idCard || '',
+                组别: item.competitionGroup || item.athleteGroup || '',
+                参赛项目: item.competitionProject || '',
+                联系电话: item.phone || item.managerPhone || item.contactPhone || '',
+                电子邮箱: item.email || '',
+                所在地: item.location || '',
+                等级: item.level || '',
+                有效期: item.validDate || '',
+                负责人: item.manager || '',
+                主要对接人: item.contactPerson || '',
+                备注: item.remark || ''
+            };
+        }
+
+        return {
+            ...baseData,
             联系人: item.contactName || '',
             联系电话: item.contactPhone || '',
-            // 培训服务字段
             学员姓名: item.traineeName || '',
             学员电话: item.traineePhone || '',
             性别: item.traineeGender === 'male' ? '男' : (item.traineeGender === 'female' ? '女' : ''),
-            出生日期: item.traineeBirthday || '',
             身份证号: item.traineeIdCard || '',
             考试机型: item.examModel || '',
             证照级别: item.licenseLevel || '',
-            有无基础: item.hasExperience === 'yes' ? '有' : (item.hasExperience === 'no' ? '无' : ''),
-            // 物流服务字段
             客户类型: item.customerType === 'enterprise' ? '企业' : '个人',
             企业名称: item.companyName || '',
             货物类型: item.cargoType || '',
-            货物重量: item.cargoWeight || '',
             起运地: item.startAddress || '',
-            目的地: item.endAddress || '',
-            状态: '待处理' // Default status
+            目的地: item.endAddress || ''
         };
     });
 
@@ -379,7 +411,7 @@ app.get('/api/export', (req, res) => {
 
     const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
 
-    res.setHeader('Content-Disposition', 'attachment; filename="applications.xlsx"');
+    res.setHeader('Content-Disposition', `attachment; filename="export_${Date.now()}.xlsx"`);
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.send(buffer);
 });

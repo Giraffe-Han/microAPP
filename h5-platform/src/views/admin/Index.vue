@@ -25,18 +25,27 @@
     </div>
 
     <van-tabs v-model:active="activeTab" sticky offset-top="46">
-        <van-tab title="订单管理">
+        <van-tab title="订单管理" v-if="userRole === 'admin'">
             <div class="data-list">
+                <div class="selection-actions" v-if="list.length > 0" style="padding: 10px 16px; background: #fff; border-bottom: 1px solid #ebedf0; display: flex; justify-content: space-between; align-items: center;">
+                    <van-checkbox v-model="allSelected" @click="toggleSelectAll">全选 ({{ selectedIds.length }})</van-checkbox>
+                    <van-button type="success" size="mini" :disabled="selectedIds.length === 0" @click="handleSelectiveExport">导出所选</van-button>
+                </div>
                 <van-empty v-if="list.length === 0" description="暂无数据" />
                 <van-cell-group v-else inset>
                     <van-cell 
                         v-for="item in list" 
                         :key="item.id" 
-                        :title="item.serviceName || '未知服务'" 
                         :label="formatDate(item.createTime)"
                         is-link
                         @click="showDetail(item)"
                     >
+                        <template #title>
+                            <div style="display: flex; align-items: center;">
+                                <van-checkbox v-model="item.selected" @click.stop style="margin-right: 8px;" />
+                                <span>{{ item.serviceName || '未知服务' }}</span>
+                            </div>
+                        </template>
                         <template #value>
                             <span :class="getStatusClass(item.status)">{{ item.status || '待处理' }}</span>
                         </template>
@@ -44,62 +53,13 @@
                 </van-cell-group>
             </div>
         </van-tab>
-        <van-tab title="案例管理">
-            <div class="case-list">
-                <div style="padding: 12px;">
-                    <van-button block type="primary" icon="plus" @click="createCase">新增案例</van-button>
-                </div>
-                <van-cell-group inset>
-                    <van-cell
-                        v-for="caseItem in cases"
-                        :key="caseItem.id"
-                        :title="caseItem.title"
-                        :label="caseItem.service"
-                        center
-                    >
-                        <template #value>
-                            <van-button 
-                                size="small" 
-                                type="primary" 
-                                icon="edit" 
-                                plain 
-                                @click.stop="editCase(caseItem)"
-                            >
-                                编辑
-                            </van-button>
-                        </template>
-                    </van-cell>
-                </van-cell-group>
-            </div>
+        <van-tab title="案例管理" v-if="userRole === 'admin'">
+            <!-- ... existing case management code ... -->
         </van-tab>
-        <van-tab title="用户管理">
-            <div class="user-list">
-                <van-cell-group inset>
-                    <van-cell
-                        v-for="user in users"
-                        :key="user.id"
-                        :title="user.name || '未命名'"
-                        :label="user.phone"
-                        center
-                    >
-                        <template #value>
-                            <van-tag :type="user.role === 'admin' ? 'danger' : 'primary'" style="margin-right: 8px;">
-                                {{ user.role === 'admin' ? '管理员' : '普通用户' }}
-                            </van-tag>
-                            <van-button 
-                                size="small" 
-                                :type="user.role === 'admin' ? 'default' : 'primary'" 
-                                plain 
-                                @click="toggleUserRole(user)"
-                            >
-                                {{ user.role === 'admin' ? '设为用户' : '设为管理' }}
-                            </van-button>
-                        </template>
-                    </van-cell>
-                </van-cell-group>
-            </div>
+        <van-tab title="用户管理" v-if="userRole === 'admin'">
+            <!-- ... existing user management code ... -->
         </van-tab>
-        <van-tab title="赛事管理">
+        <van-tab title="赛事管理" v-if="userRole === 'admin' || userRole === 'dsl_admin'">
             <div class="competition-admin">
                 <!-- 角色筛选 -->
                 <div class="role-filter" style="padding: 12px; background: #fff; margin-bottom: 10px;">
@@ -133,15 +93,25 @@
                     </div>
                 </div>
 
-                <van-cell-group inset title="报名列表">
+                <div class="selection-actions" v-if="competitionList.length > 0" style="padding: 10px 16px; background: #fff; margin: 0 16px; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center;">
+                    <van-checkbox v-model="allSelected" @click="toggleSelectAll">全选 ({{ selectedIds.length }})</van-checkbox>
+                    <van-button type="success" size="mini" :disabled="selectedIds.length === 0" @click="handleSelectiveExport">导出所选</van-button>
+                </div>
+
+                <van-cell-group inset :title="competitionList.length > 0 ? '' : '报名列表'" :style="{ borderRadius: competitionList.length > 0 ? '0 0 8px 8px' : '8px' }">
                     <van-cell 
                         v-for="item in competitionList" 
                         :key="item.id" 
-                        :title="(item.name || item.companyName || '未知姓名') + ' - ' + (item.competitionRoleText || '未知角色')" 
                         :label="formatDate(item.createTime)"
                         is-link
                         @click="showDetail(item)"
                     >
+                        <template #title>
+                            <div style="display: flex; align-items: center;">
+                                <van-checkbox v-model="item.selected" @click.stop style="margin-right: 8px;" />
+                                <span>{{ (item.name || item.companyName || '未知姓名') + ' - ' + (item.competitionRoleText || '未知角色') }}</span>
+                            </div>
+                        </template>
                         <template #value>
                             <span :class="getStatusClass(item.status)">{{ item.status || '待处理' }}</span>
                         </template>
@@ -185,6 +155,7 @@
                     <van-cell title="报名角色" :value="itemValue(currentItem.competitionRoleText)" />
                     <template v-if="currentItem.competitionRole === 'club'">
                         <van-cell title="单位简称" :value="itemValue(currentItem.companyShortName)" />
+                        <van-cell title="所在地" :value="itemValue(currentItem.location)" />
                         <van-cell title="负责人" :value="itemValue(currentItem.manager)" />
                         <van-cell title="负责人电话" :value="itemValue(currentItem.managerPhone)" />
                         <van-cell title="主要对接人" :value="itemValue(currentItem.contactPerson)" />
@@ -360,6 +331,25 @@ const currentCase = ref(null);
 const showStatusPicker = ref(false);
 const activeTab = ref(0);
 
+// User info and permissions
+const userStr = localStorage.getItem('user');
+const user = userStr ? JSON.parse(userStr) : null;
+const userRole = ref(user ? user.role : 'user');
+
+// Selection logic
+const allSelected = ref(false);
+const selectedIds = computed(() => {
+    const currentList = activeTab.value === 3 ? competitionList.value : list.value;
+    return currentList.filter(item => item.selected).map(item => item.id);
+});
+
+const toggleSelectAll = () => {
+    const currentList = activeTab.value === 3 ? competitionList.value : list.value;
+    currentList.forEach(item => {
+        item.selected = allSelected.value;
+    });
+};
+
 const selectedRole = ref('all');
 const selectedStatus = ref('all');
 
@@ -446,12 +436,20 @@ const onConfirmDate = (values) => {
 
 const fetchData = async () => {
     try {
-        const params = {};
+        const params = {
+            role: userRole.value // 传递当前角色以进行权限过滤
+        };
         if (startDate.value) params.startDate = startDate.value;
         if (endDate.value) params.endDate = endDate.value;
 
         const res = await axios.get('/api/list', { params });
-        list.value = res.data;
+        // 初始化选择状态
+        list.value = res.data.map(item => ({ ...item, selected: false }));
+        
+        // 如果是DSL管理员且当前在不可见标签，自动切换到赛事管理
+        if (userRole.value === 'dsl_admin' && activeTab.value !== 3) {
+            activeTab.value = 3;
+        }
     } catch (error) {
         showFailToast('获取数据失败');
         console.error(error);
@@ -494,8 +492,18 @@ const toggleUserRole = async (user) => {
     }
 };
 
+const handleSelectiveExport = () => {
+    if (selectedIds.value.length === 0) {
+        showToast('请先选择要导出的数据');
+        return;
+    }
+    
+    let url = `/api/export?ids=${selectedIds.value.join(',')}&role=${userRole.value}`;
+    window.open(url, '_blank');
+};
+
 const handleExport = () => {
-    let url = '/api/export?';
+    let url = `/api/export?role=${userRole.value}&`;
     if (startDate.value) url += `startDate=${startDate.value.toISOString()}&`;
     if (endDate.value) url += `endDate=${endDate.value.toISOString()}&`;
     

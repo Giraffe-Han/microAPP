@@ -89,7 +89,7 @@ router.beforeEach((to, from, next) => {
     }
     try {
       const user = JSON.parse(userStr)
-      if (user.role !== 'admin') {
+      if (user.role !== 'admin' && user.role !== 'dsl_admin') {
         showFailToast('无管理权限，请使用管理员账号登录')
         next('/login')
         return

@@ -72,7 +72,7 @@ const onSubmit = async (values) => {
       localStorage.setItem('user', JSON.stringify(res.data.user))
       
       // Redirect based on role or to home
-      if (res.data.user.role === 'admin') {
+      if (res.data.user.role === 'admin' || res.data.user.role === 'dsl_admin') {
         router.push('/admin')
       } else {
         router.push('/mine')

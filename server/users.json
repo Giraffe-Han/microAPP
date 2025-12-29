@@ -25,5 +25,14 @@
     "role": "user",
     "avatar": "",
     "createTime": "2025-12-03T07:31:29.092Z"
+  },
+  {
+    "id": "dsl_admin_id",
+    "phone": "DSLadmin",
+    "password": "dkjjfwy2026DSL",
+    "name": "DSL管理员",
+    "role": "dsl_admin",
+    "avatar": "",
+    "createTime": "2025-12-29T00:00:00.000Z"
   }
 ]
