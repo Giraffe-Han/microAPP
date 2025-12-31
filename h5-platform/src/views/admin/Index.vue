@@ -14,7 +14,12 @@
 
     <div class="filter-section" v-if="activeTab === 0 || activeTab === 3">
       <van-cell title="选择日期范围" :value="dateRange" is-link @click="showCalendar = true" />
-      <van-calendar v-model:show="showCalendar" type="range" @confirm="onConfirmDate" />
+      <van-calendar 
+        v-model:show="showCalendar" 
+        type="range" 
+        @confirm="onConfirmDate" 
+        :min-date="new Date(2024, 0, 1)"
+      />
       
       <div class="action-buttons">
         <van-button type="primary" size="small" block @click="fetchData">查询</van-button>
@@ -61,12 +66,20 @@
         </van-tab>
         <van-tab title="赛事管理" v-if="userRole === 'admin' || userRole === 'dsl_admin'">
             <div class="competition-admin">
-                <!-- 角色筛选 -->
-                <div class="role-filter" style="padding: 12px; background: #fff; margin-bottom: 10px;">
-                    <van-dropdown-menu>
-                        <van-dropdown-item v-model="selectedRole" :options="roleFilterOptions" @change="onFilterChange" />
-                        <van-dropdown-item v-model="selectedStatus" :options="statusFilterOptions" @change="onFilterChange" />
-                    </van-dropdown-menu>
+                <!-- 搜索和筛选 -->
+                <div class="search-filter-area" style="background: #fff; padding-bottom: 10px; margin-bottom: 10px;">
+                    <van-search
+                        v-model="searchText"
+                        placeholder="搜索姓名、单位或手机号"
+                        @search="onFilterChange"
+                        @clear="onFilterChange"
+                    />
+                    <div class="role-filter" style="padding: 0 12px;">
+                        <van-dropdown-menu>
+                            <van-dropdown-item v-model="selectedRole" :options="roleFilterOptions" @change="onFilterChange" />
+                            <van-dropdown-item v-model="selectedStatus" :options="statusFilterOptions" @change="onFilterChange" />
+                        </van-dropdown-menu>
+                    </div>
                 </div>
 
                 <!-- 赛事统计卡片 -->
@@ -137,7 +150,8 @@
                   <van-cell title="联系电话" :value="itemValue(currentItem.traineePhone)" />
                 </template>
                 <template v-else-if="currentItem.serviceId === '13'">
-                  <van-cell title="姓名/单位" :value="itemValue(currentItem.name || currentItem.companyName)" />
+                  <van-cell v-if="currentItem.name || currentItem.manager" :title="currentItem.competitionRole === 'club' ? '负责人' : '姓名'" :value="itemValue(currentItem.name || currentItem.manager)" />
+                  <van-cell v-if="currentItem.companyName" title="单位名称" :value="itemValue(currentItem.companyName)" />
                   <van-cell title="联系电话" :value="itemValue(currentItem.phone || currentItem.managerPhone || currentItem.contactPhone)" />
                 </template>
                 <template v-else>
@@ -352,6 +366,7 @@ const toggleSelectAll = () => {
 
 const selectedRole = ref('all');
 const selectedStatus = ref('all');
+const searchText = ref('');
 
 const roleFilterOptions = [
     { text: '全部角色', value: 'all' },
@@ -378,7 +393,18 @@ const competitionList = computed(() => {
         const isCompetition = item.serviceId === '13';
         const matchesRole = selectedRole.value === 'all' || item.competitionRole === selectedRole.value;
         const matchesStatus = selectedStatus.value === 'all' || item.status === selectedStatus.value;
-        return isCompetition && matchesRole && matchesStatus;
+        
+        // 关键字搜索：支持姓名、单位、手机号、注册号
+        const searchLower = searchText.value.toLowerCase().trim();
+        const matchesSearch = !searchLower || 
+            (item.name && item.name.toLowerCase().includes(searchLower)) ||
+            (item.companyName && item.companyName.toLowerCase().includes(searchLower)) ||
+            (item.phone && item.phone.includes(searchLower)) ||
+            (item.managerPhone && item.managerPhone.includes(searchLower)) ||
+            (item.contactPhone && item.contactPhone.includes(searchLower)) ||
+            (item.regNo && item.regNo.toLowerCase().includes(searchLower));
+
+        return isCompetition && matchesRole && matchesStatus && matchesSearch;
     });
 });
 

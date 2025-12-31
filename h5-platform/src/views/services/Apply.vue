@@ -122,15 +122,6 @@
                 />
                 <van-field v-model="formData.phone" type="tel" label="联系电话" placeholder="请输入联系电话" :rules="[{ required: true, message: '请输入电话' }, { pattern: /^1\d{10}$/, message: '电话号码必须为11位' }]" />
                 <van-field v-model="formData.email" label="电子邮箱" placeholder="请输入电子邮箱" />
-                <van-field v-model="formData.level" label="裁判员等级" placeholder="请输入等级（选填）" />
-                <van-field
-                  v-model="formData.validDate"
-                  is-link
-                  readonly
-                  label="有效期"
-                  placeholder="请选择有效期（选填）"
-                  @click="showValidDatePicker = true"
-                />
               </template>
 
               <!-- 教练员 字段 -->
@@ -157,15 +148,6 @@
                 />
                 <van-field v-model="formData.phone" type="tel" label="联系电话" placeholder="请输入联系电话" :rules="[{ required: true, message: '请输入电话' }, { pattern: /^1\d{10}$/, message: '电话号码必须为11位' }]" />
                 <van-field v-model="formData.email" label="电子邮箱" placeholder="请输入电子邮箱" />
-                <van-field v-model="formData.level" label="教练员等级" placeholder="请输入等级（选填）" />
-                <van-field
-                  v-model="formData.validDate"
-                  is-link
-                  readonly
-                  label="有效期"
-                  placeholder="请选择有效期（选填）"
-                  @click="showValidDatePicker = true"
-                />
               </template>
 
               <!-- 运动员 -->
@@ -200,15 +182,6 @@
                   :rules="[{ required: true, message: '请选择参赛项目' }]"
                 />
                 <van-field v-model="formData.phone" type="tel" label="联系电话" placeholder="请输入联系电话" :rules="[{ required: true, message: '请输入电话' }, { pattern: /^1\d{10}$/, message: '电话号码必须为11位' }]" />
-                <van-field v-model="formData.level" label="运动员等级" placeholder="请输入运动员等级（选填）" />
-                <van-field
-                  v-model="formData.validDate"
-                  is-link
-                  readonly
-                  label="有效期"
-                  placeholder="请选择有效期（选填）"
-                  @click="showValidDatePicker = true"
-                />
               </template>
 
               <!-- 俱乐部 -->
@@ -688,15 +661,6 @@
         title="选择参赛项目"
       />
     </van-popup>
-
-    <van-popup :show="showValidDatePicker" @update:show="val => showValidDatePicker = val" position="bottom">
-      <van-date-picker
-        v-model="selectedDateArray"
-        title="选择有效期"
-        @confirm="onValidDateConfirm"
-        @cancel="showValidDatePicker = false"
-      />
-    </van-popup>
   </div>
 </template>
 
@@ -855,7 +819,6 @@ const showCompetitionRolePicker = ref(false)
 const showGroupPicker = ref(false)
 const showAthleteGroupPicker = ref(false)
 const showProjectPicker = ref(false)
-const showValidDatePicker = ref(false)
 const selectedDateArray = ref([
   String(new Date().getFullYear()),
   String(new Date().getMonth() + 1).padStart(2, '0'),
@@ -919,12 +882,6 @@ const onAthleteGroupConfirm = ({ selectedOptions }) => {
 const onProjectConfirm = ({ selectedOptions }) => {
   formData.value.competitionProject = selectedOptions[0].text
   showProjectPicker.value = false
-}
-
-const onValidDateConfirm = ({ selectedValues }) => {
-  const [year, month, day] = selectedValues
-  formData.value.validDate = `${year}-${month}-${day}`
-  showValidDatePicker.value = false
 }
 
 // 培训服务 - 选项数据
