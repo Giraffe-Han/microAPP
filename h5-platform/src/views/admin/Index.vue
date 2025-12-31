@@ -59,10 +59,101 @@
             </div>
         </van-tab>
         <van-tab title="案例管理" v-if="userRole === 'admin'">
-            <!-- ... existing case management code ... -->
+            <div style="padding: 12px;">
+                <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+                    <van-button type="primary" block icon="plus" @click="createCase">新增案例</van-button>
+                    <van-button type="default" block icon="replay" @click="fetchCases">刷新</van-button>
+                </div>
+
+                <van-empty v-if="cases.length === 0" description="暂无案例数据" />
+
+                <van-cell-group v-else inset>
+                    <van-cell
+                        v-for="caseItem in cases"
+                        :key="caseItem.id"
+                        is-link
+                        @click="editCase(caseItem)"
+                    >
+                        <template #title>
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <div style="width: 56px; height: 56px; border-radius: 8px; overflow: hidden; background: #f7f8fa; flex: 0 0 56px;">
+                                    <img
+                                        v-if="caseItem.coverType !== 'video'"
+                                        :src="caseItem.cover"
+                                        :alt="caseItem.title"
+                                        style="width: 100%; height: 100%; object-fit: cover; display:block;"
+                                    />
+                                    <video
+                                        v-else
+                                        :src="caseItem.cover"
+                                        muted
+                                        playsinline
+                                        preload="metadata"
+                                        style="width: 100%; height: 100%; object-fit: cover; display:block;"
+                                    ></video>
+                                </div>
+                                <div style="min-width: 0;">
+                                    <div style="font-weight: 600; color: #1a1a1a; line-height: 1.2; margin-bottom: 4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                                        {{ caseItem.title || '未命名案例' }}
+                                    </div>
+                                    <div style="font-size: 12px; color: #969799; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                                        分类：{{ caseItem.categoryId }} · {{ caseItem.location || '-' }} · {{ caseItem.date || '-' }}
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                        <template #value>
+                            <div style="display:flex; flex-direction: column; align-items: flex-end; gap: 6px;">
+                                <van-tag type="primary" size="medium">{{ caseItem.coverType === 'video' ? '视频' : '图片' }}</van-tag>
+                                <span style="font-size: 12px; color: #969799;">{{ caseItem.views || '-' }}</span>
+                            </div>
+                        </template>
+                    </van-cell>
+                </van-cell-group>
+            </div>
         </van-tab>
         <van-tab title="用户管理" v-if="userRole === 'admin'">
-            <!-- ... existing user management code ... -->
+            <div style="padding: 12px;">
+                <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+                    <van-button type="default" block icon="replay" @click="fetchUsers">刷新</van-button>
+                </div>
+
+                <van-empty v-if="users.length === 0" description="暂无用户数据" />
+
+                <van-cell-group v-else inset>
+                    <van-cell v-for="u in users" :key="u.id">
+                        <template #title>
+                            <div style="display:flex; flex-direction: column; gap: 4px;">
+                                <div style="font-weight: 600; color: #1a1a1a;">
+                                    {{ u.name || '-' }}
+                                </div>
+                                <div style="font-size: 12px; color: #969799;">
+                                    {{ u.phone || '-' }}
+                                </div>
+                            </div>
+                        </template>
+                        <template #value>
+                            <div style="display:flex; flex-direction: column; align-items: flex-end; gap: 6px;">
+                                <van-tag
+                                    :type="u.role === 'admin' ? 'success' : (u.role === 'dsl_admin' ? 'primary' : 'default')"
+                                    size="medium"
+                                >
+                                    {{ u.role || '-' }}
+                                </van-tag>
+                                <van-button
+                                    v-if="u.role !== 'dsl_admin'"
+                                    size="mini"
+                                    type="primary"
+                                    plain
+                                    @click="toggleUserRole(u)"
+                                >
+                                    切换权限
+                                </van-button>
+                            </div>
+                        </template>
+                    </van-cell>
+                </van-cell-group>
+            </div>
         </van-tab>
         <van-tab title="赛事管理" v-if="userRole === 'admin' || userRole === 'dsl_admin'">
             <div class="competition-admin">
@@ -332,6 +423,38 @@ import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
 import { showToast, showFailToast, showSuccessToast, showLoadingToast, closeToast, showConfirmDialog } from 'vant';
 
+// 归一化上传/存量媒体地址，避免出现：
+// - http://127.0.0.1:8090/uploads/...（线上 https 混合内容/不可达）
+// - uploads/xxx（相对路径被拼到 /admin/uploads/xxx）
+const normalizeMediaUrl = (raw) => {
+    if (!raw || typeof raw !== 'string') return raw;
+    const url = raw.trim();
+    if (!url) return url;
+    if (url.startsWith('data:') || url.startsWith('blob:')) return url;
+    if (url.startsWith('uploads/')) return `/${url}`;
+    if (url.startsWith('/')) return url;
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+        try {
+            const u = new URL(url);
+            const host = u.hostname;
+            const port = u.port;
+            const isLocalish =
+                host === 'localhost' ||
+                host === '127.0.0.1' ||
+                host === '0.0.0.0' ||
+                host === '172.17.0.1' ||
+                port === '8090';
+            if (isLocalish) {
+                return `${u.pathname}${u.search}${u.hash}`;
+            }
+        } catch (e) {
+            // ignore
+        }
+        return url;
+    }
+    return url;
+};
+
 const list = ref([]);
 const cases = ref([]);
 const users = ref([]);
@@ -485,7 +608,15 @@ const fetchData = async () => {
 const fetchCases = async () => {
     try {
         const res = await axios.get('/api/cases');
-        cases.value = res.data;
+        // 兼容：数组 / {data: []} / {cases: []}
+        const raw = Array.isArray(res.data) ? res.data : (res.data?.data || res.data?.cases || []);
+        cases.value = Array.isArray(raw)
+            ? raw.map(c => ({
+                ...c,
+                cover: normalizeMediaUrl(c.cover),
+                media: Array.isArray(c.media) ? c.media.map(m => ({ ...m, url: normalizeMediaUrl(m?.url) })) : c.media,
+            }))
+            : [];
     } catch (error) {
         showFailToast('获取案例数据失败');
         console.error(error);
@@ -495,7 +626,9 @@ const fetchCases = async () => {
 const fetchUsers = async () => {
     try {
         const res = await axios.get('/api/users');
-        users.value = res.data;
+        // 兼容：数组 / {data: []} / {users: []}
+        const raw = Array.isArray(res.data) ? res.data : (res.data?.data || res.data?.users || []);
+        users.value = Array.isArray(raw) ? raw : [];
     } catch (error) {
         showFailToast('获取用户数据失败');
         console.error(error);
@@ -583,7 +716,7 @@ const uploadFile = async (file) => {
             headers: { 'Content-Type': 'multipart/form-data' }
         });
         if (res.data.success) {
-            return res.data.url;
+            return normalizeMediaUrl(res.data.url);
         } else {
             showFailToast('上传失败');
             return null;
@@ -600,7 +733,7 @@ const onReadCover = async (file) => {
     const url = await uploadFile(file);
     closeToast();
     if (url) {
-        currentCase.value.cover = url;
+        currentCase.value.cover = normalizeMediaUrl(url);
         showSuccessToast('封面已上传');
     }
 };
@@ -610,7 +743,7 @@ const onReadMedia = async (file, index) => {
     const url = await uploadFile(file);
     closeToast();
     if (url) {
-        currentCase.value.media[index].url = url;
+        currentCase.value.media[index].url = normalizeMediaUrl(url);
         showSuccessToast('资源已上传');
     }
 };

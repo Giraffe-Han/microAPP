@@ -14,6 +14,7 @@
         <van-tab
           v-for="category in categories"
           :key="category.id"
+          :name="category.id"
           :title="category.name"
         >
           <div class="cases-container">
@@ -180,6 +181,62 @@ import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
 import { showFailToast } from 'vant'
 
+// 将接口返回的媒体地址归一化为“同域可访问”的地址
+// - 兼容后端返回：http://127.0.0.1:8090/uploads/xxx、http://172.17.0.1:8090/uploads/xxx
+// - 兼容缺少前导斜杠：uploads/xxx
+// - 保留外链：https://xxx/yyy
+const normalizeMediaUrl = (raw) => {
+  if (!raw || typeof raw !== 'string') return raw
+  const url = raw.trim()
+  if (!url) return url
+  if (url.startsWith('data:') || url.startsWith('blob:')) return url
+
+  // 相对路径 uploads/xxx → /uploads/xxx（避免被当成 /cases/uploads/xxx）
+  if (url.startsWith('uploads/')) return `/${url}`
+
+  // 绝对路径直接返回
+  if (url.startsWith('/')) return url
+
+  // 处理后端返回的本机/容器内网地址：提取 pathname 走同域 nginx 反代
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    try {
+      const u = new URL(url)
+      const host = u.hostname
+      const port = u.port
+      const isLocalish =
+        host === 'localhost' ||
+        host === '127.0.0.1' ||
+        host === '0.0.0.0' ||
+        host === '172.17.0.1' ||
+        port === '8090'
+
+      if (isLocalish) {
+        // 保留查询参数，避免签名/缓存参数丢失
+        return `${u.pathname}${u.search}${u.hash}`
+      }
+    } catch {
+      // ignore
+    }
+    return url
+  }
+
+  // 兜底：保持原样
+  return url
+}
+
+const normalizeCaseItem = (item) => {
+  if (!item || typeof item !== 'object') return item
+  const normalized = { ...item }
+  normalized.cover = normalizeMediaUrl(normalized.cover)
+  if (Array.isArray(normalized.media)) {
+    normalized.media = normalized.media.map((m) => ({
+      ...m,
+      url: normalizeMediaUrl(m?.url),
+    }))
+  }
+  return normalized
+}
+
 // 分类
 const categories = ref([
   { id: 0, name: '全部案例' },
@@ -188,6 +245,7 @@ const categories = ref([
   { id: 5, name: '无人机表演' }
 ])
 
+// activeCategory 直接存 categoryId（0/1/4/5），避免“index/id 混用”导致某些 tab 拉取异常
 const activeCategory = ref(0)
 const showDetail = ref(false)
 const currentCase = ref(null)
@@ -201,18 +259,23 @@ const refreshing = ref(false)
 
 const fetchCases = async () => {
   try {
-    const categoryId = categories.value[activeCategory.value].id
+    const categoryId = activeCategory.value
 
-    const res = await axios.get('/api/cases', {
-        params: {
-            page: page.value,
-            limit: 10,
-            categoryId
-        }
-    })
+    const params = {
+      page: page.value,
+      limit: 10,
+    }
+    // “全部案例”不传 categoryId（更通用，兼容后端按是否存在该参数来判断过滤）
+    if (categoryId && String(categoryId) !== '0') {
+      params.categoryId = categoryId
+    }
+
+    const res = await axios.get('/api/cases', { params })
     
     // 兼容处理：如果返回的是数组，直接用；如果是分页对象，取 .data
     let data = Array.isArray(res.data) ? res.data : (res.data.data || [])
+    // 兼容媒体 URL（避免线上 https 下图片/视频加载失败）
+    data = data.map(normalizeCaseItem)
     console.log('Cases API response:', res.data, 'Parsed data:', data)
 
     if (refreshing.value) {
@@ -261,9 +324,15 @@ const onTabChange = () => {
     cases.value = []
     page.value = 1
     finished.value = false
-    loadingMore.value = true 
+    loadingMore.value = true
     onLoad()
 }
+
+onMounted(() => {
+  // 兜底：确保首次进入“全部案例”也会触发一次拉取
+  loadingMore.value = true
+  onLoad()
+})
 
 // 显示案例详情
 const showCaseDetail = (caseItem) => {
