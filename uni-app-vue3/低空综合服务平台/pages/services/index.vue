@@ -73,7 +73,7 @@ const openExternal = (url) => {
 
 const goToDetail = (id) => {
   if (String(id) === 'flight') {
-    openExternal('https://gw.zndkfx.com/sso/cxwz')
+    openExternal('https://wx.zndkfx.com')
     return
   }
   if (String(id) === '8') {

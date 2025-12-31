@@ -261,7 +261,7 @@ onPullDownRefresh(() => {
 const handleFunctionTap = (item) => {
   if (item.isEmpty) return
   if (item.id === 'flight') {
-    openExternal('https://gw.zndkfx.com/sso/cxwz')
+    openExternal('https://wx.zndkfx.com')
     return
   }
   if (item.id === 8) {

@@ -208,7 +208,7 @@ const displayServices = ref([
 
 const goToService = (id) => {
   if (id === 'flight') {
-    window.location.href = 'https://gw.zndkfx.com/sso/cxwz'
+    window.location.href = 'https://wx.zndkfx.com'
   } else if (id === 8) {
     goToDelivery()
   } else if (id === 'more') {
