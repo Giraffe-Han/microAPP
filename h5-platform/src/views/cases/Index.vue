@@ -10,7 +10,14 @@
 
     <div class="page-content">
       <!-- 案例分类tabs -->
-      <van-tabs v-model:active="activeCategory" sticky offset-top="46" color="#667eea" @change="onTabChange">
+      <van-tabs
+        :active="activeCategory"
+        @update:active="(v) => (activeCategory = v)"
+        sticky
+        offset-top="46"
+        color="#667eea"
+        @change="onTabChange"
+      >
         <van-tab
           v-for="category in categories"
           :key="category.id"
@@ -20,7 +27,8 @@
           <div class="cases-container">
             <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
             <van-list
-              v-model:loading="loadingMore"
+              :loading="loadingMore"
+              @update:loading="(v) => (loadingMore = v)"
               :finished="finished"
               finished-text="没有更多了"
               @load="onLoad"
@@ -95,7 +103,8 @@
 
     <!-- 案例详情弹窗 -->
     <van-popup
-      v-model:show="showDetail"
+      :show="showDetail"
+      @update:show="(v) => (showDetail = v)"
       position="bottom"
       :style="{ height: '90%' }"
       round

@@ -1,6 +1,7 @@
 <template>
   <view class="layout">
     <slot></slot>
+    <HomeFloatButton />
     <TabBar :current="current" />
   </view>
 </template>
@@ -8,6 +9,7 @@
 <script setup>
 import { onMounted } from 'vue'
 import TabBar from './TabBar.vue'
+import HomeFloatButton from './HomeFloatButton.vue'
 defineProps(['current'])
 
 onMounted(() => {

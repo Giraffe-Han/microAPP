@@ -16,6 +16,26 @@
         <view class="section-card" v-if="service.id !== '6'">
           <view class="section-title" :style="{ borderLeftColor: service.mainColor }">服务介绍</view>
           <text class="section-text">{{ service.intro }}</text>
+
+          <!-- 研学（ID: 9）固定图文展示：嵌入“服务介绍”内，不接入案例系统 -->
+          <view v-if="service.id === '9'" class="study-showcase">
+            <view class="study-subtitle">往期活动展示</view>
+            <view class="study-grid">
+              <view
+                v-for="item in studyShowcase"
+                :key="item.title"
+                class="study-item"
+                @tap="previewStudy(item)"
+              >
+                <image :src="item.image" mode="aspectFill" class="study-img" />
+                <view class="study-info">
+                  <view class="study-title">{{ item.title }}</view>
+                  <view class="study-desc">{{ item.desc }}</view>
+                </view>
+              </view>
+            </view>
+            <view class="study-tip">说明：当前为固定展示内容，后续可升级为可配置/可运营。</view>
+          </view>
         </view>
 
         <!-- 通用服务项目 -->
@@ -124,15 +144,41 @@
         {{ actionButtonText }}
       </button>
     </view>
+
+    <HomeFloatButton />
   </view>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
 import { onLoad, onReady } from '@dcloudio/uni-app'
+import HomeFloatButton from '@/components/HomeFloatButton.vue'
 
 const contentReady = ref(false)
 const service = ref(null)
+
+const studyShowcase = [
+  {
+    title: '低空科普课堂',
+    desc: '从基础原理到安全规范，互动式讲解让孩子更易理解。',
+    image: '/static/images/study/science-class.svg'
+  },
+  {
+    title: '真机飞行体验',
+    desc: '在专业导师指导下完成基础操控与任务闯关，提升动手能力。',
+    image: '/static/images/study/flight-experience.svg'
+  },
+  {
+    title: '成果与纪念',
+    desc: '完成学习任务与展示，记录成长瞬间，获得满满成就感。',
+    image: '/static/images/study/achievement.svg'
+  }
+]
+
+const previewStudy = (item) => {
+  if (!item?.image) return
+  uni.previewImage({ urls: [item.image] })
+}
 
 // 补全完整服务数据映射 (1:1 同步自 H5)
 const serviceData = {
@@ -166,7 +212,7 @@ const actionButtonText = computed(() => {
   if (!service.value) return '立即办理'
   const id = service.value.id
   if (['1', '4', '8'].includes(id)) return '立即下单'
-  if (['6', '9'].includes(id)) return '参与报名'
+  if (['6', '9'].includes(id)) return '立即报名'
   return '立即办理'
 })
 
@@ -218,4 +264,14 @@ const makeCall = (phone) => { uni.makePhoneCall({ phoneNumber: phone }) }
 .skeleton-wrap { padding: 20px; }
 .skeleton-block { height: 120px; background: #eee; border-radius: 12px; margin-bottom: 16px; animation: blink 1.5s infinite; }
 @keyframes blink { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+
+.study-showcase { margin-top: 20rpx; }
+.study-subtitle { font-size: 30rpx; font-weight: 700; color: #323233; margin: 12rpx 0; }
+.study-grid { display: flex; flex-direction: column; gap: 20rpx; }
+.study-item { background: #fff; border-radius: 24rpx; overflow: hidden; border: 1rpx solid rgba(0, 0, 0, 0.04); }
+.study-img { width: 100%; height: 240rpx; }
+.study-info { padding: 18rpx 20rpx 20rpx; }
+.study-title { font-size: 28rpx; font-weight: 700; color: #1a1a1a; margin-bottom: 10rpx; }
+.study-desc { font-size: 24rpx; color: #646566; line-height: 1.6; }
+.study-tip { margin-top: 14rpx; font-size: 22rpx; color: #969799; }
 </style>

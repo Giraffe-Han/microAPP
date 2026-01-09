@@ -1,21 +1,23 @@
 <template>
-  <view class="tabbar-placeholder"></view>
-  <view class="tabbar">
-    <view 
-      v-for="(item, index) in tabList" 
-      :key="index"
-      class="tabbar-item"
-      :class="{ active: current === index }"
-      @tap="handleTabClick(index)"
-    >
-      <view class="tabbar-icon-wrap">
-        <view 
-          class="tab-icon" 
-          :class="'icon-' + index"
-          :style="{ backgroundColor: current === index ? '#1a1a1a' : '#969799' }"
-        ></view>
+  <view class="tabbar-root">
+    <view class="tabbar-placeholder"></view>
+    <view class="tabbar">
+      <view 
+        v-for="(item, index) in tabList" 
+        :key="index"
+        class="tabbar-item"
+        :class="{ active: current === index }"
+        @tap="handleTabClick(index)"
+      >
+        <view class="tabbar-icon-wrap">
+          <view 
+            class="tab-icon" 
+            :class="'icon-' + index"
+            :style="{ backgroundColor: current === index ? '#1a1a1a' : '#969799' }"
+          ></view>
+        </view>
+        <text class="tabbar-text">{{ item.text }}</text>
       </view>
-      <text class="tabbar-text">{{ item.text }}</text>
     </view>
   </view>
 </template>

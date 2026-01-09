@@ -80,6 +80,7 @@
         <button class="close-btn" @tap="showModal = false">取消</button>
       </view>
     </view>
+
   </view>
 </template>
 

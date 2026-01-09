@@ -1,6 +1,8 @@
 <template>
   <web-view v-if="decodedUrl" :src="decodedUrl" />
   <view v-else class="empty-state">暂无链接</view>
+
+  <!-- web-view 页面不再提供“首页”图标（按需求仅保留详情/填表页） -->
 </template>
 
 <script setup>
@@ -14,6 +16,7 @@ onLoad((options) => {
     decodedUrl.value = decodeURIComponent(options.src)
   }
 })
+
 </script>
 
 <style scoped>
@@ -24,5 +27,6 @@ onLoad((options) => {
   justify-content: center;
   color: #969799;
 }
+
 </style>
 

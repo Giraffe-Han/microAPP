@@ -54,6 +54,7 @@
         <text class="value">{{ authTime }}</text>
       </view>
     </view>
+
   </view>
 </template>
 

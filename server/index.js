@@ -11,6 +11,7 @@ const PORT = process.env.PORT || 3000; //读取 process.env.PORT
 const DB_FILE = path.join(__dirname, 'data.json');
 const CASES_FILE = path.join(__dirname, 'cases.json');
 const USERS_FILE = path.join(__dirname, 'users.json');
+const SERVICES_CONFIG_FILE = path.join(__dirname, 'services_config.json');
 
 app.use(cors());
 app.use(bodyParser.json({ limit: '50mb' }));
@@ -48,6 +49,13 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
 // Initialize DB
 if (!fs.existsSync(DB_FILE)) {
     fs.writeFileSync(DB_FILE, JSON.stringify([]));
+}
+
+// Initialize Services Config
+if (!fs.existsSync(SERVICES_CONFIG_FILE)) {
+    // Robust default: avoid require() when file doesn't exist
+    // 服务配置由后台管理页维护，缺省为空对象也可运行
+    fs.writeFileSync(SERVICES_CONFIG_FILE, JSON.stringify({}, null, 2));
 }
 
 // Initialize Users DB
@@ -179,6 +187,29 @@ const readUsersDB = () => {
     }
 };
 
+// Helper to read Services Config
+const readServicesConfig = () => {
+    try {
+        if (!fs.existsSync(SERVICES_CONFIG_FILE)) return {};
+        const data = fs.readFileSync(SERVICES_CONFIG_FILE);
+        return JSON.parse(data);
+    } catch (err) {
+        console.error("Error reading Services Config:", err);
+        return {};
+    }
+};
+
+// Helper to write Services Config
+const writeServicesConfig = (data) => {
+    try {
+        fs.writeFileSync(SERVICES_CONFIG_FILE, JSON.stringify(data, null, 2));
+        return true;
+    } catch (err) {
+        console.error("Error writing Services Config:", err);
+        return false;
+    }
+};
+
 // Helper to write Users DB
 const writeUsersDB = (data) => {
     try {
@@ -296,6 +327,57 @@ app.post('/api/user/role', (req, res) => {
         }
     } else {
         res.status(404).json({ success: false, message: 'User not found' });
+    }
+});
+
+// Study Showcase (merged into services config for ID 9)
+app.get('/api/study/showcase', (req, res) => {
+    const config = readServicesConfig();
+    const data = config['9']?.studyShowcase || [];
+    res.json({ success: true, data });
+});
+
+app.post('/api/study/showcase', (req, res) => {
+    const { items } = req.body || {};
+    if (!Array.isArray(items)) {
+        return res.status(400).json({ success: false, message: 'items must be an array' });
+    }
+
+    const config = readServicesConfig();
+    if (!config['9']) config['9'] = {};
+    
+    config['9'].studyShowcase = items
+        .filter(it => it && typeof it === 'object')
+        .map(it => ({
+            title: String(it.title || '').trim(),
+            desc: String(it.desc || '').trim(),
+            image: String(it.image || '').trim()
+        }))
+        .filter(it => it.title || it.desc || it.image);
+
+    if (writeServicesConfig(config)) {
+        res.json({ success: true });
+    } else {
+        res.status(500).json({ success: false, message: 'Failed to save showcase' });
+    }
+});
+
+// Services Config (All text editable)
+app.get('/api/services/config', (req, res) => {
+    const config = readServicesConfig();
+    res.json({ success: true, data: config });
+});
+
+app.post('/api/services/config', (req, res) => {
+    const { config } = req.body;
+    if (!config || typeof config !== 'object') {
+        return res.status(400).json({ success: false, message: 'Invalid config' });
+    }
+
+    if (writeServicesConfig(config)) {
+        res.json({ success: true });
+    } else {
+        res.status(500).json({ success: false, message: 'Failed to save services config' });
     }
 });
 

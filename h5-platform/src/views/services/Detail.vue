@@ -1,186 +1,274 @@
 <template>
-  <div class="service-detail-page">
+  <div class="service-detail-page" :class="{ 'study-detail-theme': ['9', '6'].includes(serviceId) }">
     <van-nav-bar
       title="服务详情"
       left-arrow
       @click-left="$router.back()"
       fixed
       placeholder
+      :border="!['9', '6'].includes(serviceId)"
     />
+    <HomeFloatButton />
 
-    <div class="detail-content">
-      <!-- 服务图标 -->
-      <div class="service-header">
-        <div class="service-icon-big" :style="{ background: serviceColor }">
-          <van-icon :name="serviceIcon" size="48" color="#ffffff" />
+    <div class="detail-content" v-if="loading">
+      <div style="padding: 100px 0; text-align: center;">
+        <van-loading vertical>加载中...</van-loading>
+      </div>
+    </div>
+
+    <div class="detail-content" v-else>
+      <!-- [研学 ID: 9 & 培训 ID: 6] 专属 Banner 头部 -->
+      <template v-if="['9', '6'].includes(serviceId)">
+        <div class="study-banner">
+          <img 
+            :src="normalizeUrl(serviceConfig.headerImage || (serviceId === '9' ? '/images/study/study-banner.jpg' : '/images/training/training-banner.jpg'))" 
+            class="banner-img"
+            :style="{ objectPosition: serviceConfig.headerImagePosition || 'center' }"
+          />
+          <div class="banner-overlay">
+            <h1 class="study-hero-title">{{ serviceConfig.name }}</h1>
+            <p class="study-hero-slogan">{{ serviceConfig.slogan }}</p>
+          </div>
         </div>
-        <h1 class="service-name">{{ serviceName }}</h1>
-        <p class="service-slogan">{{ serviceSlogan }}</p>
+      </template>
+
+      <!-- [普通] 服务图标头部 -->
+      <template v-else>
+        <div class="service-header">
+          <div class="service-icon-big" :style="{ background: serviceConfig.color }">
+            <van-icon :name="normalizeUrl(serviceConfig.icon)" size="48" color="#ffffff" />
+          </div>
+          <h1 class="service-name">{{ serviceConfig.name }}</h1>
+          <p class="service-slogan">{{ serviceConfig.slogan }}</p>
+        </div>
+      </template>
+
+      <!-- [研学 ID: 9 & 培训 ID: 6] 核心卖点卡片 -->
+      <div class="study-highlights-row" v-if="['9', '6'].includes(serviceId) && serviceConfig.highlights && serviceConfig.highlights.length > 0">
+        <div v-for="(hl, idx) in serviceConfig.highlights" :key="idx" class="hl-card">
+          <van-icon :name="hl.icon || 'star'" class="hl-icon" />
+          <div class="hl-text">
+            <div class="hl-title">{{ hl.title }}</div>
+            <div class="hl-desc">{{ hl.desc }}</div>
+          </div>
+        </div>
       </div>
 
       <!-- 服务介绍 -->
       <div class="section-card" v-if="serviceId !== '6'">
-        <h2 class="section-title" :style="{ borderLeftColor: serviceMainColor }">服务介绍</h2>
-        <p class="section-text">{{ serviceIntro }}</p>
+        <h2 class="section-title">服务介绍</h2>
+        <p class="section-text">{{ serviceConfig.intro }}</p>
+
+        <!-- 研学往期活动 (已支持后台配置) -->
+        <div v-if="serviceId === '9'" class="study-showcase">
+          <div class="study-subtitle">精彩回顾</div>
+          <div class="study-grid">
+            <div
+              v-for="(item, idx) in studyShowcase"
+              :key="idx"
+              class="study-item"
+              @click="previewStudy(item)"
+            >
+              <div class="study-image">
+                <van-image :src="normalizeUrl(item.image)" fit="cover" width="100%" height="140" radius="12" />
+              </div>
+              <div class="study-info">
+                <div class="study-title">{{ item.title }}</div>
+                <div class="study-desc">{{ item.desc }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- 服务项目 -->
       <div class="section-card" v-if="serviceId !== '6'">
-        <h2 class="section-title" :style="{ borderLeftColor: serviceMainColor }">服务项目</h2>
+        <h2 class="section-title">服务项目</h2>
         <div class="project-grid">
           <div 
-            v-for="(item, index) in serviceProjects" 
+            v-for="(item, index) in serviceConfig.projects" 
             :key="index" 
             class="project-item"
             :class="{ 'clickable-project': serviceId === '13' }"
             @click="onProjectClick(item)"
           >
-            <van-icon :name="item.icon" size="24" :color="serviceMainColor" />
+            <van-icon :name="normalizeUrl(item.icon)" size="24" color="#424245" />
             <span>{{ item.name }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 课程安排 (针对研学) -->
+      <div class="section-card" v-if="serviceId === '9' && serviceConfig.courseSchedule">
+        <h2 class="section-title">课程安排</h2>
+        <div class="schedule-container">
+          <div v-for="(step, idx) in serviceConfig.courseSchedule" :key="idx" class="schedule-item">
+            <div class="schedule-time">{{ step.time }}</div>
+            <div class="schedule-marker">
+              <div class="schedule-dot"></div>
+            </div>
+            <div class="schedule-content">
+              <div class="schedule-text">{{ step.content }}</div>
+              <div class="schedule-remark" v-if="step.remark">{{ step.remark }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 研学费用 (针对研学) -->
+      <div class="section-card" v-if="serviceId === '9' && serviceConfig.studyPrice">
+        <h2 class="section-title">研学费用</h2>
+        <div class="price-list">
+          <div class="price-item">
+            <span class="label">半日营 - 单纯体验课堂</span>
+            <span class="price">{{ serviceConfig.studyPrice }}</span>
           </div>
         </div>
       </div>
 
       <!-- 服务优势 -->
       <div class="section-card" v-if="serviceId !== '6'">
-        <h2 class="section-title" :style="{ borderLeftColor: serviceMainColor }">服务优势</h2>
+        <h2 class="section-title">服务优势</h2>
         <div class="advantage-list">
-          <div v-for="(adv, index) in serviceAdvantages" :key="index" class="advantage-item">
-            <van-icon name="success" size="16" color="#07c160" />
+          <div v-for="(adv, index) in serviceConfig.advantages" :key="index" class="advantage-item">
+            <van-icon name="success" size="16" :color="BRAND_COLOR" />
             <span>{{ adv }}</span>
           </div>
         </div>
       </div>
 
       <!-- 飞手培训专属内容 -->
-      <template v-if="serviceId === '6'">
-        <!-- 报名条件 -->
+      <template v-if="serviceId === '6' && serviceConfig.trainingInfo">
         <div class="section-card">
-          <h2 class="section-title" :style="{ borderLeftColor: serviceMainColor }">报名条件</h2>
+          <h2 class="section-title" :style="{ borderLeftColor: serviceConfig.mainColor }">报名条件</h2>
           <div class="training-list">
-            <div class="training-item">(一)、中华人民共和国公民;</div>
-            <div class="training-item">(二)、年满16周岁以上，70周岁以下;</div>
-            <div class="training-item">(三)、初中以上文化程度;</div>
-            <div class="training-item">(四)、遵纪守法，无不良行为，五年内无犯罪记录;</div>
-            <div class="training-item">(五)、身体健康;矫正视力1.0以上，无色盲、色弱，无传染性疾病，无脑血管及精神类疾病，肢体无残疾，无不良嗜好;</div>
-            <div class="training-item">(六)、具有适应无人机操控需要的基本知识和操作能力。</div>
+            <div v-for="(cond, idx) in serviceConfig.trainingInfo.conditions" :key="idx" class="training-item">
+              {{ cond }}
+            </div>
           </div>
         </div>
 
-        <!-- 培训费用 -->
         <div class="section-card">
-          <h2 class="section-title" :style="{ borderLeftColor: serviceMainColor }">培训费用</h2>
+          <h2 class="section-title" :style="{ borderLeftColor: serviceConfig.mainColor }">培训费用</h2>
           <div class="price-list">
-            <div class="price-item">
-              <span class="label">小型无人机-多旋翼-视距内</span>
-              <span class="price">8800元/人</span>
-            </div>
-            <div class="price-item">
-              <span class="label">小型无人机-多旋翼-超视距</span>
-              <span class="price">12800元/人</span>
-            </div>
-            <div class="price-item">
-              <span class="label">中型无人机-多旋翼-视距内</span>
-              <span class="price">10800元/人</span>
-            </div>
-            <div class="price-item">
-              <span class="label">中型无人机-多旋翼-超视距</span>
-              <span class="price">15800元/人</span>
-            </div>
-            <div class="price-item">
-              <span class="label">U-BOX3.0</span>
-              <span class="price">490元/套 <span class="tip">（自愿购买）</span></span>
+            <div v-for="(p, idx) in serviceConfig.trainingInfo.prices" :key="idx" class="price-item">
+              <span class="label">{{ p.label }}</span>
+              <span class="price">{{ p.price }}</span>
             </div>
           </div>
         </div>
 
-        <!-- 培训特色 -->
         <div class="section-card">
-          <h2 class="section-title" :style="{ borderLeftColor: serviceMainColor }">教学特色</h2>
+          <h2 class="section-title">教学特色</h2>
           <div class="feature-list">
-            <div class="feature-item">
-              <div class="feature-title">权威认证</div>
-              <div class="feature-desc">御风航空多次荣获中国AOPA年度优秀训练机构称号;学员通过培训可获得中国民用航空局发放的无人机操控员执照。</div>
-            </div>
-            <div class="feature-item">
-              <div class="feature-title">全面课程</div>
-              <div class="feature-desc">涵盖无人机基础知识、飞行操作、维护保养、法律法规等；提供丰富的实操机会，确保学员熟练掌握飞行技巧。</div>
-            </div>
-            <div class="feature-item">
-              <div class="feature-title">灵活教学</div>
-              <div class="feature-desc">每班人数有限，确保每位学员都能得到充分指导;提供周末班、晚班等多种选择，适应不同学员需求。</div>
-            </div>
-            <div class="feature-item">
-              <div class="feature-title">资深老牌</div>
-              <div class="feature-desc">御风航空深耕无人机培训7年，积累丰富经验，专业教员团队，个性化教程，精准施教。</div>
+            <div v-for="(f, idx) in serviceConfig.trainingInfo.features" :key="idx" class="feature-item">
+              <div class="feature-title">{{ f.title }}</div>
+              <div class="feature-desc">{{ f.desc }}</div>
             </div>
           </div>
         </div>
 
-        <!-- 图文展示 -->
-        <div class="section-card" v-if="trainingShowcase.length">
-          <h2 class="section-title" :style="{ borderLeftColor: serviceMainColor }">图文展示</h2>
-          <div class="showcase-grid">
+        <!-- [恢复] 飞手培训图文展示 (已迁移至通用展示) -->
+        <div class="section-card" v-if="serviceId === '6' && studyShowcase && studyShowcase.length > 0">
+          <h2 class="section-title">图文展示</h2>
+          <div class="training-showcase-list">
             <div
-              v-for="item in trainingShowcase"
-              :key="item.title"
-              class="showcase-item"
+              v-for="(item, idx) in studyShowcase"
+              :key="idx"
+              class="training-showcase-item"
+              @click="previewStudy(item)"
             >
-              <div class="showcase-image">
-                <img :src="item.image" :alt="item.title" loading="lazy" />
+              <div class="training-showcase-image">
+                <van-image :src="normalizeUrl(item.image)" fit="cover" width="100%" height="100%" />
               </div>
-              <div class="showcase-info">
-                <div class="showcase-item-title">{{ item.title }}</div>
-                <p class="showcase-desc">{{ item.desc }}</p>
+              <div class="training-showcase-info">
+                <div class="training-showcase-title">{{ item.title }}</div>
+                <div class="training-showcase-desc">{{ item.desc }}</div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- 公司简介 -->
-        <div class="section-card">
-          <h2 class="section-title" :style="{ borderLeftColor: serviceMainColor }">公司简介</h2>
+        <!-- [恢复] 公司简介 -->
+        <div class="section-card" v-if="serviceConfig.trainingInfo.companyIntro">
+          <h2 class="section-title">公司简介</h2>
           <div class="company-intro">
-            <div class="intro-title">浙江御风航空科技有限公司</div>
-            <p class="section-text">系温州交运集团所属低空公司的控股子公司，公司成立于2018年，致力于无人机专业培训，为行业客户提供专业的解决方案和人才培养，为院校搭建A1无人机教学实验室，建立金字塔式的综合教学。作为国内早期开展无人机驾驶员资格培训的机构之一，是浙南闽北地区最早一家具备民航局认定的CAAC执照培训资质的机构，并具备合法合规的空域飞行权。</p>
+            <div class="intro-title">{{ serviceConfig.trainingInfo.companyIntro.title }}</div>
+            <p class="section-text">{{ serviceConfig.trainingInfo.companyIntro.content }}</p>
           </div>
         </div>
 
-        <!-- 执照功能 -->
-        <div class="section-card">
-          <h2 class="section-title" :style="{ borderLeftColor: serviceMainColor }">执照功能</h2>
+        <!-- [恢复] 执照功能 -->
+        <div class="section-card" v-if="serviceConfig.trainingInfo.licenseFunction">
+          <h2 class="section-title">执照功能</h2>
           <div class="license-intro">
-            <p class="section-text">CAAC是中国民用航空局的英文缩写，相应的无人机驾驶航空器操控员执照是由中国民航局飞行标准司直接签发的，含金量极高!是无人机行业从业者入行必备的敲门砖，具有权威的法律效力!取得该执照可申报空域、申请航线、从事无人机相关的商业活动等。</p>
-            <div class="law-quote">《无人驾驶航空器飞行管理暂行条例》中规定:操控小型、中型、大型民用无人驾驶航空器飞行的人员应当向国务院民用航空主管部门申请取得相应民用无人驾驶航空操控员执照(CAAC)。</div>
+            <p class="section-text">{{ serviceConfig.trainingInfo.licenseFunction.content }}</p>
+            <div class="law-quote">{{ serviceConfig.trainingInfo.licenseFunction.quote }}</div>
           </div>
         </div>
       </template>
 
-      <!-- 联系客服 -->
-      <div class="section-card contact-card" :class="{'training-contact': serviceId === '6'}">
-        <h2 class="section-title" :style="{ borderLeftColor: serviceMainColor }">联系客服</h2>
-        <template v-if="serviceId === '6'">
-           <div class="contact-info">
-            <p>联系电话：</p>
-            <a href="tel:0577-55558188" class="phone-link" :style="{ color: serviceMainColor }">0577-55558188</a>
-            <a href="tel:0577-88360168" class="phone-link" :style="{ color: serviceMainColor }">0577-88360168</a>
-            <p>邮箱: wzdkjjgs@163.com</p>
-            <p class="address">温州低空经济发展有限公司<br />浙江御风航空科技有限公司<br />(温州市鹿城区牛山北路52号)</p>
+        <!-- [恢复] 联系方式 (复刻原版) -->
+        <div class="section-card contact-section" v-if="serviceConfig.contactPhone || serviceConfig.address">
+          <h2 class="section-title">联系方式</h2>
+          <div class="contact-list">
+            <!-- 电话 1 -->
+            <div class="contact-item" v-if="serviceConfig.contactPhone">
+              <div class="contact-icon-wrap">
+                <van-icon name="phone-o" />
+              </div>
+              <div class="contact-content">
+                <div class="contact-label">联系电话</div>
+                <div class="contact-value">{{ serviceConfig.contactPhone }}</div>
+              </div>
+              <van-button
+                type="primary"
+                size="small"
+                round
+                class="call-btn"
+                :url="'tel:' + serviceConfig.contactPhone"
+              >
+                拨打
+              </van-button>
+            </div>
+
+            <!-- 电话 2 (针对飞手培训、研学等) -->
+            <div class="contact-item" v-if="serviceConfig.contactPhone2">
+              <div class="contact-icon-wrap">
+                <van-icon name="phone-o" />
+              </div>
+              <div class="contact-content">
+                <div class="contact-label">咨询热线</div>
+                <div class="contact-value">{{ serviceConfig.contactPhone2 }}</div>
+              </div>
+              <van-button
+                type="primary"
+                size="small"
+                round
+                class="call-btn"
+                :url="'tel:' + serviceConfig.contactPhone2"
+              >
+                拨打
+              </van-button>
+            </div>
+
+            <!-- 联系地址 -->
+            <div class="contact-item" v-if="serviceConfig.address">
+              <div class="contact-icon-wrap">
+                <van-icon name="location-o" />
+              </div>
+              <div class="contact-content">
+                <div class="contact-label">联系地址</div>
+                <div class="contact-value">{{ serviceConfig.address }}</div>
+              </div>
+            </div>
           </div>
-        </template>
-        <template v-else>
-        <div class="contact-info">
-          <p>如有疑问，请咨询客服热线：</p>
-          <a href="tel:0577-55558188" class="phone-link" :style="{ color: serviceMainColor }">0577-55558188</a>
-          <p class="work-time">工作时间：工作日 8:30-17:30</p>
         </div>
-        </template>
-      </div>
     </div>
 
     <!-- 底部操作栏 -->
     <div class="action-bar">
-      <van-button type="primary" block @click="onApply" :color="serviceColor">
+      <van-button type="primary" block @click="onApply" :color="BRAND_COLOR">
         {{ actionButtonText }}
       </van-button>
     </div>
@@ -188,263 +276,72 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { showToast } from 'vant'
+import { showToast, showImagePreview } from 'vant'
+import HomeFloatButton from '@/components/HomeFloatButton.vue'
+import axios from 'axios'
 
 const route = useRoute()
 const router = useRouter()
-const serviceId = route.params.id
+const serviceId = String(route.params.id)
 
-// 服务数据映射（图标已优化）
-const serviceData = {
-  '1': {
-    name: '无人机物流服务',
-    slogan: '快速配送 · 安全可靠 · 覆盖全城',
-    icon: '/icons/logistics-drone.svg', // 物流配送
-    color: 'linear-gradient(135deg, #06b6d4 0%, #2563eb 100%)',
-    mainColor: '#1677ff',
-    intro: '无人机物流服务利用先进的无人机技术，为城市和偏远地区提供快速、高效的物资配送服务。',
-    projects: [
-      { name: '城市配送', icon: 'shopping-cart-o' }, // 购物车配送
-      { name: '紧急物资', icon: 'warning-o' }, // 紧急警告
-      { name: '医疗运输', icon: 'add-o' }, // 医疗十字
-      { name: '特殊货物', icon: 'gift-o' } // 礼物货物
-    ],
-    advantages: ['2小时快速响应', '全程GPS跟踪', '专业团队操作', '全程保险覆盖']
-  },
-  '2': {
-    name: '政务服务',
-    slogan: '智能巡检 · 降本增效 · 精准监测',
-    icon: 'eye-o', // 巡检监控
-    color: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
-    mainColor: '#722ed1',
-    intro: '专业提供政务服务，包括环保监测、安全巡查、设施检查等，助力智慧城市建设。',
-    projects: [
-      { name: '环保监测', icon: 'cluster-o' }, // 环境聚类
-      { name: '安全巡查', icon: 'shield-o' }, // 安全盾牌
-      { name: '设施检查', icon: 'eye-o' }, // 检查查看
-      { name: '交通监控', icon: 'location-o' } // 位置监控
-    ],
-    advantages: ['高清数据采集', '实时监控反馈', 'AI智能分析', '专业报告输出']
-  },
-  '3': {
-    name: '无人机托管服务',
-    slogan: '专业托管 · 安全放心 · 省心省力',
-    icon: '/icons/maintenance.svg', // 托管商店
-    color: 'linear-gradient(135deg, #4ade80 0%, #16a34a 100%)',
-    mainColor: '#52c41a',
-    intro: '提供专业的无人机托管服务，包括保养维护、安全存储、代飞服务等一站式解决方案。',
-    projects: [
-      { name: '专业维护', icon: 'setting-o' }, // 设置维护
-      { name: '安全存储', icon: 'bag-o' }, // 包裹存储
-      { name: '代飞服务', icon: 'friends-o' }, // 代理服务
-      { name: '保险服务', icon: 'umbrella-circle' } // 保险保护
-    ],
-    advantages: ['专业维保团队', '安全存储环境', '灵活服务套餐', '完善保险保障']
-  },
-  '4': {
-    name: '无人机吊运服务',
-    slogan: '高空作业 · 精准操控 · 安全高效',
-    icon: '/icons/lifting.svg', // 吊运上升
-    color: 'linear-gradient(135deg, #fbbf24 0%, #ea580c 100%)',
-    mainColor: '#faad14',
-    intro: '提供专业的无人机吊运服务，适用于高空作业、建筑施工、设备安装等场景。',
-    projects: [
-      { name: '高空吊运', icon: 'arrow-up' }, // 上升箭头
-      { name: '设备安装', icon: 'setting-o' }, // 设备设置
-      { name: '建筑施工', icon: 'home-o' }, // 建筑房屋
-      { name: '特殊作业', icon: 'flag-o' } // 特殊标记
-    ],
-    advantages: ['专业吊运设备', '精准操控技术', '严格安全规范', '经验丰富团队']
-  },
-  '5': {
-    name: '无人机表演服务',
-    slogan: '震撼视觉 · 创意编排 · 精彩呈现',
-    icon: '/icons/drone-show-v2.svg',
-    color: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
-    mainColor: '#eb2f96',
-    intro: '提供专业的无人机表演服务，包括无人机编队飞行、灯光秀、创意表演等，为各类活动增添精彩亮点。',
-    projects: [
-      { name: '编队飞行', icon: 'friends-o' },
-      { name: '灯光秀', icon: 'fire-o' },
-      { name: '创意表演', icon: 'star-o' },
-      { name: '活动定制', icon: 'certificate' }
-    ],
-    advantages: ['创意编排', '震撼效果', '安全可控', '定制化服务']
-  },
-  '6': {
-    name: '飞手培训服务',
-    slogan: '专业培训 · 证书认证 · 实操教学',
-    icon: '/icons/training-v2.svg',
-    color: 'linear-gradient(135deg, #fbbf24 0%, #ea580c 100%)',
-    mainColor: '#faad14',
-    intro: '提供专业的飞手培训服务，包括CAAC执照培训、技能提升、行业应用培训等，助力无人机人才培养。',
-    projects: [
-      { name: 'CAAC执照', icon: 'certificate' },
-      { name: '技能培训', icon: 'award-o' },
-      { name: '实操教学', icon: 'friends-o' },
-      { name: '行业应用', icon: 'service-o' }
-    ],
-    advantages: ['资质齐全', '经验丰富', '通过率高', '就业推荐']
-  },
-  '7': {
-    name: '无人机租赁服务',
-    slogan: '灵活租赁 · 多种机型 · 专业服务',
-    icon: 'coupon-o',
-    color: 'linear-gradient(135deg, #38bdf8 0%, #3b82f6 100%)',
-    mainColor: '#13c2c2',
-    intro: '提供专业的无人机租赁服务，多种机型可选，灵活租赁方式，满足不同场景的使用需求。',
-    projects: [
-      { name: '设备租赁', icon: 'bag-o' },
-      { name: '配件租赁', icon: 'setting-o' },
-      { name: '短期租赁', icon: 'clock-o' },
-      { name: '长期租赁', icon: 'calendar-o' }
-    ],
-    advantages: ['机型丰富', '价格优惠', '灵活租期', '技术支持']
-  },
-  '8': {
-    name: '无人机外卖配送',
-    slogan: '即时配送 · 快速送达 · 安全可靠',
-    icon: '/icons/delivery.svg',
-    color: 'linear-gradient(135deg, #38bdf8 0%, #3b82f6 100%)',
-    mainColor: '#f5222d',
-    intro: '提供专业的无人机外卖配送服务，实现城市即时配送，快速安全，为用户带来全新的外卖体验。',
-    projects: [
-      { name: '即时配送', icon: 'logistics' },
-      { name: '在线下单', icon: 'shopping-cart-o' },
-      { name: '实时追踪', icon: 'location-o' },
-      { name: '安全送达', icon: 'shield-o' }
-    ],
-    advantages: ['30分钟送达', '全程保温保鲜', 'GPS实时跟踪', '无接触配送']
-  },
-  '9': {
-    name: '低空研学服务',
-    slogan: '科普教育 · 实践体验 · 创新培养',
-    icon: '/icons/study.svg',
-    color: 'linear-gradient(135deg, #06b6d4 0%, #2563eb 100%)',
-    mainColor: '#722ed1',
-    intro: '提供专业的低空研学服务，面向青少年开展无人机科普教育、飞行体验、创新实践等活动，激发科技兴趣，培养创新能力。',
-    projects: [
-      { name: '科普讲座', icon: 'records' },
-      { name: '飞行体验', icon: 'underway-o' },
-      { name: '组装实践', icon: 'setting-o' },
-      { name: '竞赛培训', icon: 'medal-o' }
-    ],
-    advantages: ['专业导师团队', '安全场地保障', '完整课程体系', '实践动手能力']
-  },
-  '10': {
-    name: '无人机二手交易',
-    slogan: '诚信交易 · 专业检测 · 以旧换新',
-    icon: 'exchange',
-    color: 'linear-gradient(135deg, #fbbf24 0%, #ea580c 100%)',
-    mainColor: '#fa8c16',
-    intro: '提供专业的无人机二手交易平台，支持设备买卖、以旧换新、专业检测等服务，让闲置设备发挥价值。',
-    projects: [
-      { name: '设备买卖', icon: 'shop-o' },
-      { name: '以旧换新', icon: 'exchange' },
-      { name: '专业检测', icon: 'certificate' },
-      { name: '质量保障', icon: 'shield-o' }
-    ],
-    advantages: ['专业估值评测', '交易安全保障', '质保售后服务', '置换优惠政策']
-  },
-  '11': {
-    name: '无人机金融服务',
-    slogan: '设备保险 · 飞行护航 · 专业理赔',
-    icon: '/icons/finance.svg',
-    color: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
-    mainColor: '#1677ff',
-    intro: '提供专业的无人机金融保险服务，涵盖设备险、责任险、飞手险等多种保险产品，为您的飞行保驾护航。',
-    projects: [
-      { name: '设备保险', icon: 'shield-o' },
-      { name: '责任保险', icon: 'balance-o' },
-      { name: '飞手保险', icon: 'manager-o' },
-      { name: '快速理赔', icon: 'gold-coin-o' }
-    ],
-    advantages: ['全面保障覆盖', '快速理赔服务', '专业风险评估', '优惠保费政策']
-  },
-  '12': {
-    name: '无人机维修服务',
-    slogan: '专业维修 · 原厂配件 · 焕然一新',
-    icon: 'setting-o',
-    color: 'linear-gradient(135deg, #38bdf8 0%, #3b82f6 100%)',
-    mainColor: '#2f54eb',
-    intro: '提供全方位的无人机维修与保养服务，拥有官方授权的专业技术团队和原厂配件库，解决各类硬件故障与软件问题，延长设备使用寿命。',
-    projects: [
-      { name: '故障维修', icon: 'warning-o' },
-      { name: '定期保养', icon: 'like-o' },
-      { name: '配件更换', icon: 'replay' },
-      { name: '系统升级', icon: 'down' }
-    ],
-    advantages: ['官方授权认证', '原厂正品配件', '资深技师团队', '维修质保承诺']
-  },
-  '13': {
-    name: 'DSL 预注册',
-    slogan: '专业竞技 · 精彩纷呈 · 科技魅力',
-    icon: '/icons/competition.svg',
-    color: 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)',
-    mainColor: '#e11d48',
-    intro: '专业的 DSL 预注册通道，支持裁判员、教练员、运动员及俱乐部的在线注册。',
-    projects: [
-      { name: '裁判员', icon: 'manager-o' },
-      { name: '教练员', icon: 'medal-o' },
-      { name: '运动员', icon: 'friends-o' },
-      { name: '俱乐部', icon: 'shop-o' }
-    ],
-    advantages: ['官方权威认证', '便捷在线注册', '专业信息核验', '全方位赛事保障']
+const loading = ref(true)
+const serviceConfig = ref({})
+const studyShowcase = ref([])
+
+const normalizeUrl = (url) => {
+  if (!url) return ''
+  // 如果是远程地址、base64 或已经以 / 开头，直接返回
+  if (url.startsWith('http') || url.startsWith('data:') || url.startsWith('/')) return url
+  // 如果包含点（如 .svg, .png）或者是存放在特定目录下的，补齐开头的 /
+  if (url.includes('.') || url.includes('/')) return `/${url}`
+  // 否则认为是 Vant 内置图标名，不加斜杠（加了斜杠 Vant 会当成图片加载导致 404）
+  return url
+}
+
+// 苹果风品牌色常量
+const BRAND_COLOR = '#0071e3'
+
+const fetchServiceData = async () => {
+  loading.value = true
+  try {
+    // 1. 获取基础配置
+    const configRes = await axios.get('/api/services/config')
+    const allConfigs = configRes?.data?.data || {}
+    const config = allConfigs[serviceId] || {}
+    serviceConfig.value = config
+
+    // 2. 如果是研学，优先使用 config 里的 studyShowcase，没有则尝试拉取旧接口（兜底）
+    if (serviceId === '9') {
+      if (config.studyShowcase && config.studyShowcase.length > 0) {
+        studyShowcase.value = config.studyShowcase
+      } else {
+        const showcaseRes = await axios.get('/api/study/showcase')
+        studyShowcase.value = showcaseRes?.data?.data || []
+      }
+    }
+  } catch (e) {
+    showToast('加载配置失败')
+    console.error(e)
+  } finally {
+    loading.value = false
   }
 }
-                                            
-const currentService = serviceData[serviceId] || serviceData['1']
 
-const serviceName = ref(currentService.name)
-const serviceSlogan = ref(currentService.slogan)
-const serviceIcon = ref(currentService.icon)
-const serviceColor = ref(currentService.color)
-const serviceMainColor = ref(currentService.mainColor)
-const serviceIntro = ref(currentService.intro)
-const serviceProjects = ref(currentService.projects)
-const serviceAdvantages = ref(currentService.advantages)
-const trainingShowcase = ref(
-  serviceId === '6'
-    ? [
-        {
-          title: '实训场地',
-          desc: '3000㎡ 综合实训场地，覆盖起降、编队、特种作业等多种科目，真实环境快速积累飞行经验。',
-          image: '/images/training/practice-field.svg'
-        },
-        {
-          title: '模拟教室',
-          desc: '搭载无人机模拟系统与XR教学屏，提前演练复杂空域任务，理论与实操一体化。',
-          image: '/images/training/simulator-lab.svg'
-        },
-        {
-          title: '取证辅导',
-          desc: '教务团队提供报考、练考、面签全流程指导，结合历年考点精讲，确保稳健通过CAAC考试。',
-          image: '/images/training/certification-support.svg'
-        }
-      ]
-    : []
-)
+const previewStudy = (item) => {
+  if (!item?.image) return
+  showImagePreview([item.image])
+}
 
 const actionButtonText = computed(() => {
-  // 物流(1)、吊运(4)、外卖(8)
-  if (['1', '4', '8'].includes(String(serviceId))) {
-    return '立即下单'
-  }
-  // 赛事报名(13)
-  if (String(serviceId) === '13') {
-    return '立即报名'
-  }
-  // 培训(6)、研学(9)
-  if (['6', '9'].includes(String(serviceId))) {
-    return '参与报名'
-  }
+  if (['1', '4', '8'].includes(serviceId)) return '立即下单'
+  if (serviceId === '13') return '立即报名'
+  if (['6', '9'].includes(serviceId)) return '立即报名'
   return '立即办理'
 })
 
 const onApply = () => {
-  // 无人机外卖服务跳转到外部配送平台
   if (serviceId === '8') {
     window.location.href = 'https://app.wzsjy.com:8446/h5/#/pages/diy/diy?pageId=130&title=%E6%97%A0%E4%BA%BA%E6%9C%BA%E5%A4%96%E5%8D%96%E9%85%8D%E9%80%81&jyauthcode='
   } else {
@@ -455,179 +352,332 @@ const onApply = () => {
 const onProjectClick = (item) => {
   if (serviceId === '13') {
     const roleMap = {
-      '裁判员': 'referee',
-      '教练员': 'coach',
-      '运动员': 'athlete',
-      '俱乐部': 'club'
+      '裁判员': 'referee', '教练员': 'coach', '运动员': 'athlete', '俱乐部': 'club'
     }
     const role = roleMap[item.name]
     if (role) {
-      router.push({
-        path: `/service-apply/${serviceId}`,
-        query: { role: role }
-      })
+      router.push({ path: `/service-apply/${serviceId}`, query: { role } })
     }
   }
 }
+
+onMounted(() => {
+  fetchServiceData()
+})
 </script>
 
 <style scoped>
-.clickable-project {
-  cursor: pointer;
-  transition: all 0.2s;
-  border: 1px solid transparent;
-}
-
-.clickable-project:active {
-  background: #f0f2ff;
-  transform: scale(0.98);
-  border-color: rgba(22, 119, 255, 0.1);
-}
-
+/* 苹果风全局变量与基础 */
 .service-detail-page {
   min-height: 100vh;
-  background: #f5f5f5;
-  padding-bottom: 70px;
+  background: #fbfbfd; /* 苹果官网常用底色 */
+  padding-bottom: 100px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
-.service-header {
-  background: #fff;
-  padding: 32px 20px;
-  text-align: center;
+/* 沉浸式导航栏 */
+:deep(.van-nav-bar) {
+  background-color: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px); /* 毛玻璃效果 */
+  border: none;
+}
+:deep(.van-nav-bar__title) {
+  font-weight: 600;
+  color: #1d1d1f;
 }
 
-.service-icon-big {
-  width: 88px;
-  height: 88px;
-  border-radius: 20px;
+.detail-content {
+  animation: appleFadeIn 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+  width: 100%;
+  max-width: 520px; /* 主要适配移动端：PC 上也保持手机宽度观感 */
+  margin: 0 auto;
+}
+
+@keyframes appleFadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 研学专属 Banner */
+.study-banner {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 5 / 3; /* 顶部背景图统一 5:3 */
+  height: auto;
+  margin: 0;
+  overflow: hidden;
+}
+
+.banner-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* 核心：确保填充且不拉伸 */
+  object-position: center; /* 默认居中对齐 */
+  transition: transform 0.8s ease;
+}
+
+.banner-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 60px 24px 30px;
+  background: linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 100%);
+  color: #fff;
+}
+
+.study-hero-title {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0 0 4px;
+  letter-spacing: -0.5px;
+}
+
+.study-hero-slogan {
+  font-size: 15px;
+  font-weight: 400;
+  opacity: 0.85;
+  margin: 0;
+}
+
+/* 核心亮点卡片（改为横向滑动，避免垂直堆叠导致的重叠） */
+.study-highlights-row {
+  margin: 16px 0 24px; /* 不再覆盖 Banner，避免遮挡口号标语 */
+  display: flex;
+  overflow-x: auto;
+  padding: 0 16px;
+  gap: 14px;
+  -webkit-overflow-scrolling: touch;
+}
+.study-highlights-row::-webkit-scrollbar {
+  display: none; /* 隐藏滚动条 */
+}
+
+.hl-card {
+  flex: 0 0 280px; /* 固定宽度，支持横向滚动 */
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(20px);
+  padding: 20px;
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.06);
+  border: 1px solid rgba(255,255,255,0.8);
+}
+
+.hl-icon {
+  font-size: 28px;
+  color: #0071e3; /* Apple Blue */
+  background: #f5f5f7;
+  width: 52px;
+  height: 52px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 16px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  border-radius: 14px;
 }
 
-/* 强制 SVG 图片图标变白 */
-.service-icon-big :deep(.van-icon__image) {
-  filter: brightness(0) invert(1);
+.hl-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin-bottom: 2px;
+}
+
+.hl-desc {
+  font-size: 13px;
+  color: #86868b;
+  line-height: 1.4;
+}
+
+/* 普通头部 */
+.service-header {
+  background: #fff;
+  padding: 48px 24px;
+  text-align: center;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.service-icon-big {
+  width: 90px;
+  height: 90px;
+  border-radius: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  box-shadow: 0 12px 24px rgba(0,0,0,0.12);
 }
 
 .service-name {
-  font-size: 22px;
-  font-weight: bold;
-  color: #323233;
+  font-size: 24px;
+  font-weight: 700;
+  color: #1d1d1f;
   margin-bottom: 8px;
 }
 
-.service-slogan {
-  font-size: 14px;
-  color: #969799;
-}
-
+/* 通用卡片设计 */
 .section-card {
   background: #fff;
   margin: 12px 16px;
-  padding: 16px;
-  border-radius: 12px;
+  padding: 18px;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+  position: relative;
+  z-index: 1;
+}
+
+/* 针对研学服务，确保第一个板块有足够空间 */
+.study-detail-theme .section-card:first-of-type {
+  margin-top: 0; /* 使用上方的 margin-bottom 32px 统一控制间距 */
 }
 
 .section-title {
   font-size: 16px;
-  font-weight: bold;
-  color: #323233;
+  font-weight: 800;
+  color: #1d1d1f;
   margin-bottom: 16px;
   padding-left: 12px;
-  border-left: 4px solid #1677ff;
+  border-left: 4px solid #0071e3; /* 恢复品牌特征蓝色边条 */
 }
 
 .section-text {
-  font-size: 14px;
-  color: #646566;
-  line-height: 1.8;
+  font-size: 15px;
+  color: #424245;
+  line-height: 1.6;
 }
 
+/* 服务项目网格 */
 .project-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  gap: 16px;
 }
 
 .project-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 16px;
-  background: #f7f8fa;
-  border-radius: 8px;
-  font-size: 13px;
-  color: #323233;
-}
-
-.advantage-list {
-  display: flex;
-  flex-direction: column;
   gap: 12px;
+  padding: 20px 12px;
+  background: #fff;
+  border: 1px solid #f1f5f9;
+  border-radius: 18px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1d1d1f;
+  transition: all 0.2s ease;
 }
 
+.project-item:active {
+  background: #f5f5f7;
+  transform: scale(0.96);
+}
+
+/* 优势列表 */
 .advantage-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  color: #646566;
+  gap: 10px;
+  font-size: 15px;
+  color: #424245;
+  margin-bottom: 14px;
 }
 
+/* 底部胶囊按钮 */
 .action-bar {
   position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 12px 16px;
-  background: #fff;
-  border-top: 1px solid #ebedf0;
-  display: flex;
-  gap: 12px;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(520px, calc(100% - 40px)); /* 跟随页面最大宽度 */
+  padding: 0;
+  background: transparent;
+  border-top: none;
   z-index: 100;
 }
 
 .action-bar :deep(.van-button) {
-  flex: 1;
+  height: 54px;
+  border-radius: 27px; /* 胶囊形状 */
+  font-size: 17px;
+  font-weight: 600;
+  box-shadow: 0 10px 20px rgba(0, 113, 227, 0.2);
 }
 
-.contact-card {
-  text-align: center;
-  padding: 24px 16px;
+.study-showcase {
+  margin-top: 24px;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 24px;
 }
 
-.contact-info p {
-  color: #646566;
-  font-size: 14px;
-  margin-bottom: 8px;
+.study-subtitle {
+  font-size: 17px;
+  font-weight: 700;
+  color: #1d1d1f;
+  margin-bottom: 16px;
+  letter-spacing: -0.3px;
 }
 
-.phone-link {
-  display: block;
-  font-size: 24px;
-  font-weight: bold;
-  color: #1677ff;
-  margin: 12px 0;
-  text-decoration: none;
+.study-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
 }
 
-.work-time {
-  font-size: 12px;
-  color: #969799;
+/* 图文展示 */
+.study-item {
+  border: none;
+  background: #f5f5f7;
+  border-radius: 20px;
+  overflow: hidden;
+  transition: transform 0.3s ease;
+  margin-bottom: 0; /* 使用 grid 的 gap 控制 */
 }
 
-/* 培训专属样式 */
-.training-list {
-  font-size: 14px;
-  color: #646566;
-  line-height: 1.6;
+.study-info {
+  padding: 16px;
 }
-.training-item {
-  margin-bottom: 8px;
+
+.study-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin-bottom: 6px;
+  letter-spacing: -0.2px;
+}
+
+.study-desc {
+  font-size: 13px;
+  color: #86868b;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.section-card {
+  background: #fff;
+  margin: 12px 16px;
+  padding: 18px;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+  position: relative;
+  z-index: 1;
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #1d1d1f;
+  margin-bottom: 16px;
+  padding-left: 12px;
+  border-left: 4px solid #0071e3; /* 恢复品牌特征蓝色边条 */
+}
+
+/* 价格与列表样式美化（恢复原版虚线） */
+.price-list {
+  margin-top: 4px;
 }
 
 .price-item {
@@ -635,125 +685,264 @@ const onProjectClick = (item) => {
   justify-content: space-between;
   align-items: center;
   padding: 12px 0;
-  border-bottom: 1px dashed #ebedf0;
+  border-bottom: 1px dashed #ebedf0; /* 恢复原版虚线 */
 }
+
 .price-item:last-child {
   border-bottom: none;
 }
+
 .price-item .label {
   font-size: 14px;
   color: #323233;
 }
+
 .price-item .price {
   font-size: 16px;
-  font-weight: bold;
-  color: #ee0a24;
+  font-weight: 700;
+  color: #ee0a24; /* 恢复原版警告红 */
 }
-.price-item .tip {
-  font-size: 12px;
-  font-weight: normal;
-  color: #969799;
+
+.training-list {
+  padding: 4px 0;
+}
+
+.training-item {
+  font-size: 14px;
+  color: #424245;
+  margin-bottom: 12px;
+  line-height: 1.7;
+  padding-left: 12px;
+  position: relative;
+}
+
+.training-item::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 9px;
+  width: 4px;
+  height: 4px;
+  background: #0071e3; /* 改为品牌蓝 */
+  border-radius: 50%;
 }
 
 .feature-item {
-  margin-bottom: 16px;
-}
-.feature-title {
-  font-size: 15px;
-  font-weight: bold;
-  color: #323233;
-  margin-bottom: 4px;
-  position: relative;
-  padding-left: 10px;
-}
-.feature-title::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background-color: #323233;
-}
-.feature-desc {
-  font-size: 13px;
-  color: #646566;
-  line-height: 1.6;
-  padding-left: 10px;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #f5f5f7;
 }
 
-.showcase-grid {
-  display: grid;
-  grid-template-columns: 1fr;
+.feature-item:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.feature-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #1d1d1f;
+  margin-bottom: 8px;
+  letter-spacing: -0.3px;
+}
+
+.feature-desc {
+  font-size: 14px;
+  color: #86868b;
+  line-height: 1.6;
+}
+
+/* 恢复飞手培训图文展示样式（左图右文） */
+.training-showcase-list {
+  display: flex;
+  flex-direction: column;
   gap: 12px;
 }
 
-.showcase-item {
+.training-showcase-item {
   display: flex;
   gap: 12px;
   padding: 12px;
   border-radius: 12px;
   background: #f7f8fa;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.04);
 }
 
-.showcase-image {
-  flex: 0 0 120px;
-  height: 90px;
-  border-radius: 10px;
+.training-showcase-image {
+  flex: 0 0 110px;
+  height: 80px;
+  border-radius: 8px;
   overflow: hidden;
-  background: #fff;
 }
 
-.showcase-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.showcase-info {
+.training-showcase-info {
+  flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 6px;
 }
 
-.showcase-item-title {
+.training-showcase-title {
   font-size: 15px;
-  font-weight: bold;
+  font-weight: 700;
   color: #323233;
+  margin-bottom: 4px;
 }
 
-.showcase-desc {
-  font-size: 13px;
+.training-showcase-desc {
+  font-size: 12px;
   color: #646566;
-  line-height: 1.6;
-  margin: 0;
+  line-height: 1.5;
+  display: -webkit-box;
+  line-clamp: 2;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-.intro-title {
+/* 研学课程表样式 */
+.schedule-container {
+  padding: 10px 0;
+}
+
+.schedule-item {
+  display: grid;
+  grid-template-columns: 96px 22px 1fr;
+  column-gap: 14px;
+  padding-bottom: 24px;
+  position: relative;
+}
+
+.schedule-item:last-child {
+  padding-bottom: 0;
+}
+
+.schedule-time {
+  font-size: 13px;
+  color: #86868b;
+  padding-top: 2px;
+  text-align: right;
+  white-space: pre-line; /* 支持 “早班/午班” 两行时间 */
+  line-height: 1.15;
+}
+
+.schedule-marker {
+  position: relative;
+  width: 22px;
+  display: flex;
+  justify-content: center;
+  padding-top: 6px; /* 让点与第一行文本视觉对齐 */
+}
+
+.schedule-item:not(:last-child) .schedule-marker::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 14px; /* dot center */
+  bottom: -24px; /* 延伸到下一项 */
+  transform: translateX(-0.5px);
+  width: 1px;
+  border-left: 1px dashed #d2d2d7;
+}
+
+.schedule-dot {
+  width: 8px;
+  height: 8px;
+  background: #0071e3;
+  border-radius: 50%;
+  position: relative;
+  z-index: 1;
+  box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.1);
+}
+
+.schedule-content {
+  flex: 1;
+}
+
+.schedule-text {
   font-size: 15px;
-  font-weight: bold;
-  color: #323233;
-  margin-bottom: 8px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin-bottom: 4px;
+}
+
+.schedule-remark {
+  font-size: 13px;
+  color: #86868b;
+}
+
+/* 飞手培训专项样式恢复 */
+.intro-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #1d1d1f;
+  margin-bottom: 12px;
 }
 
 .law-quote {
-  margin-top: 12px;
-  padding: 12px;
-  background: #f7f8fa;
-  border-radius: 8px;
+  margin-top: 16px;
+  padding: 16px;
+  background: #f5f5f7;
+  border-radius: 16px;
   font-size: 13px;
-  color: #646566;
+  color: #86868b;
   line-height: 1.6;
+  border-left: 4px solid #0071e3;
 }
 
-.training-contact .contact-info .address {
-  margin-top: 12px;
-  line-height: 1.6;
+/* 联系方式复刻原版样式 */
+.contact-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.contact-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.contact-icon-wrap {
+  width: 32px;
+  height: 32px;
+  background: #f0f7ff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0071e3;
+  font-size: 18px;
+}
+
+.contact-content {
+  flex: 1;
+}
+
+.contact-label {
+  font-size: 12px;
+  color: #969799;
+  margin-bottom: 2px;
+}
+
+.contact-value {
+  font-size: 15px;
+  font-weight: 500;
+  color: #323233;
+}
+
+.call-btn {
+  height: 28px !important;
+  padding: 0 12px !important;
+  font-size: 12px !important;
+}
+
+/* 联系客服 (废弃) */
+.contact-card {
+  display: none;
+}
+
+.service-icon-big :deep(.van-icon__image) {
+  filter: brightness(0) invert(1);
 }
 </style>
-

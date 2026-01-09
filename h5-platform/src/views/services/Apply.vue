@@ -7,6 +7,7 @@
       fixed
       placeholder
     />
+    <HomeFloatButton />
 
     <div class="content-wrapper">
       <!-- 服务暂未开放提示 (5-14号服务) -->
@@ -669,6 +670,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast, showDialog, showLoadingToast, closeToast, showFailToast } from 'vant'
 import axios from 'axios'
+import HomeFloatButton from '@/components/HomeFloatButton.vue'
 
 const route = useRoute()
 const router = useRouter()

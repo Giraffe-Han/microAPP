@@ -233,12 +233,14 @@
         </view>
       </view>
     </view>
+    <HomeFloatButton />
   </view>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
+import HomeFloatButton from '@/components/HomeFloatButton.vue'
 import { getStoredUser, request } from '../../utils/request'
 
 const serviceId = ref('')
