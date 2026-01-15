@@ -6,7 +6,10 @@
     "name": "wzdkjjfzyxgs",
     "role": "admin",
     "avatar": "",
-    "createTime": "2025-11-27T01:20:54.251Z"
+    "createTime": "2025-11-27T01:20:54.251Z",
+    "passwordHash": "$2a$10$ARafqtTzYvmwZcRwpou50e6p4FgukpJ.CEvzfhEh9IRsu9urNPhia",
+    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwidHlwZSI6InJlZnJlc2giLCJpYXQiOjE3Njg0NDE0ODksImV4cCI6MTc2OTA0NjI4OX0.Ju7srgXGJPkC6sXrm3O-Kse7t3WTS_KfiykGQmzlLVI",
+    "refreshTokenExpiresAt": 1769046289000
   },
   {
     "id": "1764206954630",
@@ -15,7 +18,8 @@
     "name": "test ",
     "role": "user",
     "avatar": "",
-    "createTime": "2025-11-27T01:29:14.630Z"
+    "createTime": "2025-11-27T01:29:14.630Z",
+    "passwordHash": "$2a$10$ARsNKzGb/3AdhTkpGOCRtO2i.zTPTDcptcmUvuSDBxX6oTOGftLIW"
   },
   {
     "id": "1764747089092",
@@ -24,7 +28,8 @@
     "name": "test3",
     "role": "user",
     "avatar": "",
-    "createTime": "2025-12-03T07:31:29.092Z"
+    "createTime": "2025-12-03T07:31:29.092Z",
+    "passwordHash": "$2a$10$8Pc5oVbYmU8cu9UQqb9sQuaU/cJe.R62oBrFm6iLn2cSgk506wfFS"
   },
   {
     "id": "dsl_admin_id",
@@ -33,6 +38,7 @@
     "name": "DSL管理员",
     "role": "dsl_admin",
     "avatar": "",
-    "createTime": "2025-12-29T00:00:00.000Z"
+    "createTime": "2025-12-29T00:00:00.000Z",
+    "passwordHash": "$2a$10$SW56WdPYQdYaMFgsjDYGr.69YbRZ.p.ELmZm2lEhI2HNzP73Ffs02"
   }
 ]

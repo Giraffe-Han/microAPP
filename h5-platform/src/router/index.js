@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { showFailToast } from 'vant'
+import axios, { authStorage } from '@/utils/http'
 
 const routes = [
   {
@@ -69,6 +70,18 @@ const routes = [
     name: 'Admin',
     component: () => import('@/views/admin/Index.vue'),
     meta: { title: '后台管理' }
+  },
+  {
+    path: '/games',
+    name: 'Games',
+    component: () => import('@/views/games/Lobby.vue'),
+    meta: { title: 'Fruit Box', showTabbar: false }
+  },
+  {
+    path: '/games/play',
+    name: 'GamesPlay',
+    component: () => import('@/views/games/Play.vue'),
+    meta: { title: 'Fruit Box', showTabbar: false }
   }
 ]
 
@@ -77,24 +90,42 @@ const router = createRouter({
   routes
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   document.title = to.meta.title || '低空综合服务平台'
   
   // Admin route protection
   if (to.path.startsWith('/admin')) {
+    const accessToken = authStorage.getAccessToken()
     const userStr = localStorage.getItem('user')
-    if (!userStr) {
+    if (!accessToken && !userStr) {
       next('/login')
       return
     }
-    try {
-      const user = JSON.parse(userStr)
-      if (user.role !== 'admin' && user.role !== 'dsl_admin') {
-        showFailToast('无管理权限，请使用管理员账号登录')
-        next('/login')
-        return
+    let user = null
+    if (userStr) {
+      try {
+        user = JSON.parse(userStr)
+      } catch (e) {
+        user = null
       }
-    } catch (e) {
+    }
+    if (!user && accessToken) {
+      try {
+        const res = await axios.get('/api/auth/me')
+        if (res.data?.success) {
+          user = res.data.user
+          localStorage.setItem('user', JSON.stringify(user))
+        }
+      } catch (e) {
+        user = null
+      }
+    }
+    if (!user) {
+      next('/login')
+      return
+    }
+    if (user.role !== 'admin' && user.role !== 'dsl_admin') {
+      showFailToast('无管理权限，请使用管理员账号登录')
       next('/login')
       return
     }

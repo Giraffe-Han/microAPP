@@ -55,7 +55,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { showDialog, showFailToast } from 'vant'
-import axios from 'axios'
+import axios, { authStorage } from '@/utils/http'
 
 // 申请数据
 const applications = ref([])
@@ -64,9 +64,10 @@ const fetchData = async () => {
   try {
     const userStr = localStorage.getItem('user');
     const user = userStr ? JSON.parse(userStr) : null;
+    const accessToken = authStorage.getAccessToken()
     
     // If no user logged in, return empty list (or handle as needed)
-    if (!user) {
+    if (!user || !accessToken) {
         applications.value = [];
         return;
     }

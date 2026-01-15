@@ -19,7 +19,7 @@
           <h2 class="user-name">{{ user?.name || '点击登录' }}</h2>
           <p class="user-phone">{{ user?.phone || '登录后享受更多服务' }}</p>
         </div>
-        <van-icon name="arrow" size="16" color="#fff" v-if="!user" />
+        <van-icon name="arrow" size="16" color="#8e8e93" v-if="!user" />
       </div>
 
       <!-- 统计数据 -->
@@ -122,7 +122,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { showDialog, showToast, showFailToast, showConfirmDialog } from 'vant'
-import axios from 'axios'
+import axios, { authStorage } from '@/utils/http'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -130,6 +130,7 @@ const totalCount = ref(0)
 const processingCount = ref(0)
 const completedCount = ref(0)
 const user = ref(null)
+const SERVICE_PHONE = '0577-55558188'
 
 const fetchStats = async (userId) => {
   if (!userId) {
@@ -163,7 +164,9 @@ const handleLogout = () => {
     message: '确定要退出登录吗？',
   })
     .then(() => {
+      axios.post('/api/auth/logout').catch(() => {})
       localStorage.removeItem('user')
+      authStorage.clearTokens()
       user.value = null
       fetchStats(null) // Reset stats
       showToast('已退出登录')
@@ -174,7 +177,28 @@ const handleLogout = () => {
 }
 
 onMounted(() => {
+  const accessToken = authStorage.getAccessToken()
   const userStr = localStorage.getItem('user')
+  if (accessToken) {
+    axios
+      .get('/api/auth/me')
+      .then((res) => {
+        if (res.data?.success) {
+          user.value = res.data.user
+          localStorage.setItem('user', JSON.stringify(res.data.user))
+          fetchStats(res.data.user.id)
+          return
+        }
+        fetchStats(null)
+      })
+      .catch(() => {
+        authStorage.clearTokens()
+        localStorage.removeItem('user')
+        fetchStats(null)
+      })
+    return
+  }
+
   if (userStr) {
     try {
       user.value = JSON.parse(userStr)
@@ -184,7 +208,7 @@ onMounted(() => {
       fetchStats(null)
     }
   } else {
-      fetchStats(null)
+    fetchStats(null)
   }
 })
 
@@ -203,10 +227,18 @@ const showFAQ = () => {
 }
 
 const showContact = () => {
-  showDialog({
+  showConfirmDialog({
     title: '联系客服',
-    message: '客服电话：400-123-4567\n工作时间：工作日 9:00-18:00'
+    message: `客服电话：${SERVICE_PHONE}\n工作时间：工作日 9:00-18:00`,
+    confirmButtonText: '拨打电话',
+    cancelButtonText: '取消'
   })
+    .then(() => {
+      window.location.href = `tel:${SERVICE_PHONE}`
+    })
+    .catch(() => {
+      // on cancel
+    })
 }
 
 const showAbout = () => {
@@ -219,33 +251,42 @@ const showAbout = () => {
 
 <style scoped>
 .mine-page {
-  background: #f5f5f5;
+  background: #f5f5f7;
+}
+
+.mine-page :deep(.van-nav-bar--fixed) {
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: 100% !important;
+  max-width: var(--page-max-width);
 }
 
 .user-card {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  margin: 16px;
-  padding: 24px 20px;
-  border-radius: 16px;
-  color: #fff;
+  background: #ffffff;
+  margin: 12px;
+  padding: 16px;
+  border-radius: 18px;
+  color: #1d1d1f;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
 }
 
 .default-avatar {
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  background: #f5f6fa;
+  background: #f2f2f7;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .user-header {
   display: flex;
   align-items: center;
   gap: 16px;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
   cursor: pointer;
 }
 
@@ -255,21 +296,21 @@ const showAbout = () => {
 
 .user-name {
   font-size: 20px;
-  font-weight: bold;
+  font-weight: 600;
   margin-bottom: 6px;
 }
 
 .user-phone {
   font-size: 14px;
-  opacity: 0.8;
+  color: #86868b;
 }
 
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  padding-top: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .stat-item {
@@ -277,18 +318,18 @@ const showAbout = () => {
 }
 
 .stat-value {
-  font-size: 24px;
-  font-weight: bold;
+  font-size: 22px;
+  font-weight: 600;
   margin-bottom: 6px;
 }
 
 .stat-label {
   font-size: 13px;
-  opacity: 0.8;
+  color: #86868b;
 }
 
 .menu-section {
-  margin: 16px 0;
+  margin: 12px 0;
 }
 </style>
 

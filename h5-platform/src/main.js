@@ -9,6 +9,7 @@ import 'vant/lib/index.css'
 
 // 全局样式
 import './styles/global.css'
+import './utils/http'
 
 const app = createApp(App)
 

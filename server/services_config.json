@@ -396,7 +396,7 @@
     "contactPhone": "0577-55558188",
     "contactPhone2": "",
     "address": "浙江省温州市鹿城区牛山北路52号",
-    "headerImage": "/uploads/1767838900770-899962962.gif",
+    "headerImage": "/uploads/1768188385259-375206345.jpeg",
     "highlights": [
       {
         "title": "知识储备",
@@ -423,17 +423,17 @@
       {
         "title": "集合签到 & 开营破冰",
         "desc": "宣读研学纪律，通过趣味互动培养逻辑思维和团队精神。",
-        "image": "/uploads/1767842757867-352847476.gif"
+        "image": "/uploads/1768188414134-48425106.jpeg"
       },
       {
         "title": "走进低空展厅",
         "desc": "触摸救援与物流无人机，了解不同领域场景的应用知识。",
-        "image": "/uploads/1767842768191-807573711.gif"
+        "image": "/uploads/1768188435669-984724112.jpeg"
       },
       {
         "title": "手工组装 & 穿越飞行",
         "desc": "拼搭木质无人机并在专业指导下进行飞行穿越竞技。",
-        "image": "/uploads/1767842889739-146429198.jpg"
+        "image": "/uploads/1768188459053-34871813.jpeg"
       }
     ],
     "courseSchedule": [
@@ -606,5 +606,9 @@
     ],
     "contactPhone": "0577-55558188",
     "address": "温州市鹿城区七都街道温州低空经济发展有限公司"
+  },
+  "_home": {
+    "headerImage": "/uploads/1768188276421-341576585.jpeg",
+    "headerImagePosition": "center"
   }
 }

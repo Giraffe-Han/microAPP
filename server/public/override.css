@@ -1,0 +1,48 @@
+:root {
+  /* 保持与前端约定一致：大屏也呈现“移动端宽度” */
+  --page-max-width: 520px;
+
+  /* Tabbar 总占位高度：可点击热区 + iPhone 安全区 */
+  --tabbar-height: calc(74px + env(safe-area-inset-bottom));
+}
+
+/* 通用页面容器：底部留白与 Tabbar 一致，避免遮挡/留白不一致 */
+.page-container {
+  padding-bottom: var(--tabbar-height) !important;
+  width: 100% !important;
+  max-width: var(--page-max-width) !important;
+  margin: 0 auto !important;
+}
+
+/* Home 页不是 page-container，需要单独对齐底部留白 */
+.home-page {
+  padding-bottom: var(--tabbar-height) !important;
+}
+
+/* Vant Tabbar：更高、更好点；并在大屏下居中为“手机宽度” */
+.van-tabbar {
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: 100% !important;
+  max-width: var(--page-max-width) !important;
+
+  height: var(--tabbar-height) !important;
+  padding-top: 6px !important;
+  padding-bottom: env(safe-area-inset-bottom) !important;
+  box-sizing: border-box !important;
+}
+
+.van-tabbar-item {
+  padding: 10px 0 !important;
+}
+
+.van-tabbar-item__icon {
+  margin-bottom: 6px !important;
+  font-size: 22px !important;
+}
+
+.van-tabbar-item__text {
+  font-size: 12px !important;
+}
+
+

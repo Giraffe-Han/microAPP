@@ -4,16 +4,17 @@
       title="登录"
       left-arrow
       @click-left="$router.back()"
-    />
+    >
+      <template #right>
+        <van-icon name="wap-home-o" size="18" class="nav-home" @click="goHome" />
+      </template>
+    </van-nav-bar>
 
     <div class="login-container">
       <div class="logo-area">
-        <van-image
-          round
-          width="80"
-          height="80"
-          src="https://fastly.jsdelivr.net/npm/@vant/assets/cat.jpeg"
-        />
+        <div class="login-avatar" aria-label="default avatar">
+          <van-icon name="contact" size="40" color="#8e8e93" />
+        </div>
         <h2 class="app-title">低空综合服务平台</h2>
       </div>
 
@@ -53,15 +54,19 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { showSuccessToast, showFailToast } from 'vant'
-import axios from 'axios'
+import axios, { authStorage } from '@/utils/http'
 
 const router = useRouter()
 const phone = ref('')
 const password = ref('')
 
+const goHome = () => {
+  router.replace('/home')
+}
+
 const onSubmit = async (values) => {
   try {
-    const res = await axios.post('/api/login', {
+    const res = await axios.post('/api/auth/login', {
       phone: values.phone,
       password: values.password
     })
@@ -70,6 +75,7 @@ const onSubmit = async (values) => {
       showSuccessToast('登录成功')
       // Store user info (simple localStorage for now)
       localStorage.setItem('user', JSON.stringify(res.data.user))
+      authStorage.setTokens(res.data.accessToken, res.data.refreshToken)
       
       // Redirect based on role or to home
       if (res.data.user.role === 'admin' || res.data.user.role === 'dsl_admin') {
@@ -91,6 +97,10 @@ const onSubmit = async (values) => {
   background: #f7f8fa;
 }
 
+.nav-home {
+  color: #1d1d1f;
+}
+
 .login-container {
   padding-top: 40px;
 }
@@ -100,6 +110,18 @@ const onSubmit = async (values) => {
   flex-direction: column;
   align-items: center;
   margin-bottom: 40px;
+}
+
+.login-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
 }
 
 .app-title {

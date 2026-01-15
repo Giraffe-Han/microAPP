@@ -147,7 +147,7 @@
                                     {{ u.role || '-' }}
                                 </van-tag>
                                 <van-button
-                                    v-if="u.role !== 'dsl_admin'"
+                                    v-if="isSuperAdmin && u.role !== 'dsl_admin' && u.phone !== SUPER_ADMIN_PHONE"
                                     size="mini"
                                     type="primary"
                                     plain
@@ -235,11 +235,20 @@
                     <van-button type="default" block icon="replay" @click="fetchAllServiceConfigs">刷新配置</van-button>
                 </div>
                 
+                <van-cell-group inset title="首页配置" style="margin-bottom: 12px;">
+                    <van-cell
+                        title="首页背景图"
+                        :label="homeConfig?.headerImage ? '已配置（可点击修改）' : '未配置（点击上传）'"
+                        is-link
+                        @click="editHomeConfig"
+                    />
+                </van-cell-group>
+
                 <van-cell-group inset title="选择要编辑的服务">
-                    <van-cell 
-                        v-for="(cfg, id) in allServiceConfigs" 
-                        :key="id" 
-                        :title="cfg.name" 
+                    <van-cell
+                        v-for="[id, cfg] in serviceConfigEntries"
+                        :key="id"
+                        :title="cfg.name"
                         :label="cfg.slogan"
                         is-link
                         @click="editServiceConfig(id)"
@@ -269,6 +278,13 @@
                 <template v-if="currentItem.serviceId === '6'">
                   <van-cell title="姓名" :value="itemValue(currentItem.traineeName)" />
                   <van-cell title="联系电话" :value="itemValue(currentItem.traineePhone)" />
+                </template>
+                <template v-else-if="currentItem.serviceId === '9'">
+                  <van-cell title="学校/机构" :value="itemValue(currentItem.studyOrg)" />
+                  <van-cell v-if="currentItem.studyGrade" title="年级/年龄段" :value="itemValue(currentItem.studyGrade)" />
+                  <van-cell title="参与人数" :value="itemValue(currentItem.studyParticipants)" />
+                  <van-cell title="期望日期" :value="itemValue(currentItem.studyDate)" />
+                  <van-cell title="场次" :value="itemValue(currentItem.studySessionText || currentItem.studySession)" />
                 </template>
                 <template v-else-if="currentItem.serviceId === '13'">
                   <van-cell v-if="currentItem.name || currentItem.manager" :title="currentItem.competitionRole === 'club' ? '负责人' : '姓名'" :value="itemValue(currentItem.name || currentItem.manager)" />
@@ -619,12 +635,67 @@
             </div>
         </div>
     </van-popup>
+
+    <!-- Home Config Popup -->
+    <van-popup
+      :show="showHomeConfigPopup"
+      @update:show="(v) => (showHomeConfigPopup = v)"
+      position="bottom"
+      :style="{ height: '70%' }"
+      round
+    >
+        <div class="detail-content" v-if="editingHomeConfig">
+            <van-nav-bar
+                title="首页配置"
+                left-text="取消"
+                right-text="保存"
+                @click-left="showHomeConfigPopup = false"
+                @click-right="saveHomeConfig"
+            />
+
+            <div style="padding-bottom: 40px;">
+                <van-cell-group title="首页背景图">
+                    <van-field v-model="editingHomeConfig.headerImage" label="图片地址" placeholder="输入URL或上传" />
+                    <van-field label="上传图片">
+                        <template #input>
+                            <van-uploader :after-read="onReadHomeHeaderImage" max-count="1" accept="image/*">
+                                <van-button icon="plus" type="primary" size="small" plain>上传图片</van-button>
+                            </van-uploader>
+                        </template>
+                    </van-field>
+
+                    <van-field name="headerImagePosition" label="图片焦点">
+                        <template #input>
+                            <van-radio-group v-model="editingHomeConfig.headerImagePosition" direction="horizontal">
+                                <van-radio name="top">上</van-radio>
+                                <van-radio name="center">中</van-radio>
+                                <van-radio name="bottom">下</van-radio>
+                            </van-radio-group>
+                        </template>
+                    </van-field>
+
+                    <div v-if="editingHomeConfig.headerImage" style="padding: 0 16px 16px;">
+                        <div class="aspect-preview-container">
+                            <div class="aspect-label">背景预览（固定高度，不受金刚区调参影响）</div>
+                            <div
+                                class="preview-box"
+                                :class="editingHomeConfig.headerImagePosition === 'top' ? 'pos-top' : (editingHomeConfig.headerImagePosition === 'bottom' ? 'pos-bottom' : 'pos-center')"
+                                style="height: 200px;"
+                            >
+                                <img :src="normalizeMediaUrl(editingHomeConfig.headerImage)" alt="preview" />
+                            </div>
+                        </div>
+                    </div>
+                </van-cell-group>
+            </div>
+        </div>
+    </van-popup>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, computed } from 'vue';
-import axios from 'axios';
+import axios, { authStorage } from '@/utils/http';
 import { showToast, showFailToast, showSuccessToast, showLoadingToast, closeToast, showConfirmDialog } from 'vant';
 
 // 归一化上传/存量媒体地址，避免出现：
@@ -685,6 +756,25 @@ const activeTab = ref(0);
 const userStr = localStorage.getItem('user');
 const user = userStr ? JSON.parse(userStr) : null;
 const userRole = ref(user ? user.role : 'user');
+const SUPER_ADMIN_PHONE = 'wzdkjjfzyxgs';
+const isSuperAdmin = ref(user ? user.phone === SUPER_ADMIN_PHONE : false);
+
+const refreshCurrentUser = async () => {
+    const accessToken = authStorage.getAccessToken();
+    if (!accessToken) return;
+    try {
+        const res = await axios.get('/api/auth/me');
+        if (res.data?.success) {
+            const current = res.data.user || {};
+            localStorage.setItem('user', JSON.stringify(current));
+            userRole.value = current.role || 'user';
+            isSuperAdmin.value = current.phone === SUPER_ADMIN_PHONE;
+        }
+    } catch (error) {
+        authStorage.clearTokens();
+        localStorage.removeItem('user');
+    }
+};
 
 // Selection logic
 const allSelected = ref(false);
@@ -895,12 +985,60 @@ const onReadStudyImage = async (file) => {
 };
 
 // 全局服务配置管理
+const DEFAULT_HOME_CONFIG = {
+    headerImage: '',
+    headerImagePosition: 'center'
+};
+
 const fetchAllServiceConfigs = async () => {
     try {
         const res = await axios.get('/api/services/config');
         allServiceConfigs.value = res.data.data || {};
+        homeConfig.value = JSON.parse(JSON.stringify(allServiceConfigs.value._home || DEFAULT_HOME_CONFIG));
     } catch (error) {
         showFailToast('获取服务配置失败');
+    }
+};
+
+const serviceConfigEntries = computed(() => {
+    const entries = Object.entries(allServiceConfigs.value || {}).filter(([id]) => /^\d+$/.test(String(id)));
+    entries.sort((a, b) => Number(a[0]) - Number(b[0]));
+    return entries;
+});
+
+const homeConfig = ref(JSON.parse(JSON.stringify(DEFAULT_HOME_CONFIG)));
+const editingHomeConfig = ref(JSON.parse(JSON.stringify(DEFAULT_HOME_CONFIG)));
+const showHomeConfigPopup = ref(false);
+
+const editHomeConfig = () => {
+    editingHomeConfig.value = JSON.parse(JSON.stringify(homeConfig.value || DEFAULT_HOME_CONFIG));
+    showHomeConfigPopup.value = true;
+};
+
+const onReadHomeHeaderImage = async (file) => {
+    showLoadingToast({ message: '上传中...', forbidClick: true });
+    const url = await uploadFile(file);
+    closeToast();
+    if (url && editingHomeConfig.value) {
+        editingHomeConfig.value.headerImage = normalizeMediaUrl(url);
+        showSuccessToast('背景图已上传');
+    }
+};
+
+const saveHomeConfig = async () => {
+    try {
+        showLoadingToast({ message: '保存中...', forbidClick: true });
+        const newConfigs = { ...allServiceConfigs.value };
+        newConfigs._home = editingHomeConfig.value;
+        await axios.post('/api/services/config', { config: newConfigs });
+        allServiceConfigs.value = newConfigs;
+        homeConfig.value = JSON.parse(JSON.stringify(editingHomeConfig.value));
+        closeToast();
+        showSuccessToast('保存成功');
+        showHomeConfigPopup.value = false;
+    } catch (error) {
+        closeToast();
+        showFailToast('保存失败');
     }
 };
 
@@ -942,6 +1080,14 @@ const onReadServiceFile = async (file, field) => {
 };
 
 const toggleUserRole = async (user) => {
+    if (!isSuperAdmin.value) {
+        showFailToast('仅超级管理员可调整权限');
+        return;
+    }
+    if (user.phone === SUPER_ADMIN_PHONE) {
+        showFailToast('超级管理员权限不可修改');
+        return;
+    }
     const newRole = user.role === 'admin' ? 'user' : 'admin';
     try {
         await axios.post('/api/user/role', {
@@ -1145,7 +1291,8 @@ const onDeleteCase = () => {
     });
 };
 
-onMounted(() => {
+onMounted(async () => {
+    await refreshCurrentUser();
     fetchData();
     fetchCases();
     fetchUsers();

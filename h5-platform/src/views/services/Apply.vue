@@ -21,7 +21,7 @@
               {{ serviceName }}功能正在建设中，敬请期待！
             </p>
             <p style="color: #969799; font-size: 13px; margin-bottom: 20px;">
-              如有需求，请联系客服：400-888-8888
+              如有需求，请联系客服：0577-55558188
             </p>
             <van-button 
               type="primary" 
@@ -530,6 +530,76 @@
             </van-popup>
           </template>
 
+          <!-- 低空研学报名（服务 9） -->
+          <template v-if="serviceId === '9'">
+            <van-field
+              v-model="formData.studyOrg"
+              label="学校/机构"
+              placeholder="请输入学校/机构名称"
+              :rules="[{ required: true, message: '请输入学校/机构名称' }]"
+            />
+            <van-field
+              v-model="formData.studyGrade"
+              label="年级/年龄段"
+              placeholder="如：四-六年级 / 10-12岁（可选）"
+            />
+            <van-field
+              v-model="formData.studyParticipants"
+              type="number"
+              label="参与人数"
+              placeholder="请输入参与人数"
+              :rules="[{ required: true, message: '请输入参与人数' }]"
+            />
+            <van-field
+              v-model="formData.studyDate"
+              is-link
+              readonly
+              label="期望日期"
+              placeholder="请选择日期"
+              @click="showStudyDatePicker = true"
+              @click-input="showStudyDatePicker = true"
+              :rules="[{ required: true, message: '请选择日期' }]"
+            />
+            <van-popup :show="showStudyDatePicker" @update:show="val => showStudyDatePicker = val" position="bottom">
+              <van-date-picker
+                v-model="studyDate"
+                title="选择日期"
+                :min-date="minDate"
+                @confirm="onStudyDateConfirm"
+                @cancel="showStudyDatePicker = false"
+              />
+            </van-popup>
+
+            <van-field
+              v-model="formData.studySessionText"
+              is-link
+              readonly
+              label="场次"
+              placeholder="请选择上午/下午场次"
+              @click="showStudySessionPicker = true"
+              @click-input="showStudySessionPicker = true"
+              :rules="[{ required: true, message: '请选择场次' }]"
+            />
+            <van-popup :show="showStudySessionPicker" @update:show="val => showStudySessionPicker = val" position="bottom">
+              <van-picker
+                :columns="studySessionOptions"
+                @confirm="onStudySessionConfirm"
+                @cancel="showStudySessionPicker = false"
+                title="选择场次"
+              />
+            </van-popup>
+
+            <van-field
+              v-model="formData.remark"
+              label="备注"
+              type="textarea"
+              rows="3"
+              maxlength="200"
+              show-word-limit
+              placeholder="可填写：集合方式/是否需要发票/其他需求（可选）"
+            />
+          </template>
+
           <!-- 无人机维修服务 -->
           <template v-if="serviceId === '12'">
             <van-field name="maintenanceType" label="服务类型">
@@ -736,8 +806,8 @@ const submitButtonText = computed(() => {
   return '提交申请'
 })
 
-// 判断服务是否可申请 (只有1-4号和6号服务在一期开放申请，新增13号)
-const isServiceAvailable = computed(() => ['1', '2', '3', '4', '6', '13'].includes(serviceId.value))
+// 判断服务是否可申请 (一期开放：1-4, 6, 9 以及 13 号)
+const isServiceAvailable = computed(() => ['1', '2', '3', '4', '6', '9', '13'].includes(serviceId.value))
 
 // 表单数据
 const formData = ref({
@@ -780,6 +850,13 @@ const formData = ref({
   liftItemWeight: '',
   workLocation: '',
   liftHeight: '',
+  // 研学报名（服务 9）
+  studyOrg: '', // 学校/机构
+  studyGrade: '', // 年级/年龄段
+  studyParticipants: '', // 人数
+  studyDate: '', // 期望日期
+  studySession: '', // am/pm
+  studySessionText: '', // 上午/下午
   // 维修
   maintenanceType: 'repair',
   isWarranty: 'yes',
@@ -835,6 +912,18 @@ const showExamModelPicker = ref(false)
 const showLicenseLevelPicker = ref(false)
 const showExperiencePicker = ref(false)
 const showBirthdayPicker = ref(false)
+// 研学选择器
+const showStudySessionPicker = ref(false)
+const showStudyDatePicker = ref(false)
+const studyDate = ref([
+  String(new Date().getFullYear()),
+  String(new Date().getMonth() + 1).padStart(2, '0'),
+  String(new Date().getDate()).padStart(2, '0')
+])
+const studySessionOptions = [
+  { text: '上午（08:50-11:40）', value: 'am' },
+  { text: '下午（13:50-16:40）', value: 'pm' }
+]
 const currentBirthday = ref(new Date(1990, 0, 1))
 const minDate = new Date(1950, 0, 1)
 const maxDate = new Date()
@@ -986,6 +1075,20 @@ const onTimeConfirm = ({ selectedValues }) => {
   const [year, month, day] = selectedValues
   formData.value.expectedTime = `${year}-${month}-${day}`
   showTimePicker.value = false
+}
+
+// 研学 - 日期确认
+const onStudyDateConfirm = ({ selectedValues }) => {
+  const [year, month, day] = selectedValues
+  formData.value.studyDate = `${year}-${month}-${day}`
+  showStudyDatePicker.value = false
+}
+
+// 研学 - 场次确认
+const onStudySessionConfirm = ({ selectedOptions }) => {
+  formData.value.studySession = selectedOptions[0].value
+  formData.value.studySessionText = selectedOptions[0].text
+  showStudySessionPicker.value = false
 }
 // 文件上传后处理
 const afterRead = (file) => {

@@ -5,7 +5,8 @@
       <div class="video-header">
         <img 
           class="bg-video"
-          src="https://www-cdn.djiits.com/cms/uploads/4d6128a30991074b6bad20e7e13a0c62.png"
+          :src="homeHeaderImage"
+          :style="{ objectPosition: homeHeaderImagePosition }"
           alt="background"
         />
         <div class="video-mask"></div>
@@ -123,8 +124,19 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
+import axios from 'axios'
 
 const router = useRouter()
+
+const normalizeUrl = (url) => {
+  if (!url) return ''
+  if (url.startsWith('http') || url.startsWith('data:') || url.startsWith('/')) return url
+  if (url.includes('.') || url.includes('/')) return `/${url}`
+  return url
+}
+
+const homeHeaderImage = ref('https://www-cdn.djiits.com/cms/uploads/4d6128a30991074b6bad20e7e13a0c62.png')
+const homeHeaderImagePosition = ref('center')
 
 // 下拉刷新
 const loading = ref(false)
@@ -153,6 +165,23 @@ onMounted(() => {
     index = (index + 1) % searchKeywords.length
     searchPlaceholder.value = searchKeywords[index]
   }, 3000)
+})
+
+onMounted(async () => {
+  try {
+    const res = await axios.get('/api/services/config')
+    const allConfigs = res?.data?.data || {}
+    const cfg = allConfigs?._home || {}
+    homeHeaderImage.value = normalizeUrl(cfg.headerImage || homeHeaderImage.value)
+    homeHeaderImagePosition.value =
+      cfg.headerImagePosition === 'top'
+        ? 'top'
+        : cfg.headerImagePosition === 'bottom'
+          ? 'bottom'
+          : 'center'
+  } catch (e) {
+    // ignore，使用默认图
+  }
 })
 
 onUnmounted(() => {
@@ -257,30 +286,46 @@ const goToDelivery = () => {
 .home-page {
   background-color: transparent;
   min-height: 100vh;
-  padding-bottom: 80px;
+  /* 与 Tabbar 实际占位高度保持一致，确保底部卡片完整露出且“贴合” */
+  padding-bottom: var(--tabbar-height);
+  width: 100%;
+  max-width: var(--page-max-width);
+  margin: 0 auto;
+
+  /* === Home 首屏可调参数 ===
+   * - 背景高度固定，不跟“调参”变化（避免背景被压缩裁切）
+   * - 只调金刚区覆盖高度，下面整体会跟着动
+   */
+  --home-bg-height: 300px;
+  --home-overlay-overlap: 40px;
 }
 
 /* 沉浸式视频背景 */
 .video-header {
-  height: 300px;
+  height: var(--home-bg-height);
   position: fixed; /* 固定定位 */
   top: 0;
-  left: 0;
+  left: 50%;
+  transform: translateX(-50%);
   width: 100%;
+  max-width: var(--page-max-width);
   z-index: 0;
   overflow: hidden;
   background: #000;
 }
 
 .video-placeholder {
-  height: 300px;
+  height: var(--home-bg-height);
   width: 100%;
+  max-width: var(--page-max-width);
+  margin: 0 auto;
 }
 
 .bg-video {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center;
   display: block;
 }
 
@@ -298,10 +343,12 @@ const goToDelivery = () => {
 .float-header {
   position: fixed; /* 固定定位 */
   top: 0;
-  left: 0;
-  right: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: var(--page-max-width);
   z-index: 100;
-  padding: 12px 16px 20px;
+  padding: calc(12px + env(safe-area-inset-top)) 16px 20px;
   color: #fff;
   background: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, transparent 100%);
 }
@@ -356,7 +403,7 @@ const goToDelivery = () => {
 .overlay-card {
   position: relative;
   z-index: 10;
-  margin: -40px 12px 10px; /* 向上重叠，左右留空 */
+  margin: calc(-1 * var(--home-overlay-overlap)) 12px 10px; /* 向上重叠，左右留空 */
   background: rgba(255, 255, 255, 0.25); /* 极简透明度 */
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);

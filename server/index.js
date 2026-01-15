@@ -5,6 +5,9 @@ const fs = require('fs');
 const path = require('path');
 const XLSX = require('xlsx');
 const multer = require('multer'); // Import multer
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+const { randomUUID } = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 3000; //读取 process.env.PORT
@@ -12,6 +15,10 @@ const DB_FILE = path.join(__dirname, 'data.json');
 const CASES_FILE = path.join(__dirname, 'cases.json');
 const USERS_FILE = path.join(__dirname, 'users.json');
 const SERVICES_CONFIG_FILE = path.join(__dirname, 'services_config.json');
+const JWT_SECRET = process.env.JWT_SECRET || 'low-altitude-platform-secret';
+const ACCESS_TOKEN_TTL = process.env.ACCESS_TOKEN_TTL || '30m';
+const REFRESH_TOKEN_TTL = process.env.REFRESH_TOKEN_TTL || '7d';
+const SUPER_ADMIN_PHONE = process.env.SUPER_ADMIN_PHONE || 'wzdkjjfzyxgs';
 
 app.use(cors());
 app.use(bodyParser.json({ limit: '50mb' }));
@@ -19,6 +26,137 @@ app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 
 // Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
+
+function getClientIp(req) {
+    const xf = req.headers['x-forwarded-for'];
+    let ip =
+        (typeof xf === 'string' && xf.split(',')[0].trim()) ||
+        (Array.isArray(xf) && xf[0]) ||
+        req.socket?.remoteAddress ||
+        req.ip ||
+        '';
+    if (ip.startsWith('::ffff:')) ip = ip.slice(7);
+    return ip;
+}
+
+function hashToSeed(str) {
+    // FNV-1a 32-bit
+    let h = 2166136261;
+    const s = String(str || '');
+    for (let i = 0; i < s.length; i++) {
+        h ^= s.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+    }
+    return h >>> 0;
+}
+
+function sanitizeUser(user) {
+    if (!user) return null;
+    const { password, passwordHash, refreshToken, refreshTokenExpiresAt, ...safe } = user;
+    return safe;
+}
+
+function generateTokens(user) {
+    const accessToken = jwt.sign(
+        { sub: user.id, role: user.role },
+        JWT_SECRET,
+        { expiresIn: ACCESS_TOKEN_TTL }
+    );
+    const refreshToken = jwt.sign(
+        { sub: user.id, type: 'refresh' },
+        JWT_SECRET,
+        { expiresIn: REFRESH_TOKEN_TTL }
+    );
+    const decoded = jwt.decode(refreshToken) || {};
+    return {
+        accessToken,
+        refreshToken,
+        refreshTokenExpiresAt: decoded.exp ? decoded.exp * 1000 : null
+    };
+}
+
+function findUserById(userId) {
+    const users = readUsersDB();
+    return users.find(u => u.id === userId);
+}
+
+function authRequired(req, res, next) {
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+    if (!token) {
+        return res.status(401).json({ success: false, message: '未登录或登录已过期' });
+    }
+    try {
+        const payload = jwt.verify(token, JWT_SECRET);
+        const user = findUserById(payload.sub);
+        if (!user) {
+            return res.status(401).json({ success: false, message: '用户不存在或登录已失效' });
+        }
+        req.user = sanitizeUser(user);
+        next();
+    } catch (err) {
+        return res.status(401).json({ success: false, message: '登录已过期，请重新登录' });
+    }
+}
+
+function authOptional(req, res, next) {
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+    if (!token) {
+        return next();
+    }
+    try {
+        const payload = jwt.verify(token, JWT_SECRET);
+        const user = findUserById(payload.sub);
+        if (user) {
+            req.user = sanitizeUser(user);
+        }
+    } catch (err) {
+        // ignore invalid token for optional auth
+    }
+    next();
+}
+
+function roleRequired(roles = []) {
+    return (req, res, next) => {
+        const user = req.user;
+        if (!user) {
+            return res.status(401).json({ success: false, message: '未登录或登录已过期' });
+        }
+        if (!roles.includes(user.role)) {
+            return res.status(403).json({ success: false, message: '无权限访问' });
+        }
+        next();
+    };
+}
+
+async function verifyUserPassword(user, inputPassword) {
+    if (!user || !inputPassword) return false;
+    if (user.passwordHash) {
+        return bcrypt.compare(inputPassword, user.passwordHash);
+    }
+    return user.password === inputPassword;
+}
+
+// Client IP helper (LAN testing / 分发)
+app.get('/api/client-ip', (req, res) => {
+    const ip = getClientIp(req);
+    res.json({ success: true, ip });
+});
+
+// Game assignment based on IP (seed + bucket for future sharding)
+app.get('/api/games/assign', (req, res) => {
+    const ip = getClientIp(req);
+    const seed = hashToSeed(ip || 'unknown');
+    res.json({
+        success: true,
+        ip,
+        playerKey: ip || 'unknown',
+        seed,
+        bucket: seed % 4,
+        assignedAt: new Date().toISOString()
+    });
+});
 
 // Multer Storage Configuration
 const storage = multer.diskStorage({
@@ -64,7 +202,8 @@ if (!fs.existsSync(USERS_FILE)) {
         {
             id: '1',
             phone: 'wzdkjjfzyxgs',
-            password: 'admin', // Plain text for demo
+            password: 'admin', // legacy plain text (kept for compatibility)
+            passwordHash: bcrypt.hashSync('admin', 10),
             name: 'wzdkjjfzyxgs',
             role: 'admin',
             avatar: '',
@@ -79,12 +218,31 @@ function ensureAdminUsers() {
     let users = readUsersDB();
     let modified = false;
 
+    const superAdminIndex = users.findIndex(u => u.phone === SUPER_ADMIN_PHONE);
+    if (superAdminIndex === -1) {
+        users.push({
+            id: randomUUID(),
+            phone: SUPER_ADMIN_PHONE,
+            password: 'admin',
+            passwordHash: bcrypt.hashSync('admin', 10),
+            name: SUPER_ADMIN_PHONE,
+            role: 'admin',
+            avatar: '',
+            createTime: new Date().toISOString()
+        });
+        modified = true;
+    } else if (users[superAdminIndex].role !== 'admin') {
+        users[superAdminIndex].role = 'admin';
+        modified = true;
+    }
+
     // Check DSLadmin
     if (!users.find(u => u.phone === 'DSLadmin')) {
         users.push({
             id: 'dsl_admin_id',
             phone: 'DSLadmin',
-            password: 'dkjjfwy2026DSL',
+            password: 'dkjjfwy2026DSL', // legacy plain text (kept for compatibility)
+            passwordHash: bcrypt.hashSync('dkjjfwy2026DSL', 10),
             name: 'DSL管理员',
             role: 'dsl_admin',
             avatar: '',
@@ -92,6 +250,15 @@ function ensureAdminUsers() {
         });
         modified = true;
     }
+
+    // Ensure existing admins have passwordHash
+    users = users.map(user => {
+        if (user.role && !user.passwordHash && user.password) {
+            modified = true;
+            return { ...user, passwordHash: bcrypt.hashSync(user.password, 10) };
+        }
+        return user;
+    });
 
     if (modified) {
         writeUsersDB(users);
@@ -243,34 +410,65 @@ const writeCasesDB = (data) => {
     }
 };
 
-// Login Endpoint
-app.post('/api/login', (req, res) => {
-    const { phone, password } = req.body;
-    const users = readUsersDB();
-    const user = users.find(u => u.phone === phone && u.password === password);
+async function handleLogin(req, res) {
+    try {
+        const { phone, username, password } = req.body || {};
+        const loginId = (phone || username || '').trim();
+        if (!loginId || !password) {
+            return res.status(400).json({ success: false, message: '账号或密码不能为空' });
+        }
+        const users = readUsersDB();
+        const user = users.find(u => u.phone === loginId || u.username === loginId);
+        const isValid = await verifyUserPassword(user, password);
+        if (!user || !isValid) {
+            return res.status(401).json({ success: false, message: '账号或密码错误' });
+        }
 
-    if (user) {
-        // In a real app, generate a token here
-        const { password, ...userInfo } = user;
-        res.json({ success: true, user: userInfo });
-    } else {
-        res.status(401).json({ success: false, message: 'Invalid phone or password' });
+        // Upgrade legacy users to hashed password
+        if (!user.passwordHash) {
+            user.passwordHash = await bcrypt.hash(password, 10);
+            user.password = user.password || '';
+            writeUsersDB(users);
+        }
+
+        const tokens = generateTokens(user);
+        const updatedUsers = users.map(u => {
+            if (u.id === user.id) {
+                return { ...u, refreshToken: tokens.refreshToken, refreshTokenExpiresAt: tokens.refreshTokenExpiresAt };
+            }
+            return u;
+        });
+        writeUsersDB(updatedUsers);
+
+        res.json({ success: true, user: sanitizeUser(user), ...tokens });
+    } catch (err) {
+        console.error('[login] failed:', err);
+        res.status(500).json({ success: false, message: '登录服务异常', detail: err?.message || 'unknown' });
     }
-});
+}
 
-// Register Endpoint
-app.post('/api/register', (req, res) => {
-    const { phone, password, name } = req.body;
+// Login Endpoint (legacy)
+app.post('/api/login', handleLogin);
+
+// Auth Login Endpoint
+app.post('/api/auth/login', handleLogin);
+
+// Register Endpoint (legacy)
+app.post('/api/register', async (req, res) => {
+    const { phone, password, name } = req.body || {};
     const users = readUsersDB();
-    
+    if (!phone || !password) {
+        return res.status(400).json({ success: false, message: '手机号或密码不能为空' });
+    }
     if (users.find(u => u.phone === phone)) {
-        return res.status(400).json({ success: false, message: 'User already exists' });
+        return res.status(400).json({ success: false, message: '用户已存在' });
     }
 
     const newUser = {
-        id: Date.now().toString(),
+        id: randomUUID(),
         phone,
-        password,
+        password: '', // do not keep plain text
+        passwordHash: await bcrypt.hash(password, 10),
         name: name || `User${phone.slice(-4)}`,
         role: 'user',
         avatar: '',
@@ -279,16 +477,112 @@ app.post('/api/register', (req, res) => {
 
     users.push(newUser);
     if (writeUsersDB(users)) {
-        const { password, ...userInfo } = newUser;
-        res.json({ success: true, user: userInfo });
+        const tokens = generateTokens(newUser);
+        const updatedUsers = users.map(u => {
+            if (u.id === newUser.id) {
+                return { ...u, refreshToken: tokens.refreshToken, refreshTokenExpiresAt: tokens.refreshTokenExpiresAt };
+            }
+            return u;
+        });
+        writeUsersDB(updatedUsers);
+        res.json({ success: true, user: sanitizeUser(newUser), ...tokens });
     } else {
         res.status(500).json({ success: false, message: 'Failed to create user' });
     }
 });
 
+// Auth Register Endpoint
+app.post('/api/auth/register', async (req, res) => {
+    const { phone, password, name } = req.body || {};
+    const users = readUsersDB();
+    if (!phone || !password) {
+        return res.status(400).json({ success: false, message: '手机号或密码不能为空' });
+    }
+    if (users.find(u => u.phone === phone)) {
+        return res.status(400).json({ success: false, message: '用户已存在' });
+    }
+
+    const newUser = {
+        id: randomUUID(),
+        phone,
+        password: '',
+        passwordHash: await bcrypt.hash(password, 10),
+        name: name || `User${phone.slice(-4)}`,
+        role: 'user',
+        avatar: '',
+        createTime: new Date().toISOString()
+    };
+
+    users.push(newUser);
+    if (writeUsersDB(users)) {
+        const tokens = generateTokens(newUser);
+        const updatedUsers = users.map(u => {
+            if (u.id === newUser.id) {
+                return { ...u, refreshToken: tokens.refreshToken, refreshTokenExpiresAt: tokens.refreshTokenExpiresAt };
+            }
+            return u;
+        });
+        writeUsersDB(updatedUsers);
+        res.json({ success: true, user: sanitizeUser(newUser), ...tokens });
+    } else {
+        res.status(500).json({ success: false, message: 'Failed to create user' });
+    }
+});
+
+// Auth Me
+app.get('/api/auth/me', authRequired, (req, res) => {
+    res.json({ success: true, user: req.user });
+});
+
+// Auth Refresh
+app.post('/api/auth/refresh', (req, res) => {
+    const { refreshToken } = req.body || {};
+    if (!refreshToken) {
+        return res.status(400).json({ success: false, message: '缺少 refresh token' });
+    }
+    let payload;
+    try {
+        payload = jwt.verify(refreshToken, JWT_SECRET);
+    } catch (err) {
+        return res.status(401).json({ success: false, message: 'refresh token 无效或已过期' });
+    }
+    if (payload.type !== 'refresh') {
+        return res.status(401).json({ success: false, message: 'refresh token 类型不正确' });
+    }
+
+    const users = readUsersDB();
+    const user = users.find(u => u.id === payload.sub);
+    if (!user || user.refreshToken !== refreshToken) {
+        return res.status(401).json({ success: false, message: 'refresh token 无效' });
+    }
+
+    const accessToken = jwt.sign(
+        { sub: user.id, role: user.role },
+        JWT_SECRET,
+        { expiresIn: ACCESS_TOKEN_TTL }
+    );
+    res.json({ success: true, accessToken });
+});
+
+// Auth Logout
+app.post('/api/auth/logout', authRequired, (req, res) => {
+    const users = readUsersDB();
+    const updatedUsers = users.map(u => {
+        if (u.id === req.user.id) {
+            return { ...u, refreshToken: '', refreshTokenExpiresAt: null };
+        }
+        return u;
+    });
+    writeUsersDB(updatedUsers);
+    res.json({ success: true });
+});
+
 // Update User Profile
-app.post('/api/user/update', (req, res) => {
-    const { id, name, avatar, phone } = req.body;
+app.post('/api/user/update', authRequired, (req, res) => {
+    const { id, name, avatar, phone } = req.body || {};
+    if (req.user.role !== 'admin' && req.user.id !== id) {
+        return res.status(403).json({ success: false, message: '无权限修改该用户' });
+    }
     let users = readUsersDB();
     const index = users.findIndex(u => u.id === id);
 
@@ -305,20 +599,34 @@ app.post('/api/user/update', (req, res) => {
     }
 });
 
-// Get Users (Admin only usually, but simplified here)
-app.get('/api/users', (req, res) => {
+// Get Users (Admin only)
+app.get('/api/users', authRequired, roleRequired(['admin', 'dsl_admin']), (req, res) => {
     const users = readUsersDB();
-    const safeUsers = users.map(({ password, ...u }) => u); // Exclude password
+    const safeUsers = users.map(u => sanitizeUser(u));
     res.json(safeUsers);
 });
 
 // Update User Role
-app.post('/api/user/role', (req, res) => {
-    const { id, role } = req.body;
+app.post('/api/user/role', authRequired, roleRequired(['admin']), (req, res) => {
+    const { id, role } = req.body || {};
     let users = readUsersDB();
     const index = users.findIndex(u => u.id === id);
 
     if (index !== -1) {
+        const requester = req.user;
+        const target = users[index];
+        const allowedRoles = ['user', 'admin', 'dsl_admin'];
+
+        if (requester.phone !== SUPER_ADMIN_PHONE) {
+            return res.status(403).json({ success: false, message: '仅超级管理员可调整权限' });
+        }
+        if (target.phone === SUPER_ADMIN_PHONE) {
+            return res.status(400).json({ success: false, message: '超级管理员权限不可修改' });
+        }
+        if (!allowedRoles.includes(role)) {
+            return res.status(400).json({ success: false, message: '非法角色' });
+        }
+
         users[index].role = role;
         if (writeUsersDB(users)) {
             res.json({ success: true });
@@ -368,7 +676,7 @@ app.get('/api/services/config', (req, res) => {
     res.json({ success: true, data: config });
 });
 
-app.post('/api/services/config', (req, res) => {
+app.post('/api/services/config', authRequired, roleRequired(['admin', 'dsl_admin']), (req, res) => {
     const { config } = req.body;
     if (!config || typeof config !== 'object') {
         return res.status(400).json({ success: false, message: 'Invalid config' });
@@ -382,8 +690,11 @@ app.post('/api/services/config', (req, res) => {
 });
 
 // Submit Application
-app.post('/api/submit', (req, res) => {
+app.post('/api/submit', authOptional, (req, res) => {
     const application = req.body;
+    if (req.user && !application.userId) {
+        application.userId = req.user.id;
+    }
     application.id = Date.now().toString(); // Simple ID
     application.createTime = new Date().toISOString(); // Server timestamp
 
@@ -413,14 +724,17 @@ app.post('/api/update', (req, res) => {
 });
 
 // Get Applications (with optional filtering)
-app.get('/api/list', (req, res) => {
-    const { startDate, endDate, userId, role } = req.query;
+app.get('/api/list', authRequired, (req, res) => {
+    const { startDate, endDate } = req.query;
     let db = readDB();
+
+    const role = req.user?.role;
+    const userId = req.user?.id;
 
     // DSL管理员权限：仅支持查阅管理无人机赛事(ID 13)信息
     if (role === 'dsl_admin') {
         db = db.filter(item => item.serviceId === '13');
-    } else if (userId) {
+    } else if (userId && role !== 'admin') {
         // Filter by User ID if provided (for regular users)
         db = db.filter(item => item.userId === userId);
     }
@@ -441,9 +755,10 @@ app.get('/api/list', (req, res) => {
 });
 
 // Export to Excel
-app.get('/api/export', (req, res) => {
-    const { startDate, endDate, ids, role } = req.query;
+app.get('/api/export', authRequired, roleRequired(['admin', 'dsl_admin']), (req, res) => {
+    const { startDate, endDate, ids } = req.query;
     let db = readDB();
+    const role = req.user?.role;
 
     // DSL管理员权限过滤
     if (role === 'dsl_admin') {

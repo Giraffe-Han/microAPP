@@ -57,7 +57,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { showSuccessToast, showFailToast } from 'vant'
-import axios from 'axios'
+import axios, { authStorage } from '@/utils/http'
 
 const router = useRouter()
 const name = ref('')
@@ -71,7 +71,7 @@ const validatePass = (val) => {
 
 const onSubmit = async (values) => {
   try {
-    const res = await axios.post('/api/register', {
+    const res = await axios.post('/api/auth/register', {
       name: values.name,
       phone: values.phone,
       password: values.password
@@ -81,6 +81,7 @@ const onSubmit = async (values) => {
       showSuccessToast('注册成功')
       // Store user info
       localStorage.setItem('user', JSON.stringify(res.data.user))
+      authStorage.setTokens(res.data.accessToken, res.data.refreshToken)
       
       // Redirect to mine
       router.push('/mine')
