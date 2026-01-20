@@ -2,17 +2,23 @@ const axios = require('axios');
 const crypto = require('crypto');
 const { sm2, sm4 } = require('sm-crypto');
 
-// 畅行温州平台对接配置（根据真实报文提取）
-const PLATFORM_BASE_URL = process.env.PLATFORM_BASE_URL || 'https://app.wzsjy.com:8446';
+// 畅行温州平台对接配置（测试环境）
+// 来源：docs/接入文档/接入参数.txt
+const PLATFORM_BASE_URL = process.env.PLATFORM_BASE_URL || 'https://dev.jieyisoft.com:11296';
 const JOIN_INST_ID = process.env.PLATFORM_JOININST_ID || '00000010';
 const H_INST_ID = process.env.PLATFORM_INST_ID || '00000001';
 const MCHNT_ID = process.env.PLATFORM_MCHNT_ID || '100000010003';
 const CHNL_ID = process.env.PLATFORM_CHNL_ID || '03';
 const AUTH_INST_ID = process.env.PLATFORM_AUTH_INST_ID || '00000001';
-const SM2_PRIVATE_KEY = process.env.PLATFORM_SM2_PRIVATE_KEY || 'C2993EDE51A683DB26B9988DF8D3785147AE5AFD2AE0E1CE5BD98328829D3423';
-// SM4密钥需要转为hex格式（1234567890123456 -> 31323334353637383930313233343536）
-const SM4_KEY_RAW = process.env.PLATFORM_SM4_KEY || '1234567890123456';
-const SM4_KEY = Buffer.from(SM4_KEY_RAW, 'utf8').toString('hex');
+const SM2_PRIVATE_KEY = process.env.PLATFORM_SM2_PRIVATE_KEY || 'a180a91baed06c50a92699d0fd6ca03412ad9f246a643396a07957b8933de643';
+
+// SM4密钥处理：
+// - 如果是32位hex字符串（如 67651926067651926067651926067651），直接使用
+// - 如果是16位UTF-8字符串（如 1234567890123456），转换为hex
+const SM4_KEY_RAW = process.env.PLATFORM_SM4_KEY || '67651926067651926067651926067651';
+const SM4_KEY = SM4_KEY_RAW.length === 32 && /^[0-9a-fA-F]+$/.test(SM4_KEY_RAW)
+  ? SM4_KEY_RAW  // 已经是32位hex，直接使用
+  : Buffer.from(SM4_KEY_RAW, 'utf8').toString('hex');  // UTF-8转hex
 
 const platformClient = axios.create({
   baseURL: PLATFORM_BASE_URL,
