@@ -780,12 +780,16 @@ const refreshCurrentUser = async () => {
 const allSelected = ref(false);
 const selectedIds = computed(() => {
     const currentList = activeTab.value === 3 ? competitionList.value : list.value;
-    return currentList.filter(item => item.selected).map(item => item.id);
+    // 防御性检查确保是数组
+    const listData = Array.isArray(currentList) ? currentList : [];
+    return listData.filter(item => item.selected).map(item => item.id);
 });
 
 const toggleSelectAll = () => {
     const currentList = activeTab.value === 3 ? competitionList.value : list.value;
-    currentList.forEach(item => {
+    // 防御性检查确保是数组
+    const listData = Array.isArray(currentList) ? currentList : [];
+    listData.forEach(item => {
         item.selected = allSelected.value;
     });
 };
@@ -815,7 +819,9 @@ const onFilterChange = () => {
 };
 
 const competitionList = computed(() => {
-    return list.value.filter(item => {
+    // 防御性检查确保 list.value 是数组
+    const listData = Array.isArray(list.value) ? list.value : [];
+    return listData.filter(item => {
         const isCompetition = item.serviceId === '13';
         const matchesRole = selectedRole.value === 'all' || item.competitionRole === selectedRole.value;
         const matchesStatus = selectedStatus.value === 'all' || item.status === selectedStatus.value;
@@ -837,7 +843,9 @@ const competitionList = computed(() => {
 const competitionStats = computed(() => {
     const stats = { total: 0, athlete: 0, coach: 0, referee: 0, club: 0 };
     // 使用所有赛事数据进行统计，不受当前筛选影响
-    list.value.filter(item => item.serviceId === '13').forEach(item => {
+    // 防御性检查确保 list.value 是数组
+    const listData = Array.isArray(list.value) ? list.value : [];
+    listData.filter(item => item.serviceId === '13').forEach(item => {
         stats.total++;
         if (item.competitionRole === 'athlete') stats.athlete++;
         else if (item.competitionRole === 'coach') stats.coach++;
@@ -895,8 +903,24 @@ const fetchData = async () => {
         if (endDate.value) params.endDate = endDate.value;
 
         const res = await axios.get('/api/list', { params });
+        
+        // 确保数据是数组格式
+        let data = res.data;
+        if (typeof data === 'string') {
+            try {
+                data = JSON.parse(data);
+            } catch (e) {
+                console.error('Failed to parse list data:', e);
+                data = [];
+            }
+        }
+        if (!Array.isArray(data)) {
+            console.error('API /api/list did not return an array:', data);
+            data = [];
+        }
+        
         // 初始化选择状态
-        list.value = res.data.map(item => ({ ...item, selected: false }));
+        list.value = data.map(item => ({ ...item, selected: false }));
         
         // 如果是DSL管理员且当前在不可见标签，自动切换到赛事管理
         if (userRole.value === 'dsl_admin' && activeTab.value !== 3) {

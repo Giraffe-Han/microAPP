@@ -73,7 +73,21 @@ async function readJsonStore(key, fallback) {
 
     const result = await query('SELECT data FROM json_store WHERE key = $1', [key]);
     if (!result.rows.length) return fallback;
-    return result.rows[0].data;
+    
+    let data = result.rows[0].data;
+    
+    // Handle potentially double-serialized data (stored as JSON string instead of JSONB)
+    // This can happen if data was previously stored with JSON.stringify()
+    if (typeof data === 'string') {
+        try {
+            data = JSON.parse(data);
+        } catch (e) {
+            console.error(`[storage] Failed to parse data for key ${key}:`, e);
+            return fallback;
+        }
+    }
+    
+    return data;
 }
 
 async function writeJsonStore(key, data) {
@@ -92,6 +106,8 @@ async function writeJsonStore(key, data) {
         }
     }
 
+    // Pass data directly to pg library - it handles JSONB serialization automatically
+    // Note: pg library converts JS objects/arrays to JSON for JSONB columns
     await query(
         `
         INSERT INTO json_store (key, data, updated_at)
@@ -99,7 +115,7 @@ async function writeJsonStore(key, data) {
         ON CONFLICT (key)
         DO UPDATE SET data = EXCLUDED.data, updated_at = NOW();
         `,
-        [key, JSON.stringify(data)]
+        [key, data]
     );
     return true;
 }
