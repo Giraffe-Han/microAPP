@@ -14,12 +14,13 @@ const AUTH_INST_ID = process.env.PLATFORM_AUTH_INST_ID || '00000015';
 const SM2_PRIVATE_KEY = process.env.PLATFORM_SM2_PRIVATE_KEY || 'cdcd3db6845a1457895328a52e109646707c6bf372ef44db69d4390989b9a5ed';
 
 // SM4密钥处理：
-// - 如果是32位hex字符串（如 67651926067651926067651926067651），直接使用
-// - 如果是16位UTF-8字符串（如 1234567890123456），转换为hex
+// 根据文档Java示例，SM4密钥是32位字符串，直接作为hex使用（代表16字节密钥）
 const SM4_KEY_RAW = process.env.PLATFORM_SM4_KEY || '12545612345648907234561434557894';
-const SM4_KEY = SM4_KEY_RAW.length === 32 && /^[0-9a-fA-F]+$/.test(SM4_KEY_RAW)
-  ? SM4_KEY_RAW  // 已经是32位hex，直接使用
-  : Buffer.from(SM4_KEY_RAW, 'utf8').toString('hex');  // UTF-8转hex
+// 32位字符串直接作为hex使用，16位字符串转hex
+const SM4_KEY = SM4_KEY_RAW.length === 32 
+  ? SM4_KEY_RAW 
+  : Buffer.from(SM4_KEY_RAW, 'utf8').toString('hex');
+console.log('[SSO Config] SM4_KEY_RAW:', SM4_KEY_RAW, 'SM4_KEY:', SM4_KEY);
 
 const platformClient = axios.create({
   baseURL: PLATFORM_BASE_URL,
