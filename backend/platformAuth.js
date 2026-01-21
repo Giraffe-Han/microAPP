@@ -68,18 +68,34 @@ const buildSignContent = (payload) => {
 
 const signPayload = (payload) => {
   const signContent = buildSignContent(payload);
+  console.log('[SSO Debug] signContent:', signContent);
+  
+  // SHA1 摘要
   const digestHex = crypto.createHash('sha1').update(signContent).digest('hex');
+  console.log('[SSO Debug] SHA1 digestHex:', digestHex);
+  
+  // SM2 签名 - 使用 joininstid 作为 userId
+  // 注意：sm-crypto 的 doSignature 接受 hex 字符串作为消息
   const signatureHex = sm2.doSignature(digestHex, SM2_PRIVATE_KEY, {
-    hash: false,
+    hash: false,  // 我们已经做了 SHA1，不需要再 hash
     userId: JOIN_INST_ID
   });
+  console.log('[SSO Debug] signatureHex:', signatureHex);
+  
   return Buffer.from(signatureHex, 'hex').toString('base64');
 };
 
 const encryptPayload = (plain) => {
-  // 文档要求：SM4加密 → hex输出 → 转base64
-  const hexCipher = sm4.encrypt(JSON.stringify(plain), SM4_KEY);
-  return Buffer.from(hexCipher, 'hex').toString('base64');
+  // 文档要求：SM4 ECB模式加密 → hex输出 → 转base64
+  const plainStr = JSON.stringify(plain);
+  console.log('[SSO Debug] encryptPayload plain:', plainStr);
+  
+  // sm4.encrypt 默认使用 ECB 模式，输出 hex 字符串
+  const hexCipher = sm4.encrypt(plainStr, SM4_KEY);
+  const base64Cipher = Buffer.from(hexCipher, 'hex').toString('base64');
+  console.log('[SSO Debug] encrypted base64:', base64Cipher);
+  
+  return base64Cipher;
 };
 
 const decryptPayload = (ciphertext) => {
@@ -115,11 +131,18 @@ const buildRequestBody = (data) => {
 const postPlatform = async (path, data) => {
   ensureConfig();
   const body = buildRequestBody(data);
+  
+  console.log('[SSO Debug] POST', PLATFORM_BASE_URL + path);
+  console.log('[SSO Debug] Request body:', JSON.stringify(body, null, 2));
+  
   const res = await platformClient.post(path, body, {
     headers: {
       'Content-Type': 'application/json'
     }
   });
+  
+  console.log('[SSO Debug] Response:', JSON.stringify(res.data, null, 2));
+  
   if (!res?.data) {
     throw new Error('平台响应为空');
   }
