@@ -104,15 +104,18 @@ https://microapp.zndkfx.com/sso/login?jyauthcode={authcode}
 
 ### 3.3 测试环境配置
 
+> 更新日期：2026-01-20
+
 | 配置项 | 值 |
 |--------|-----|
 | 平台地址 | https://dev.jieyisoft.com:11296 |
-| joininstid | 00000010 |
+| joininstid | 00000015 |
+| authinstid | 00000015 |
 | instid | 00000001 |
-| mchntid | 100000010003 |
+| mchntid | 150000150001 |
 | chnlid | 03 |
-| SM2 私钥 | a180a91baed06c50a92699d0fd6ca03412ad9f246a643396a07957b8933de643 |
-| SM4 密钥 | 67651926067651926067651926067651 |
+| SM2 私钥 | cdcd3db6845a1457895328a52e109646707c6bf372ef44db69d4390989b9a5ed |
+| SM4 密钥 | 12545612345648907234561434557894 |
 
 ### 3.4 连通性测试
 

@@ -8,14 +8,15 @@ const crypto = require('crypto');
 const { sm2, sm4 } = require('sm-crypto');
 
 // 配置（与 platformAuth.js 保持一致）
+// 更新日期：2026-01-20
 const PLATFORM_BASE_URL = process.env.PLATFORM_BASE_URL || 'https://dev.jieyisoft.com:11296';
-const JOIN_INST_ID = process.env.PLATFORM_JOININST_ID || '00000010';
+const JOIN_INST_ID = process.env.PLATFORM_JOININST_ID || '00000015';
 const H_INST_ID = process.env.PLATFORM_INST_ID || '00000001';
-const MCHNT_ID = process.env.PLATFORM_MCHNT_ID || '100000010003';
+const MCHNT_ID = process.env.PLATFORM_MCHNT_ID || '150000150001';
 const CHNL_ID = process.env.PLATFORM_CHNL_ID || '03';
-const AUTH_INST_ID = process.env.PLATFORM_AUTH_INST_ID || '00000001';
-const SM2_PRIVATE_KEY = process.env.PLATFORM_SM2_PRIVATE_KEY || 'a180a91baed06c50a92699d0fd6ca03412ad9f246a643396a07957b8933de643';
-const SM4_KEY_RAW = process.env.PLATFORM_SM4_KEY || '67651926067651926067651926067651';
+const AUTH_INST_ID = process.env.PLATFORM_AUTH_INST_ID || '00000015';
+const SM2_PRIVATE_KEY = process.env.PLATFORM_SM2_PRIVATE_KEY || 'cdcd3db6845a1457895328a52e109646707c6bf372ef44db69d4390989b9a5ed';
+const SM4_KEY_RAW = process.env.PLATFORM_SM4_KEY || '12545612345648907234561434557894';
 const SM4_KEY = SM4_KEY_RAW.length === 32 && /^[0-9a-fA-F]+$/.test(SM4_KEY_RAW)
   ? SM4_KEY_RAW
   : Buffer.from(SM4_KEY_RAW, 'utf8').toString('hex');
