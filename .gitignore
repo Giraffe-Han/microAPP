@@ -7,12 +7,12 @@
 # These files are modified by users during runtime
 # Overwriting will cause DATA LOSS!
 # ============================================
-server/data.json
-server/users.json
-server/cases.json
-server/services_config.json
-server/study_showcase.json
-server/public/uploads/
+backend/data.json
+backend/users.json
+backend/cases.json
+backend/services_config.json
+backend/study_showcase.json
+backend/public/uploads/
 
 # ============================================
 # Node.js Dependencies
