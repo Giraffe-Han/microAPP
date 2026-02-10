@@ -66,8 +66,23 @@ coverage/
 .nyc_output/
 
 # ============================================
+# Backend Local Test Scripts
+# ============================================
+backend/test-*.js
+backend/*-test-*.js
+backend/local-*.js
+backend/create-request.js
+backend/signature-verify-server.js
+backend/verify-signature.js
+
+# ============================================
 # Archives
 # ============================================
 *.tgz
 *.zip
 *.tar.gz
+
+# ============================================
+# Documentation Files
+# ============================================
+docs/files/

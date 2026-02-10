@@ -171,6 +171,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { onPullDownRefresh } from '@dcloudio/uni-app'
 import Layout from '@/components/Layout.vue'
 import { safeNavigateTo, safeSwitchTab } from '../../utils/nav'
+import { request } from '../../utils/request'
 
 const searchKeywords = ['搜索服务/案例', '无人机外卖', '行业应用示范', '飞行服务', '低空研学', '无人机吊运']
 const activeSearchIndex = ref(0)
@@ -197,7 +198,7 @@ const getCapsuleInfo = () => {
 const capsuleInfo = ref(getCapsuleInfo())
 const statusBarHeight = ref(uni.getSystemInfoSync().statusBarHeight || 20)
 
-const notices = ['交享点无人机外卖配送正式上线', '新开通江心屿无人机外卖配送']
+const notices = ref(['交享点无人机外卖配送正式上线', '新开通江心屿无人机外卖配送'])
 
 const quickServices = ref([
   { id: 'flight', name: '飞行服务', icon: '/static/icons/flight.svg', color: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)' },
@@ -315,12 +316,23 @@ const onBannerChange = (event) => {
   activeBanner.value = event.detail.current
 }
 
-onMounted(() => {
+onMounted(async () => {
   let index = 0
   searchTimer = setInterval(() => {
     index = (index + 1) % searchKeywords.length
     searchPlaceholder.value = searchKeywords[index]
   }, 3000)
+
+  // 加载后端配置的轮播消息
+  try {
+    const res = await request({ url: '/api/services/config' })
+    const cfg = (res?.data || res)?._home || {}
+    if (Array.isArray(cfg.notices) && cfg.notices.length > 0) {
+      notices.value = cfg.notices.filter(m => m && typeof m === 'string' && m.trim())
+    }
+  } catch (e) {
+    // ignore，使用默认值
+  }
 
   // #ifdef MP-WEIXIN
   // 预加载详情页，提升秒开感

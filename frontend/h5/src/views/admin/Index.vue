@@ -237,8 +237,8 @@
                 
                 <van-cell-group inset title="首页配置" style="margin-bottom: 12px;">
                     <van-cell
-                        title="首页背景图"
-                        :label="homeConfig?.headerImage ? '已配置（可点击修改）' : '未配置（点击上传）'"
+                        title="首页背景图 & 轮播消息"
+                        :label="(homeConfig?.headerImage ? '背景图已配置' : '背景图未配置') + '  ·  ' + (homeConfig?.notices?.length || 0) + ' 条轮播消息'"
                         is-link
                         @click="editHomeConfig"
                     />
@@ -687,6 +687,21 @@
                         </div>
                     </div>
                 </van-cell-group>
+
+                <van-cell-group title="轮播消息（首页通知栏）">
+                    <div v-for="(msg, idx) in editingHomeConfig.notices" :key="idx" style="display: flex; align-items: center; padding: 0 16px;">
+                        <van-field
+                            :model-value="msg"
+                            @update:model-value="(v) => editingHomeConfig.notices[idx] = v"
+                            :label="'消息 ' + (idx + 1)"
+                            placeholder="请输入通知消息"
+                        />
+                        <van-button size="mini" type="danger" icon="cross" @click="editingHomeConfig.notices.splice(idx, 1)" style="margin-left: 8px;" />
+                    </div>
+                    <div style="padding: 10px;">
+                        <van-button size="small" type="primary" block plain icon="plus" @click="editingHomeConfig.notices.push('')">添加消息</van-button>
+                    </div>
+                </van-cell-group>
             </div>
         </div>
     </van-popup>
@@ -1011,7 +1026,8 @@ const onReadStudyImage = async (file) => {
 // 全局服务配置管理
 const DEFAULT_HOME_CONFIG = {
     headerImage: '',
-    headerImagePosition: 'center'
+    headerImagePosition: 'center',
+    notices: ['交享点无人机外卖配送正式上线', '新开通江心屿无人机外卖配送']
 };
 
 const fetchAllServiceConfigs = async () => {
@@ -1036,6 +1052,9 @@ const showHomeConfigPopup = ref(false);
 
 const editHomeConfig = () => {
     editingHomeConfig.value = JSON.parse(JSON.stringify(homeConfig.value || DEFAULT_HOME_CONFIG));
+    if (!Array.isArray(editingHomeConfig.value.notices)) {
+        editingHomeConfig.value.notices = [...DEFAULT_HOME_CONFIG.notices];
+    }
     showHomeConfigPopup.value = true;
 };
 

@@ -64,8 +64,7 @@
             :touchable="false"
             :show-indicators="false"
           >
-            <van-swipe-item>交享点无人机外卖配送正式上线</van-swipe-item>
-            <van-swipe-item>新开通江心屿无人机外卖配送</van-swipe-item>
+            <van-swipe-item v-for="(msg, idx) in notices" :key="idx">{{ msg }}</van-swipe-item>
           </van-swipe>
         </van-notice-bar>
       </div>
@@ -137,6 +136,7 @@ const normalizeUrl = (url) => {
 
 const homeHeaderImage = ref('https://www-cdn.djiits.com/cms/uploads/4d6128a30991074b6bad20e7e13a0c62.png')
 const homeHeaderImagePosition = ref('center')
+const notices = ref(['交享点无人机外卖配送正式上线', '新开通江心屿无人机外卖配送'])
 
 // 下拉刷新
 const loading = ref(false)
@@ -179,8 +179,12 @@ onMounted(async () => {
         : cfg.headerImagePosition === 'bottom'
           ? 'bottom'
           : 'center'
+    // 加载后端配置的轮播消息
+    if (Array.isArray(cfg.notices) && cfg.notices.length > 0) {
+      notices.value = cfg.notices.filter(m => m && typeof m === 'string' && m.trim())
+    }
   } catch (e) {
-    // ignore，使用默认图
+    // ignore，使用默认值
   }
 })
 
