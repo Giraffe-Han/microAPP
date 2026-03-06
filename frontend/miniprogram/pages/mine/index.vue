@@ -37,7 +37,7 @@
       <!-- 第一组功能菜单 -->
       <view class="menu-section">
         <view class="menu-list">
-          <view class="menu-item" v-if="user && user.role === 'admin'" @tap="goAdmin">
+          <view class="menu-item" v-if="user && (user.role === 'admin' || user.role === 'dsl_admin')" @tap="goAdmin">
             <text class="menu-icon">⚙️</text>
             <text class="menu-title">后台管理</text>
             <text class="menu-arrow">›</text>
@@ -57,6 +57,17 @@
             <text class="menu-title">个人信息</text>
             <text class="menu-arrow">›</text>
           </view>
+          <!-- #ifdef MP-WEIXIN -->
+          <view class="menu-item" v-if="user && user.wxOpenid && !user.phone">
+            <text class="menu-icon">📱</text>
+            <view class="menu-title-group">
+              <text class="menu-title">绑定手机号</text>
+              <button class="inline-phone-btn" open-type="getPhoneNumber" @getphonenumber="handleBindPhone">
+                去绑定
+              </button>
+            </view>
+          </view>
+          <!-- #endif -->
           <view class="menu-item" @tap="goAuth">
             <text class="menu-icon">🛡️</text>
             <view class="menu-title-group">
@@ -114,7 +125,7 @@
 import { onShow } from '@dcloudio/uni-app'
 import { ref } from 'vue'
 import Layout from '@/components/Layout.vue'
-import { getStoredUser, request } from '../../utils/request'
+import { getStoredUser, request, authStorage } from '../../utils/request'
 
 const user = ref(null)
 const totalCount = ref(0)
@@ -131,11 +142,21 @@ const fetchData = async () => {
     return
   }
 
+  // Refresh user info from server
+  try {
+    const meRes = await request({ url: '/api/auth/me' })
+    if (meRes?.user) {
+      user.value = meRes.user
+      uni.setStorageSync('user', JSON.stringify(meRes.user))
+    }
+  } catch (e) { /* use cached user */ }
+
   try {
     const res = await request({ url: '/api/list', data: { userId: currentUser.id } })
-    totalCount.value = res.length
-    processingCount.value = res.filter((i) => i.status === '处理中').length
-    completedCount.value = res.filter((i) => i.status === '已完成').length
+    const list = Array.isArray(res) ? res : (res?.data || [])
+    totalCount.value = list.length
+    processingCount.value = list.filter((i) => i.status === '处理中').length
+    completedCount.value = list.filter((i) => i.status === '已完成').length
   } catch (e) {
     const mock = uni.getStorageSync('mock_applications') || []
     const list = mock.filter((a) => a.userId === currentUser.id)
@@ -207,12 +228,39 @@ const showAbout = () => {
   })
 }
 
+const handleBindPhone = async (e) => {
+  if (e.detail.errMsg !== 'getPhoneNumber:ok') return
+  uni.showLoading({ title: '绑定中...' })
+  try {
+    const res = await request({
+      url: '/api/auth/wx-phone',
+      method: 'POST',
+      data: { code: e.detail.code }
+    })
+    if (res?.success) {
+      user.value = res.user
+      uni.setStorageSync('user', JSON.stringify(res.user))
+      uni.showToast({ title: '绑定成功' })
+    } else {
+      throw new Error(res?.message || '绑定失败')
+    }
+  } catch (err) {
+    uni.showToast({ title: err?.message || '绑定失败', icon: 'none' })
+  } finally {
+    uni.hideLoading()
+  }
+}
+
 const handleLogout = () => {
   uni.showModal({
     title: '提示',
     content: '确定退出？',
-    success: (res) => {
+    success: async (res) => {
       if (res.confirm) {
+        try {
+          await request({ url: '/api/auth/logout', method: 'POST' })
+        } catch (e) { /* ignore */ }
+        authStorage.clearTokens()
         uni.removeStorageSync('user')
         user.value = null
         uni.switchTab({ url: '/pages/home/index' })
@@ -377,6 +425,22 @@ const handleLogout = () => {
 
 .logout-item .menu-title {
   color: #ee0a24;
+}
+
+.inline-phone-btn {
+  display: inline-block;
+  font-size: 13px;
+  color: #667eea;
+  background: transparent;
+  padding: 4px 12px;
+  border: 1px solid #667eea;
+  border-radius: 14px;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.inline-phone-btn::after {
+  border: none;
 }
 
 .safe-area-bottom {

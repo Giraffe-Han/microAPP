@@ -244,6 +244,8 @@ const goToService = (id) => {
     window.location.href = 'https://wx.zndkfx.com'
   } else if (id === 8) {
     goToDelivery()
+  } else if (id === 9) {
+    router.push('/study')
   } else if (id === 'more') {
     // 切换到服务列表 Tab (假设Tabbar中有这个路径，或者跳转到列表页)
     router.push('/services')

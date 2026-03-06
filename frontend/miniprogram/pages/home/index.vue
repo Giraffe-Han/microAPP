@@ -167,7 +167,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { onPullDownRefresh } from '@dcloudio/uni-app'
 import Layout from '@/components/Layout.vue'
 import { safeNavigateTo, safeSwitchTab } from '../../utils/nav'
@@ -205,6 +205,7 @@ const quickServices = ref([
   { id: 8, name: '无人机外卖', icon: '/static/icons/delivery.svg', color: 'linear-gradient(135deg, #38bdf8 0%, #3b82f6 100%)' },
   { id: 1, name: '无人机物流', icon: '/static/icons/logistics-drone.svg', color: 'linear-gradient(135deg, #06b6d4 0%, #2563eb 100%)' },
   { id: 4, name: '无人机吊运', icon: '/static/icons/lifting.svg', color: 'linear-gradient(135deg, #fbbf24 0%, #ea580c 100%)' },
+  { id: 13, name: '无人机赛事', icon: '/static/icons/competition.svg', color: 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)' },
   { id: 6, name: '飞手培训', icon: '/static/icons/training-v2.svg', color: 'linear-gradient(135deg, #fbbf24 0%, #ea580c 100%)' },
   { id: 9, name: '低空研学', icon: '/static/icons/study.svg', color: 'linear-gradient(135deg, #06b6d4 0%, #2563eb 100%)' },
   { id: 2, name: '政务服务', icon: '/static/icons/government.svg', color: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)' },
@@ -269,6 +270,10 @@ const handleFunctionTap = (item) => {
     goToDelivery()
     return
   }
+  if (item.id === 9) {
+    safeNavigateTo('/pages/study/index')
+    return
+  }
   if (item.id === 'contact') {
     uni.makePhoneCall({ phoneNumber: '057712345678' })
     return
@@ -317,12 +322,6 @@ const onBannerChange = (event) => {
 }
 
 onMounted(async () => {
-  let index = 0
-  searchTimer = setInterval(() => {
-    index = (index + 1) % searchKeywords.length
-    searchPlaceholder.value = searchKeywords[index]
-  }, 3000)
-
   // 加载后端配置的轮播消息
   try {
     const res = await request({ url: '/api/services/config' })
@@ -341,11 +340,6 @@ onMounted(async () => {
   // #endif
 })
 
-onUnmounted(() => {
-  if (searchTimer) {
-    clearInterval(searchTimer)
-  }
-})
 </script>
 
 <style scoped>

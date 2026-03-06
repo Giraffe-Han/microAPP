@@ -60,12 +60,23 @@
 import { ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { getCaseById } from '../../utils/cases'
+import { request } from '../../utils/request'
 
 const caseItem = ref(null)
 
-onLoad((options) => {
+onLoad(async (options) => {
   const id = options.id || '1'
-  caseItem.value = getCaseById(id)
+  try {
+    const res = await request({ url: '/api/cases', data: { id } })
+    const item = res?.data?.[0] || (Array.isArray(res) ? res[0] : res)
+    if (item && item.title) {
+      caseItem.value = item
+    } else {
+      caseItem.value = getCaseById(id)
+    }
+  } catch (e) {
+    caseItem.value = getCaseById(id)
+  }
   if (caseItem.value) {
     uni.setNavigationBarTitle({ title: '案例详情' })
   }

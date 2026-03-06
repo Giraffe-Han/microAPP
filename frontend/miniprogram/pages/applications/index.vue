@@ -59,13 +59,14 @@ const fetchData = async () => {
 
   try {
     const res = await request({ url: '/api/list', data: { userId: user.id } })
-    applications.value = res.map((item) => ({
+    const list = Array.isArray(res) ? res : (res?.data || [])
+    applications.value = list.map((item) => ({
       id: item.id,
       applyNo: item.orderNo || item.id,
       serviceName: item.serviceName || '未知服务',
       status: item.status || '待处理',
-      contactName: item.contactName,
-      contactPhone: item.contactPhone,
+      contactName: item.contactName || item.traineeName || item.name,
+      contactPhone: item.contactPhone || item.traineePhone || item.phone,
       applyTime: item.applyTime || new Date(item.createTime).toLocaleString()
     }))
   } catch (error) {

@@ -8,6 +8,7 @@ const multer = require('multer'); // Import multer
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { randomUUID } = require('crypto');
+const axios = require('axios');
 const { queryMemberByAuthCode } = require('./platformAuth');
 
 const app = express();
@@ -27,6 +28,27 @@ const JWT_SECRET = process.env.JWT_SECRET || 'low-altitude-platform-secret';
 const ACCESS_TOKEN_TTL = process.env.ACCESS_TOKEN_TTL || '30m';
 const REFRESH_TOKEN_TTL = process.env.REFRESH_TOKEN_TTL || '7d';
 const SUPER_ADMIN_PHONE = process.env.SUPER_ADMIN_PHONE || 'wzdkjjfzyxgs';
+
+const WX_APPID = process.env.WX_APPID || '';
+const WX_SECRET = process.env.WX_SECRET || '';
+
+let wxAccessTokenCache = { token: '', expiresAt: 0 };
+
+async function getWxAccessToken() {
+    if (wxAccessTokenCache.token && Date.now() < wxAccessTokenCache.expiresAt - 60000) {
+        return wxAccessTokenCache.token;
+    }
+    const url = `https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=${WX_APPID}&secret=${WX_SECRET}`;
+    const { data } = await axios.get(url);
+    if (data.errcode) {
+        throw new Error(`获取微信access_token失败: ${data.errmsg}`);
+    }
+    wxAccessTokenCache = {
+        token: data.access_token,
+        expiresAt: Date.now() + data.expires_in * 1000
+    };
+    return data.access_token;
+}
 
 app.use(cors());
 app.use(bodyParser.json({ limit: '50mb' }));
@@ -60,7 +82,7 @@ function hashToSeed(str) {
 
 function sanitizeUser(user) {
     if (!user) return null;
-    const { password, passwordHash, refreshToken, refreshTokenExpiresAt, ...safe } = user;
+    const { password, passwordHash, refreshToken, refreshTokenExpiresAt, wxSessionKey, ...safe } = user;
     return safe;
 }
 
@@ -226,6 +248,21 @@ async function ensureAdminUsers() {
             passwordHash: bcrypt.hashSync('dkjjfwy2026DSL', 10),
             name: 'DSL管理员',
             role: 'dsl_admin',
+            avatar: '',
+            createTime: new Date().toISOString()
+        });
+        modified = true;
+    }
+
+    // Check study_admin (研学管理员)
+    if (!users.find(u => u.phone === 'studyadmin')) {
+        users.push({
+            id: 'study_admin_id',
+            phone: 'studyadmin',
+            password: 'yanxue2026',
+            passwordHash: bcrypt.hashSync('yanxue2026', 10),
+            name: '研学管理员',
+            role: 'study_admin',
             avatar: '',
             createTime: new Date().toISOString()
         });
@@ -575,6 +612,124 @@ app.post('/api/auth/logout', authRequired, async (req, res) => {
     res.json({ success: true });
 });
 
+// WeChat Mini-Program Login (code → openid → find/create user → tokens)
+app.post('/api/auth/wx-login', async (req, res) => {
+    try {
+        const { code } = req.body || {};
+        if (!code) {
+            return res.status(400).json({ success: false, message: '缺少微信授权码' });
+        }
+        if (!WX_APPID || !WX_SECRET) {
+            return res.status(500).json({ success: false, message: '微信小程序配置缺失，请联系管理员' });
+        }
+
+        const wxUrl = `https://api.weixin.qq.com/sns/jscode2session?appid=${WX_APPID}&secret=${WX_SECRET}&js_code=${code}&grant_type=authorization_code`;
+        const { data: wxRes } = await axios.get(wxUrl);
+
+        if (wxRes.errcode) {
+            console.error('[wx-login] code2Session failed:', wxRes);
+            return res.status(400).json({ success: false, message: `微信授权失败: ${wxRes.errmsg}` });
+        }
+
+        const { openid, unionid, session_key } = wxRes;
+        if (!openid) {
+            return res.status(400).json({ success: false, message: '获取微信openid失败' });
+        }
+
+        const users = await readUsersDB();
+        let user = users.find(u => u.wxOpenid === openid);
+        let isNewUser = false;
+
+        if (!user && unionid) {
+            user = users.find(u => u.wxUnionid === unionid);
+        }
+
+        if (!user) {
+            isNewUser = true;
+            user = {
+                id: randomUUID(),
+                phone: '',
+                password: '',
+                passwordHash: '',
+                name: `微信用户${openid.slice(-4)}`,
+                role: 'user',
+                avatar: '',
+                wxOpenid: openid,
+                wxUnionid: unionid || '',
+                wxSessionKey: session_key || '',
+                createTime: new Date().toISOString()
+            };
+            users.push(user);
+        } else {
+            if (unionid && !user.wxUnionid) user.wxUnionid = unionid;
+            user.wxSessionKey = session_key || user.wxSessionKey || '';
+        }
+
+        const tokens = generateTokens(user);
+        const updatedUsers = users.map(u => {
+            if (u.id === user.id) {
+                return { ...u, wxOpenid: openid, wxUnionid: user.wxUnionid, wxSessionKey: user.wxSessionKey, refreshToken: tokens.refreshToken, refreshTokenExpiresAt: tokens.refreshTokenExpiresAt };
+            }
+            return u;
+        });
+        await writeUsersDB(updatedUsers);
+
+        res.json({ success: true, user: sanitizeUser(user), isNewUser, ...tokens });
+    } catch (err) {
+        console.error('[wx-login] failed:', err);
+        res.status(500).json({ success: false, message: err?.message || '微信登录失败' });
+    }
+});
+
+// WeChat Phone Number Binding (phone code → phone number → update user)
+app.post('/api/auth/wx-phone', authRequired, async (req, res) => {
+    try {
+        const { code } = req.body || {};
+        if (!code) {
+            return res.status(400).json({ success: false, message: '缺少手机号授权码' });
+        }
+        if (!WX_APPID || !WX_SECRET) {
+            return res.status(500).json({ success: false, message: '微信小程序配置缺失' });
+        }
+
+        const accessToken = await getWxAccessToken();
+        const { data: phoneRes } = await axios.post(
+            `https://api.weixin.qq.com/wxa/business/getuserphonenumber?access_token=${accessToken}`,
+            { code }
+        );
+
+        if (phoneRes.errcode) {
+            console.error('[wx-phone] getPhoneNumber failed:', phoneRes);
+            return res.status(400).json({ success: false, message: `获取手机号失败: ${phoneRes.errmsg}` });
+        }
+
+        const phoneNumber = phoneRes.phone_info?.purePhoneNumber || phoneRes.phone_info?.phoneNumber || '';
+        if (!phoneNumber) {
+            return res.status(400).json({ success: false, message: '未获取到手机号' });
+        }
+
+        const users = await readUsersDB();
+        const existingUser = users.find(u => u.phone === phoneNumber && u.id !== req.user.id);
+        if (existingUser) {
+            return res.status(400).json({ success: false, message: '该手机号已被其他账号绑定' });
+        }
+
+        const updatedUsers = users.map(u => {
+            if (u.id === req.user.id) {
+                return { ...u, phone: phoneNumber, name: u.name.startsWith('微信用户') ? `用户${phoneNumber.slice(-4)}` : u.name };
+            }
+            return u;
+        });
+        await writeUsersDB(updatedUsers);
+
+        const updatedUser = updatedUsers.find(u => u.id === req.user.id);
+        res.json({ success: true, user: sanitizeUser(updatedUser), phone: phoneNumber });
+    } catch (err) {
+        console.error('[wx-phone] failed:', err);
+        res.status(500).json({ success: false, message: err?.message || '获取手机号失败' });
+    }
+});
+
 // Update User Profile
 app.post('/api/user/update', authRequired, async (req, res) => {
     const { id, name, avatar, phone } = req.body || {};
@@ -613,7 +768,7 @@ app.post('/api/user/role', authRequired, roleRequired(['admin']), async (req, re
     if (index !== -1) {
         const requester = req.user;
         const target = users[index];
-        const allowedRoles = ['user', 'admin', 'dsl_admin'];
+        const allowedRoles = ['user', 'admin', 'dsl_admin', 'study_admin'];
 
         if (requester.phone !== SUPER_ADMIN_PHONE) {
             return res.status(403).json({ success: false, message: '仅超级管理员可调整权限' });
@@ -643,7 +798,7 @@ app.get('/api/study/showcase', async (req, res) => {
     res.json({ success: true, data });
 });
 
-app.post('/api/study/showcase', async (req, res) => {
+app.post('/api/study/showcase', authRequired, roleRequired(['admin', 'dsl_admin', 'study_admin']), async (req, res) => {
     const { items } = req.body || {};
     if (!Array.isArray(items)) {
         return res.status(400).json({ success: false, message: 'items must be an array' });
@@ -674,16 +829,111 @@ app.get('/api/services/config', async (req, res) => {
     res.json({ success: true, data: config });
 });
 
-app.post('/api/services/config', authRequired, roleRequired(['admin', 'dsl_admin']), async (req, res) => {
+app.post('/api/services/config', authRequired, roleRequired(['admin', 'dsl_admin', 'study_admin']), async (req, res) => {
     const { config } = req.body;
     if (!config || typeof config !== 'object') {
         return res.status(400).json({ success: false, message: 'Invalid config' });
+    }
+
+    const role = req.user?.role;
+    if (role === 'study_admin') {
+        const existing = await readServicesConfig();
+        const allowed = config['9'];
+        if (!allowed) {
+            return res.status(403).json({ success: false, message: '研学管理员仅可修改研学(ID:9)配置' });
+        }
+        existing['9'] = { ...existing['9'], ...allowed };
+        if (await writeServicesConfig(existing)) {
+            return res.json({ success: true });
+        }
+        return res.status(500).json({ success: false, message: 'Failed to save services config' });
     }
 
     if (await writeServicesConfig(config)) {
         res.json({ success: true });
     } else {
         res.status(500).json({ success: false, message: 'Failed to save services config' });
+    }
+});
+
+// ─── Dashboard Stats API ─────────────────────────────────────────────
+app.get('/api/admin/stats', authRequired, roleRequired(['admin', 'dsl_admin', 'study_admin']), async (req, res) => {
+    try {
+        const role = req.user?.role;
+        const [allApps, allUsers, allCases] = await Promise.all([
+            readDB(),
+            readUsersDB(),
+            readCasesDB()
+        ]);
+
+        // Applications visible to this role
+        let apps = allApps;
+        if (role === 'dsl_admin') {
+            apps = apps.filter(item => item.serviceId === '13');
+        } else if (role === 'study_admin') {
+            apps = apps.filter(item => item.serviceId === '9');
+        }
+
+        // Overview counts
+        const overview = {
+            totalOrders: apps.length,
+            pendingOrders: apps.filter(a => !a.status || a.status === '待处理').length,
+            processingOrders: apps.filter(a => a.status === '处理中').length,
+            completedOrders: apps.filter(a => a.status === '已完成').length,
+            totalUsers: allUsers.length,
+            totalCases: allCases.length,
+            totalCompetition: allApps.filter(a => a.serviceId === '13').length
+        };
+
+        // Order trend – last 14 days
+        const now = new Date();
+        const orderTrend = [];
+        for (let i = 13; i >= 0; i--) {
+            const d = new Date(now);
+            d.setDate(d.getDate() - i);
+            const dateStr = d.toISOString().slice(0, 10);
+            const count = apps.filter(a => {
+                if (!a.createTime) return false;
+                return a.createTime.slice(0, 10) === dateStr;
+            }).length;
+            orderTrend.push({ date: dateStr, count });
+        }
+
+        // Competition by role
+        const compApps = allApps.filter(a => a.serviceId === '13');
+        const competitionByRole = {
+            athlete: compApps.filter(a => a.competitionRole === 'athlete').length,
+            coach: compApps.filter(a => a.competitionRole === 'coach').length,
+            referee: compApps.filter(a => a.competitionRole === 'referee').length,
+            club: compApps.filter(a => a.competitionRole === 'club').length
+        };
+
+        // User growth – group by month
+        const monthMap = {};
+        allUsers.forEach(u => {
+            if (!u.createTime) return;
+            const m = u.createTime.slice(0, 7); // "YYYY-MM"
+            monthMap[m] = (monthMap[m] || 0) + 1;
+        });
+        const userGrowth = Object.entries(monthMap)
+            .sort(([a], [b]) => a.localeCompare(b))
+            .slice(-12)
+            .map(([month, count]) => ({ month, count }));
+
+        // Status distribution
+        const statusDist = {};
+        apps.forEach(a => {
+            const s = a.status || '待处理';
+            statusDist[s] = (statusDist[s] || 0) + 1;
+        });
+
+        res.json({
+            success: true,
+            data: { overview, orderTrend, competitionByRole, userGrowth, statusDist }
+        });
+    } catch (err) {
+        console.error('[admin/stats] failed:', err);
+        res.status(500).json({ success: false, message: '获取统计数据失败' });
     }
 });
 
@@ -732,6 +982,8 @@ app.get('/api/list', authRequired, async (req, res) => {
     // DSL管理员权限：仅支持查阅管理无人机赛事(ID 13)信息
     if (role === 'dsl_admin') {
         db = db.filter(item => item.serviceId === '13');
+    } else if (role === 'study_admin') {
+        db = db.filter(item => item.serviceId === '9');
     } else if (userId && role !== 'admin') {
         // Filter by User ID if provided (for regular users)
         db = db.filter(item => item.userId === userId);
@@ -753,7 +1005,7 @@ app.get('/api/list', authRequired, async (req, res) => {
 });
 
 // Export to Excel
-app.get('/api/export', authRequired, roleRequired(['admin', 'dsl_admin']), async (req, res) => {
+app.get('/api/export', authRequired, roleRequired(['admin', 'dsl_admin', 'study_admin']), async (req, res) => {
     const { startDate, endDate, ids } = req.query;
     let db = await readDB();
     const role = req.user?.role;
@@ -761,6 +1013,8 @@ app.get('/api/export', authRequired, roleRequired(['admin', 'dsl_admin']), async
     // DSL管理员权限过滤
     if (role === 'dsl_admin') {
         db = db.filter(item => item.serviceId === '13');
+    } else if (role === 'study_admin') {
+        db = db.filter(item => item.serviceId === '9');
     }
 
     // 如果指定了IDS，则只导出选中的项

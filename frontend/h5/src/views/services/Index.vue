@@ -105,6 +105,8 @@ const goToDetail = (id) => {
     window.location.href = 'https://wx.zndkfx.com'
   } else if (id === 8) {
     window.location.href = 'https://app.wzsjy.com:8446/h5/#/pages/diy/diy?pageId=130&title=%E6%97%A0%E4%BA%BA%E6%9C%BA%E5%A4%96%E5%8D%96%E9%85%8D%E9%80%81&jyauthcode='
+  } else if (id === 9) {
+    router.push('/study')
   } else {
     router.push(`/service-detail/${id}`)
   }

@@ -13,20 +13,40 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* 主题色定义 - 参考时尚科技网站的紫色主题 */
+/* 主题色定义 - Apple / Notion 简洁风 */
 :root {
-  --primary-color: #667eea;
-  --primary-dark: #764ba2;
-  --success-color: #07c160;
-  --warning-color: #ff976a;
-  --danger-color: #ee0a24;
-  --text-color: #323233;
-  --text-secondary: #969799;
-  --border-color: #ebedf0;
-  --background-color: #f7f8fa;
-  --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  /* 主色 */
+  --primary-color: #1d1d1f;
+  --primary-light: #515154;
+  --accent-color: #0071e3;
+  --accent-light: #e8f2fc;
+
+  /* 功能色 */
+  --success-color: #34c759;
+  --warning-color: #ff9f0a;
+  --danger-color: #ff3b30;
+  --info-color: #5ac8fa;
+
+  /* 文本 */
+  --text-color: #1d1d1f;
+  --text-secondary: #86868b;
+  --text-tertiary: #aeaeb2;
+
+  /* 边框 & 背景 */
+  --border-color: #e5e5e7;
+  --background-color: #f5f5f7;
+  --bg-primary: #ffffff;
+  --bg-sidebar: #fbfbfd;
+
+  /* 卡片 */
+  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --card-radius: 12px;
+
+  /* 布局 */
   --page-max-width: 520px;
   --tabbar-height: calc(74px + env(safe-area-inset-bottom));
+  --sidebar-width: 220px;
+  --admin-header-height: 56px;
 }
 
 /* 通用容器 */
@@ -52,9 +72,9 @@ body {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
-/* 渐变背景 */
+/* 渐变背景 (保留兼容，新页面不再使用) */
 .gradient-bg {
-  background: var(--gradient-primary);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
 /* 文本省略 */

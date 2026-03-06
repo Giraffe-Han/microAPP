@@ -153,11 +153,13 @@
 import { ref, computed } from 'vue'
 import { onLoad, onReady } from '@dcloudio/uni-app'
 import HomeFloatButton from '@/components/HomeFloatButton.vue'
+import { request } from '../../utils/request'
 
 const contentReady = ref(false)
 const service = ref(null)
+const serviceConfig = ref({})
 
-const studyShowcase = [
+const studyShowcase = ref([
   {
     title: '低空科普课堂',
     desc: '从基础原理到安全规范，互动式讲解让孩子更易理解。',
@@ -173,7 +175,32 @@ const studyShowcase = [
     desc: '完成学习任务与展示，记录成长瞬间，获得满满成就感。',
     image: '/static/images/study/achievement.svg'
   }
-]
+])
+
+const fetchServiceConfig = async (id) => {
+  try {
+    const res = await request({ url: '/api/services/config' })
+    const allConfigs = res?.data || res || {}
+    const config = allConfigs[id] || {}
+    serviceConfig.value = config
+
+    if (id === '9') {
+      if (config.studyShowcase && config.studyShowcase.length > 0) {
+        studyShowcase.value = config.studyShowcase
+      } else {
+        try {
+          const showcaseRes = await request({ url: '/api/study/showcase' })
+          const items = showcaseRes?.data || showcaseRes || []
+          if (Array.isArray(items) && items.length > 0) {
+            studyShowcase.value = items
+          }
+        } catch (e) { /* use default */ }
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to load service config:', e)
+  }
+}
 
 const previewStudy = (item) => {
   if (!item?.image) return
@@ -193,7 +220,8 @@ const serviceData = {
   '9': { id: '9', name: '低空研学服务', slogan: '科普教育 · 实践体验', icon: '/static/icons/study.svg', color: 'linear-gradient(135deg, #06b6d4 0%, #2563eb 100%)', mainColor: '#722ed1', intro: '面向青少年开展无人机科普、飞行体验活动。', projects: [{name: '科普讲座'}, {name: '飞行体验'}], advantages: ['专业导师', '安全场地', '完整体系'] },
   '10': { id: '10', name: '无人机二手交易', slogan: '诚信交易 · 专业检测', icon: '/static/icons/exchange.svg', color: 'linear-gradient(135deg, #fbbf24 0%, #ea580c 100%)', mainColor: '#fa8c16', intro: '支持设备买卖、以旧换新、专业检测。', projects: [{name: '设备买卖'}, {name: '以旧换新'}], advantages: ['交易安全', '置换优惠', '检测报告'] },
   '11': { id: '11', name: '金融服务', slogan: '设备保险 · 飞行护航', icon: '/static/icons/finance.svg', color: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)', mainColor: '#1677ff', intro: '涵盖设备险、责任险、飞手险等。', projects: [{name: '设备保险'}, {name: '快速理赔'}], advantages: ['全面保障', '快速理赔', '风险评估'] },
-  '12': { id: '12', name: '维修服务', slogan: '专业维修 · 原厂配件', icon: '/static/icons/wrench.svg', color: 'linear-gradient(135deg, #38bdf8 0%, #3b82f6 100%)', mainColor: '#2f54eb', intro: '解决各类硬件故障与软件问题。', projects: [{name: '故障维修'}, {name: '定期保养'}], advantages: ['官方授权', '正品配件', '质保承诺'] }
+  '12': { id: '12', name: '维修服务', slogan: '专业维修 · 原厂配件', icon: '/static/icons/wrench.svg', color: 'linear-gradient(135deg, #38bdf8 0%, #3b82f6 100%)', mainColor: '#2f54eb', intro: '解决各类硬件故障与软件问题。', projects: [{name: '故障维修'}, {name: '定期保养'}], advantages: ['官方授权', '正品配件', '质保承诺'] },
+  '13': { id: '13', name: '无人机赛事', slogan: '竞技比赛 · 精彩纷呈', icon: '/static/icons/competition.svg', color: 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)', mainColor: '#e11d48', intro: '提供无人机竞技赛事组织、报名、赛事执行等全流程服务。涵盖竞速赛、花飞赛、编程赛等多种赛事类型。', projects: [{name: '赛事组织'}, {name: '选手报名'}, {name: '裁判服务'}, {name: '赛事执行'}], advantages: ['专业赛事团队', '标准化赛事流程', '全程安全保障', '多赛事类型支持'] }
 }
 
 onLoad((options) => {
@@ -202,6 +230,7 @@ onLoad((options) => {
   if (service.value) {
     uni.setNavigationBarTitle({ title: service.value.name })
   }
+  fetchServiceConfig(id)
 })
 
 onReady(() => {
@@ -212,7 +241,7 @@ const actionButtonText = computed(() => {
   if (!service.value) return '立即办理'
   const id = service.value.id
   if (['1', '4', '8'].includes(id)) return '立即下单'
-  if (['6', '9'].includes(id)) return '立即报名'
+  if (['6', '9', '13'].includes(id)) return '立即报名'
   return '立即办理'
 })
 

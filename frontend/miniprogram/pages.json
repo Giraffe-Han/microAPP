@@ -105,6 +105,22 @@
       }
     },
     {
+      "path": "pages/study/index",
+      "style": {
+        "navigationBarTitleText": "低空研学",
+        "navigationBarTextStyle": "black",
+        "navigationBarBackgroundColor": "#ffffff"
+      }
+    },
+    {
+      "path": "pages/study/detail",
+      "style": {
+        "navigationBarTitleText": "课程详情",
+        "navigationBarTextStyle": "black",
+        "navigationBarBackgroundColor": "#ffffff"
+      }
+    },
+    {
       "path": "pages/admin/index",
       "style": {
         "navigationBarTitleText": "后台管理",

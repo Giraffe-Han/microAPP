@@ -19,6 +19,15 @@ export default defineConfig(({ mode }) => {
       '@': fileURLToPath(new URL('./src', import.meta.url))
     }
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          echarts: ['echarts', 'vue-echarts']
+        }
+      }
+    }
+  },
   server: {
     port: 5173,
     host: '0.0.0.0',

@@ -82,6 +82,10 @@ const goToDetail = (id) => {
     )
     return
   }
+  if (String(id) === '9') {
+    uni.navigateTo({ url: '/pages/study/index' })
+    return
+  }
   uni.navigateTo({ url: `/pages/services/detail?id=${encodeURIComponent(String(id))}` })
 }
 </script>

@@ -48,6 +48,18 @@ const routes = [
     meta: { title: '注册账号' }
   },
   {
+    path: '/study',
+    name: 'StudyIndex',
+    component: () => import('@/views/study/Index.vue'),
+    meta: { title: '低空研学' }
+  },
+  {
+    path: '/study/:id',
+    name: 'StudyDetail',
+    component: () => import('@/views/study/Detail.vue'),
+    meta: { title: '课程详情' }
+  },
+  {
     path: '/service-detail/:id',
     name: 'ServiceDetail',
     component: () => import('@/views/services/Detail.vue'),
@@ -67,9 +79,47 @@ const routes = [
   },
   {
     path: '/admin',
-    name: 'Admin',
-    component: () => import('@/views/admin/Index.vue'),
-    meta: { title: '后台管理' }
+    component: () => import('@/views/admin/AdminLayout.vue'),
+    meta: { title: '后台管理' },
+    redirect: '/admin/dashboard',
+    children: [
+      {
+        path: 'dashboard',
+        name: 'AdminDashboard',
+        component: () => import('@/views/admin/Dashboard.vue'),
+        meta: { title: '数据概览' }
+      },
+      {
+        path: 'orders',
+        name: 'AdminOrders',
+        component: () => import('@/views/admin/orders/OrderList.vue'),
+        meta: { title: '订单管理' }
+      },
+      {
+        path: 'cases',
+        name: 'AdminCases',
+        component: () => import('@/views/admin/cases/CaseList.vue'),
+        meta: { title: '案例管理' }
+      },
+      {
+        path: 'users',
+        name: 'AdminUsers',
+        component: () => import('@/views/admin/users/UserList.vue'),
+        meta: { title: '用户管理' }
+      },
+      {
+        path: 'competition',
+        name: 'AdminCompetition',
+        component: () => import('@/views/admin/competition/CompetitionList.vue'),
+        meta: { title: '赛事管理' }
+      },
+      {
+        path: 'config',
+        name: 'AdminConfig',
+        component: () => import('@/views/admin/config/ServiceConfigList.vue'),
+        meta: { title: '服务配置' }
+      }
+    ]
   },
   {
     path: '/games',
@@ -150,7 +200,7 @@ router.beforeEach(async (to, from, next) => {
       next('/login')
       return
     }
-    if (user.role !== 'admin' && user.role !== 'dsl_admin') {
+    if (!['admin', 'dsl_admin', 'study_admin'].includes(user.role)) {
       showFailToast('无管理权限，请使用管理员账号登录')
       next('/login')
       return
