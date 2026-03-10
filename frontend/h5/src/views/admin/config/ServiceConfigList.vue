@@ -272,6 +272,7 @@ const fetchAllServiceConfigs = async () => {
     allServiceConfigs.value = res.data.data || {}
     homeConfig.value = JSON.parse(JSON.stringify(allServiceConfigs.value._home || DEFAULT_HOME_CONFIG))
   } catch (error) {
+    console.error('[ServiceConfig] 获取配置失败', error)
     showFailToast('获取服务配置失败')
   }
 }
@@ -337,7 +338,10 @@ const saveServiceConfig = async () => {
     showServiceEditPopup.value = false
   } catch (error) {
     closeToast()
-    showFailToast('保存失败')
+    const status = error?.response?.status
+    const msg = error?.response?.data?.message
+    console.error('[ServiceConfig] 保存失败', status, msg, error)
+    showFailToast(status === 403 ? '无权限，请检查账号角色' : (msg || '保存失败'))
   }
 }
 
