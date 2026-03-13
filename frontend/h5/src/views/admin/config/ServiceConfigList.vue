@@ -350,7 +350,8 @@ const onReadServiceFile = async (file, field) => {
   const url = await uploadFile(file)
   closeToast()
   if (url && editingService.value) {
-    editingService.value[field] = normalizeMediaUrl(url)
+    // 替换整个对象引用，确保 van-field 等 Vant 组件内部缓存刷新
+    editingService.value = { ...editingService.value, [field]: normalizeMediaUrl(url) }
     showSuccessToast('图片已上传')
   }
 }
