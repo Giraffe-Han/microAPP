@@ -55,7 +55,7 @@
       </div>
 
       <!-- 服务介绍 -->
-      <div class="section-card" v-if="serviceId !== '6'">
+      <div class="section-card" v-if="serviceId !== '6' || !serviceConfig.trainingInfo">
         <h2 class="section-title">服务介绍</h2>
         <p class="section-text">{{ serviceConfig.intro }}</p>
 
@@ -82,7 +82,7 @@
       </div>
 
       <!-- 服务项目 -->
-      <div class="section-card" v-if="serviceId !== '6'">
+      <div class="section-card" v-if="serviceId !== '6' || !serviceConfig.trainingInfo">
         <h2 class="section-title">服务项目</h2>
         <div class="project-grid">
           <div 
@@ -127,7 +127,7 @@
       </div>
 
       <!-- 服务优势 -->
-      <div class="section-card" v-if="serviceId !== '6'">
+      <div class="section-card" v-if="serviceId !== '6' || !serviceConfig.trainingInfo">
         <h2 class="section-title">服务优势</h2>
         <div class="advantage-list">
           <div v-for="(adv, index) in serviceConfig.advantages" :key="index" class="advantage-item">
