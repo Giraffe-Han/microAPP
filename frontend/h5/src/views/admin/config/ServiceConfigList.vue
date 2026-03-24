@@ -5,10 +5,11 @@
         <span class="toolbar-label">服务配置</span>
       </template>
       <template #actions>
-        <van-button type="default" size="small" icon="replay" @click="fetchAllServiceConfigs">刷新配置</van-button>
+        <van-button type="default" size="small" icon="replay" @click="fetchAllServiceConfigs">刷新</van-button>
       </template>
     </DataToolbar>
 
+    <!-- 首页配置 -->
     <van-cell-group inset title="首页配置" style="margin-bottom: 12px; border-radius: var(--card-radius);">
       <van-cell
         title="首页背景图 & 轮播消息"
@@ -18,151 +19,268 @@
       />
     </van-cell-group>
 
-    <van-cell-group inset title="选择要编辑的服务" style="border-radius: var(--card-radius);">
+    <!-- 服务列表 -->
+    <van-cell-group inset title="服务列表" style="border-radius: var(--card-radius);">
       <van-cell
         v-for="[id, cfg] in serviceConfigEntries"
         :key="id"
         :title="cfg.name"
-        :label="cfg.slogan"
+        :label="cfg.intro ? (cfg.intro.length > 20 ? cfg.intro.slice(0, 20) + '...' : cfg.intro) : '暂无介绍'"
         is-link
         @click="editServiceConfig(id)"
       />
     </van-cell-group>
 
-    <!-- Service Config Edit Popup -->
+    <!-- ========== 服务编辑弹窗 ========== -->
     <van-popup :show="showServiceEditPopup" @update:show="v => showServiceEditPopup = v" position="bottom" :style="{ height: '90%' }" round>
-      <div class="detail-content" v-if="editingService">
+      <div class="edit-popup" v-if="editingService">
         <van-nav-bar
-          :title="'编辑 - ' + editingService.name"
+          :title="editingService.name"
           left-text="取消"
           right-text="保存"
           @click-left="showServiceEditPopup = false"
           @click-right="saveServiceConfig"
         />
-        <div style="padding-bottom: 40px;">
-          <van-cell-group title="基本信息">
-            <van-field v-model="editingService.name" label="服务名称" placeholder="请输入名称" />
-            <van-field v-model="editingService.slogan" label="口号/标语" placeholder="请输入标语" />
-            <van-field v-model="editingService.intro" label="服务介绍" type="textarea" rows="3" placeholder="请输入介绍" />
-            <van-field v-model="editingService.mainColor" label="主题色" placeholder="例如 #1677ff" />
-            <van-field v-model="editingService.contactPhone" label="联系电话" placeholder="主要联系电话" />
-            <van-field v-model="editingService.contactPhone2" label="咨询热线" placeholder="第二个联系电话（可选）" />
-            <van-field v-model="editingService.address" label="联系地址" type="textarea" rows="2" placeholder="请输入公司地址" />
+
+        <div class="edit-body">
+          <!-- 服务介绍 -->
+          <van-cell-group inset title="服务介绍">
+            <van-field v-model="editingService.intro" type="textarea" rows="3" placeholder="请输入服务介绍，建议50-100字" autosize show-word-limit maxlength="200" />
           </van-cell-group>
 
-          <van-cell-group title="背景图/图标">
-            <van-field v-model="editingService.headerImage" label="背景图URL" placeholder="研学展示用" />
-            <van-field name="headerImagePosition" label="图片对齐">
-              <template #input>
-                <van-radio-group v-model="editingService.headerImagePosition" direction="horizontal">
-                  <van-radio name="top">顶部</van-radio>
-                  <van-radio name="center">居中</van-radio>
-                  <van-radio name="bottom">底部</van-radio>
-                </van-radio-group>
-              </template>
-            </van-field>
-            <van-field label="选区预览">
-              <template #input>
-                <div v-if="editingService.headerImage" class="aspect-preview-container">
-                  <div class="aspect-label">Banner 选区 (5:3)</div>
-                  <div class="preview-box banner-box" :class="'pos-' + (editingService.headerImagePosition || 'center')">
-                    <img :src="normalizeMediaUrl(editingService.headerImage)" />
-                    <div class="safe-area-marker">页面文字显示区</div>
-                  </div>
-                </div>
-                <div v-else style="color: var(--text-secondary); font-size: 12px;">上传后可查看页面实际选区</div>
-              </template>
-            </van-field>
-            <van-field label="上传背景图">
-              <template #input>
-                <van-uploader :after-read="file => onReadServiceFile(file, 'headerImage')" max-count="1">
-                  <van-button icon="plus" size="small" type="primary" plain>点击上传海报图</van-button>
-                </van-uploader>
-              </template>
-            </van-field>
-            <van-field v-model="editingService.icon" label="图标名称/URL" placeholder="Vant图标或SVG路径" />
+          <!-- 联系方式 -->
+          <van-cell-group inset title="联系方式">
+            <van-field v-model="editingService.contactPhone" label="电话" placeholder="联系电话" type="tel" />
+            <van-field v-model="editingService.contactPhone2" label="热线" placeholder="选填，第二个电话" type="tel" />
+            <van-field v-model="editingService.address" label="地址" placeholder="选填" type="textarea" rows="1" autosize />
           </van-cell-group>
 
-          <van-cell-group title="服务项目">
-            <div v-for="(p, idx) in editingService.projects" :key="idx" style="padding: 10px; border-bottom: 1px solid #f7f8fa; display: flex; align-items: center; gap: 10px;">
-              <van-field v-model="p.name" label="项目名" dense style="flex: 1;" />
-              <van-field v-model="p.icon" label="图标" dense style="width: 100px;" />
-              <van-button size="mini" type="danger" icon="cross" @click="editingService.projects.splice(idx, 1)" />
+          <!-- 服务项目 -->
+          <van-cell-group inset :title="'服务项目（' + (editingService.projects?.length || 0) + '）'">
+            <div v-for="(p, idx) in editingService.projects" :key="idx" class="list-item">
+              <van-field v-model="p.name" placeholder="项目名称" dense />
+              <van-button size="mini" type="danger" plain icon="cross" @click="editingService.projects.splice(idx, 1)" />
             </div>
-            <div style="padding: 10px;">
-              <van-button size="small" type="primary" block plain icon="plus" @click="editingService.projects.push({name:'', icon:''})">添加项目</van-button>
+            <div class="list-add">
+              <van-button size="small" type="primary" block plain icon="plus" @click="editingService.projects.push({ name: '', icon: 'star-o' })">添加项目</van-button>
             </div>
           </van-cell-group>
 
-          <van-cell-group title="服务优势">
-            <div v-for="(adv, idx) in editingService.advantages" :key="idx" style="padding: 5px 10px; display: flex; align-items: center; gap: 10px;">
-              <van-field v-model="editingService.advantages[idx]" dense style="flex: 1;" />
-              <van-button size="mini" type="danger" icon="cross" @click="editingService.advantages.splice(idx, 1)" />
+          <!-- 服务优势 -->
+          <van-cell-group inset :title="'服务优势（' + (editingService.advantages?.length || 0) + '）'">
+            <div v-for="(adv, idx) in editingService.advantages" :key="idx" class="list-item">
+              <van-field v-model="editingService.advantages[idx]" placeholder="优势描述" dense />
+              <van-button size="mini" type="danger" plain icon="cross" @click="editingService.advantages.splice(idx, 1)" />
             </div>
-            <div style="padding: 10px;">
+            <div class="list-add">
               <van-button size="small" type="primary" block plain icon="plus" @click="editingService.advantages.push('')">添加优势</van-button>
             </div>
           </van-cell-group>
 
-          <!-- 研学专属：课程安排 -->
-          <van-cell-group title="课程安排 (仅研学有效)" v-if="editingServiceId === '9'">
-            <van-field v-model="editingService.studyPrice" label="统一票价" placeholder="例如 198元/人" />
-            <div v-for="(step, idx) in editingService.courseSchedule" :key="idx" style="padding: 10px; border-bottom: 1px solid #f7f8fa;">
-              <van-field v-model="step.time" label="时间段" placeholder="8:50-9:10" dense />
-              <van-field v-model="step.content" label="项目" placeholder="集合签到" dense />
-              <van-field v-model="step.remark" label="备注" placeholder="选填" dense />
-              <div style="text-align: right; margin-top: 5px;">
-                <van-button size="mini" type="danger" @click="editingService.courseSchedule.splice(idx, 1)">删除步骤</van-button>
-              </div>
-            </div>
-            <div style="padding: 10px;">
-              <van-button size="small" type="primary" block plain icon="plus" @click="editingService.courseSchedule ? editingService.courseSchedule.push({time:'', content:'', remark:''}) : editingService.courseSchedule = [{time:'', content:'', remark:''}]">添加课程步骤</van-button>
+          <!-- 背景图（仅培训显示） -->
+          <van-cell-group inset title="页面背景图" v-if="editingServiceId === '6'">
+            <van-field label="上传图片">
+              <template #input>
+                <van-uploader :after-read="file => onReadServiceFile(file, 'headerImage')" max-count="1">
+                  <van-button icon="plus" size="small" type="primary" plain>选择图片</van-button>
+                </van-uploader>
+              </template>
+            </van-field>
+            <div v-if="editingService.headerImage" class="img-preview">
+              <img :src="normalizeMediaUrl(editingService.headerImage)" />
             </div>
           </van-cell-group>
 
-          <!-- 亮点卡片 -->
-          <van-cell-group :title="(editingServiceId === '9' ? '研学' : '培训') + '亮点'" v-if="['9', '6'].includes(editingServiceId)">
-            <div v-for="(hl, idx) in editingService.highlights" :key="idx" style="padding: 10px; border-bottom: 1px solid #f7f8fa;">
-              <van-field v-model="hl.title" label="标题" dense />
-              <van-field v-model="hl.desc" label="描述" dense />
-              <van-field v-model="hl.icon" label="图标" dense />
-              <div style="text-align: right; margin-top: 5px;">
-                <van-button size="mini" type="danger" @click="editingService.highlights.splice(idx, 1)">删除</van-button>
+          <!-- 培训亮点（仅培训） -->
+          <van-cell-group inset :title="'培训亮点（' + (editingService.highlights?.length || 0) + '）'" v-if="editingServiceId === '6'">
+            <div v-for="(hl, idx) in editingService.highlights" :key="idx" class="list-item-block">
+              <div class="list-item-head">
+                <span class="item-num">{{ idx + 1 }}</span>
+                <van-button size="mini" type="danger" plain icon="cross" @click="editingService.highlights.splice(idx, 1)" />
               </div>
+              <van-field v-model="hl.title" label="标题" placeholder="如：官方认证" dense />
+              <van-field v-model="hl.desc" label="描述" placeholder="如：CAAC民航局授权" dense />
             </div>
-            <div style="padding: 10px;">
-              <van-button size="small" type="primary" block plain icon="plus" @click="editingService.highlights.push({title:'', desc:'', icon:''})">添加亮点</van-button>
+            <div class="list-add">
+              <van-button size="small" type="primary" block plain icon="plus" @click="editingService.highlights.push({ title: '', desc: '', icon: 'star-o' })">添加亮点</van-button>
             </div>
           </van-cell-group>
 
-          <!-- 精彩回顾 -->
-          <van-cell-group :title="(editingServiceId === '9' ? '研学' : '培训') + '展示'" v-if="['9', '6'].includes(editingServiceId)">
-            <div v-for="(item, idx) in editingService.studyShowcase" :key="idx" style="padding: 10px; border-bottom: 1px solid #f7f8fa;">
-              <div style="display:flex; gap:10px; align-items:center; margin-bottom: 10px;">
-                <div style="width: 60px; height: 45px; border-radius: 4px; overflow: hidden; background: #f7f8fa; flex: 0 0 60px;">
-                  <img v-if="item.image" :src="normalizeMediaUrl(item.image)" style="width: 100%; height: 100%; object-fit: cover;" />
-                </div>
-                <div style="flex: 1; font-weight: 600; font-size: 14px;">{{ item.title || '未命名回顾' }}</div>
-                <van-button size="mini" type="primary" plain @click="innerEditStudyItem(idx)">编辑</van-button>
-                <van-button size="mini" type="danger" plain @click="editingService.studyShowcase.splice(idx, 1)">删除</van-button>
+          <!-- 图文展示（研学/培训） -->
+          <van-cell-group inset :title="(editingServiceId === '9' ? '精彩回顾' : '图文展示') + '（' + (editingService.studyShowcase?.length || 0) + '）'" v-if="['9', '6'].includes(editingServiceId)">
+            <div v-for="(item, idx) in editingService.studyShowcase" :key="idx" class="showcase-item">
+              <div class="showcase-left">
+                <img v-if="item.image" :src="normalizeMediaUrl(item.image)" class="showcase-img" />
+                <van-icon v-else name="photo-o" size="24" color="#ddd" />
               </div>
+              <div class="showcase-mid">{{ item.title || '未命名' }}</div>
+              <van-button size="mini" type="primary" plain @click="innerEditStudyItem(idx)">编辑</van-button>
+              <van-button size="mini" type="danger" plain icon="cross" @click="editingService.studyShowcase.splice(idx, 1)" />
             </div>
-            <div style="padding: 10px; display: flex; gap: 10px;">
+            <div class="list-add">
               <van-button size="small" type="primary" block plain icon="plus" @click="innerAddStudyItem">添加展示</van-button>
             </div>
           </van-cell-group>
+
+          <!-- ===== 研学课程包管理（仅研学） ===== -->
+          <template v-if="editingServiceId === '9'">
+            <van-cell-group inset title="课程包管理" style="margin-top: 12px;">
+              <div class="pkg-tabs">
+                <div
+                  v-for="pkgId in studyPackageIds"
+                  :key="pkgId"
+                  class="pkg-tab"
+                  :class="{ active: activeStudyPkgId === pkgId }"
+                  @click="activeStudyPkgId = pkgId"
+                >
+                  {{ studyPackages[pkgId]?.tag || pkgId }} (¥{{ studyPackages[pkgId]?.price || '' }})
+                </div>
+              </div>
+            </van-cell-group>
+
+            <template v-if="activeStudyPkg">
+              <!-- 基本信息 -->
+              <van-cell-group inset :title="activeStudyPkg.tag + ' - 基本信息'">
+                <van-field v-model="activeStudyPkg.name" label="课程名称" placeholder="如：无人机研学实践中心半日营" />
+                <van-field v-model="activeStudyPkg.tag" label="标签" placeholder="如：半日营" />
+                <van-field v-model.number="activeStudyPkg.price" label="票价" placeholder="198" type="number" />
+                <van-field v-model="activeStudyPkg.headerBg" label="渐变背景" placeholder="linear-gradient(135deg, #06b6d4 0%, #2563eb 100%)" />
+                <van-field v-model="activeStudyPkg.intro" label="介绍" type="textarea" rows="3" placeholder="课程介绍" autosize />
+              </van-cell-group>
+
+              <!-- 课程安排 -->
+              <van-cell-group inset :title="activeStudyPkg.tag + ' - 课程安排（' + (activeStudyPkg.schedule?.length || 0) + '）'">
+                <div v-for="(step, idx) in activeStudyPkg.schedule" :key="idx" class="list-item-block">
+                  <div class="list-item-head">
+                    <span class="item-num">{{ idx + 1 }}</span>
+                    <van-button size="mini" type="danger" plain icon="cross" @click="activeStudyPkg.schedule.splice(idx, 1)" />
+                  </div>
+                  <van-field v-model="step.amTime" label="上午" placeholder="08:50" dense />
+                  <van-field v-model="step.pmTime" label="下午" placeholder="13:50" dense />
+                  <van-field v-model="step.name" label="环节" placeholder="集合签到" dense />
+                  <van-field v-model="step.desc" label="说明" placeholder="研学中心集合，签到报到" dense />
+                </div>
+                <div class="list-add">
+                  <van-button size="small" type="primary" block plain icon="plus" @click="activeStudyPkg.schedule.push({ amTime: '', pmTime: '', name: '', desc: '' })">添加步骤</van-button>
+                </div>
+              </van-cell-group>
+
+              <!-- 课程亮点 -->
+              <van-cell-group inset :title="activeStudyPkg.tag + ' - 课程亮点（' + (activeStudyPkg.highlights?.length || 0) + '）'">
+                <div v-for="(hl, idx) in activeStudyPkg.highlights" :key="idx" class="list-item-block">
+                  <div class="list-item-head">
+                    <span class="item-num">{{ idx + 1 }}</span>
+                    <van-button size="mini" type="danger" plain icon="cross" @click="activeStudyPkg.highlights.splice(idx, 1)" />
+                  </div>
+                  <van-field v-model="hl.emoji" label="图标" placeholder="🏛️" dense />
+                  <van-field v-model="hl.name" label="名称" placeholder="展厅参观" dense />
+                  <van-field v-model="hl.desc" label="描述" placeholder="无人机机型及场景应用讲解" dense />
+                </div>
+                <div class="list-add">
+                  <van-button size="small" type="primary" block plain icon="plus" @click="activeStudyPkg.highlights.push({ emoji: '', name: '', desc: '' })">添加亮点</van-button>
+                </div>
+              </van-cell-group>
+
+              <!-- 适合人群 -->
+              <van-cell-group inset :title="activeStudyPkg.tag + ' - 适合人群（' + (activeStudyPkg.audience?.length || 0) + '）'">
+                <div v-for="(a, idx) in activeStudyPkg.audience" :key="idx" class="list-item">
+                  <van-field v-model="activeStudyPkg.audience[idx]" placeholder="如：6-16岁青少年" dense />
+                  <van-button size="mini" type="danger" plain icon="cross" @click="activeStudyPkg.audience.splice(idx, 1)" />
+                </div>
+                <div class="list-add">
+                  <van-button size="small" type="primary" block plain icon="plus" @click="activeStudyPkg.audience.push('')">添加</van-button>
+                </div>
+              </van-cell-group>
+
+              <!-- 费用说明 -->
+              <van-cell-group inset :title="activeStudyPkg.tag + ' - 费用说明（' + (activeStudyPkg.feeInfo?.length || 0) + '）'">
+                <div v-for="(f, idx) in activeStudyPkg.feeInfo" :key="idx" class="list-item-block">
+                  <div class="list-item-head">
+                    <span class="item-num">{{ idx + 1 }}</span>
+                    <van-button size="mini" type="danger" plain icon="cross" @click="activeStudyPkg.feeInfo.splice(idx, 1)" />
+                  </div>
+                  <van-field v-model="f.label" label="项目" placeholder="课程价格" dense />
+                  <van-field v-model="f.value" label="内容" placeholder="¥198/人" dense />
+                </div>
+                <div class="list-add">
+                  <van-button size="small" type="primary" block plain icon="plus" @click="activeStudyPkg.feeInfo.push({ label: '', value: '' })">添加</van-button>
+                </div>
+              </van-cell-group>
+
+              <!-- 温馨提示 -->
+              <van-cell-group inset :title="activeStudyPkg.tag + ' - 温馨提示（' + (activeStudyPkg.tips?.length || 0) + '）'">
+                <div v-for="(t, idx) in activeStudyPkg.tips" :key="idx" class="list-item">
+                  <van-field v-model="activeStudyPkg.tips[idx]" placeholder="提示内容" dense />
+                  <van-button size="mini" type="danger" plain icon="cross" @click="activeStudyPkg.tips.splice(idx, 1)" />
+                </div>
+                <div class="list-add">
+                  <van-button size="small" type="primary" block plain icon="plus" @click="activeStudyPkg.tips.push('')">添加</van-button>
+                </div>
+              </van-cell-group>
+            </template>
+          </template>
+
+          <!-- ===== 飞手培训专属 ===== -->
+          <template v-if="editingServiceId === '6'">
+            <van-cell-group inset title="报名条件">
+              <div v-for="(cond, idx) in trainingConditions" :key="idx" class="list-item">
+                <van-field v-model="trainingConditions[idx]" placeholder="如：年满16周岁" dense />
+                <van-button size="mini" type="danger" plain icon="cross" @click="trainingConditions.splice(idx, 1)" />
+              </div>
+              <div class="list-add">
+                <van-button size="small" type="primary" block plain icon="plus" @click="trainingConditions.push('')">添加条件</van-button>
+              </div>
+            </van-cell-group>
+
+            <van-cell-group inset title="培训费用">
+              <div v-for="(p, idx) in trainingPrices" :key="idx" class="list-item-block">
+                <div class="list-item-head">
+                  <span class="item-num">{{ idx + 1 }}</span>
+                  <van-button size="mini" type="danger" plain icon="cross" @click="trainingPrices.splice(idx, 1)" />
+                </div>
+                <van-field v-model="p.label" label="项目" placeholder="视距内驾驶员" dense />
+                <van-field v-model="p.price" label="价格" placeholder="¥4,800起" dense />
+              </div>
+              <div class="list-add">
+                <van-button size="small" type="primary" block plain icon="plus" @click="trainingPrices.push({ label: '', price: '' })">添加</van-button>
+              </div>
+            </van-cell-group>
+
+            <van-cell-group inset title="教学特色">
+              <div v-for="(f, idx) in trainingFeatures" :key="idx" class="list-item-block">
+                <div class="list-item-head">
+                  <span class="item-num">{{ idx + 1 }}</span>
+                  <van-button size="mini" type="danger" plain icon="cross" @click="trainingFeatures.splice(idx, 1)" />
+                </div>
+                <van-field v-model="f.title" label="标题" placeholder="小班制教学" dense />
+                <van-field v-model="f.desc" label="描述" type="textarea" rows="2" placeholder="详细说明" dense autosize />
+              </div>
+              <div class="list-add">
+                <van-button size="small" type="primary" block plain icon="plus" @click="trainingFeatures.push({ title: '', desc: '' })">添加</van-button>
+              </div>
+            </van-cell-group>
+
+            <van-cell-group inset title="公司简介">
+              <van-field v-model="trainingCompanyTitle" label="公司名" placeholder="温州低空科技集团" />
+              <van-field v-model="trainingCompanyContent" label="简介" type="textarea" rows="3" placeholder="公司介绍" autosize />
+            </van-cell-group>
+
+            <van-cell-group inset title="执照说明">
+              <van-field v-model="trainingLicenseContent" label="说明" type="textarea" rows="2" placeholder="执照功能介绍" autosize />
+              <van-field v-model="trainingLicenseQuote" label="法规" type="textarea" rows="2" placeholder="法规条文引用" autosize />
+            </van-cell-group>
+          </template>
         </div>
       </div>
     </van-popup>
 
-    <!-- Study Item Edit Popup -->
-    <van-popup :show="showStudyItemEditPopup" @update:show="v => showStudyItemEditPopup = v" position="bottom" :style="{ height: '70%' }" round>
-      <div class="detail-content" v-if="studyEditingItem">
-        <van-cell-group title="往期回顾内容">
+    <!-- 图文展示编辑子弹窗 -->
+    <van-popup :show="showStudyItemEditPopup" @update:show="v => showStudyItemEditPopup = v" position="bottom" :style="{ height: '65%' }" round>
+      <div style="padding: 16px 0;" v-if="studyEditingItem">
+        <van-cell-group title="编辑图文">
           <van-field v-model="studyEditingItem.title" label="标题" placeholder="请输入标题" />
           <van-field v-model="studyEditingItem.desc" label="描述" type="textarea" rows="2" placeholder="请输入描述" />
-          <van-field v-model="studyEditingItem.image" label="图片地址" placeholder="输入URL或上传" />
-          <van-field label="上传图片">
+          <van-field label="图片">
             <template #input>
               <van-uploader :after-read="onReadStudyImage" max-count="1" accept="image/*">
                 <van-button icon="plus" type="primary" size="small" plain>上传图片</van-button>
@@ -170,62 +288,43 @@
             </template>
           </van-field>
           <div v-if="studyEditingItem.image" style="padding: 0 16px 16px;">
-            <img :src="normalizeMediaUrl(studyEditingItem.image)" style="width:100%; border-radius: 10px; display:block;" />
+            <img :src="normalizeMediaUrl(studyEditingItem.image)" style="width:100%; border-radius: 8px; display:block;" />
           </div>
         </van-cell-group>
-        <div style="margin: 16px; padding-bottom: 30px;">
+        <div style="margin: 16px;">
           <van-button round block type="primary" @click="confirmStudyItemEdit">确定</van-button>
         </div>
       </div>
     </van-popup>
 
-    <!-- Home Config Popup -->
+    <!-- 首页配置弹窗 -->
     <van-popup :show="showHomeConfigPopup" @update:show="v => showHomeConfigPopup = v" position="bottom" :style="{ height: '70%' }" round>
-      <div class="detail-content" v-if="editingHomeConfig">
+      <div style="padding: 16px 0;" v-if="editingHomeConfig">
         <van-nav-bar title="首页配置" left-text="取消" right-text="保存" @click-left="showHomeConfigPopup = false" @click-right="saveHomeConfig" />
         <div style="padding-bottom: 40px;">
-          <van-cell-group title="首页背景图">
-            <van-field v-model="editingHomeConfig.headerImage" label="图片地址" placeholder="输入URL或上传" />
-            <van-field label="上传图片">
+          <van-cell-group title="背景图">
+            <van-field label="上传">
               <template #input>
                 <van-uploader :after-read="onReadHomeHeaderImage" max-count="1" accept="image/*">
-                  <van-button icon="plus" type="primary" size="small" plain>上传图片</van-button>
+                  <van-button icon="plus" type="primary" size="small" plain>选择图片</van-button>
                 </van-uploader>
               </template>
             </van-field>
-            <van-field name="headerImagePosition" label="图片焦点">
-              <template #input>
-                <van-radio-group v-model="editingHomeConfig.headerImagePosition" direction="horizontal">
-                  <van-radio name="top">上</van-radio>
-                  <van-radio name="center">中</van-radio>
-                  <van-radio name="bottom">下</van-radio>
-                </van-radio-group>
-              </template>
-            </van-field>
             <div v-if="editingHomeConfig.headerImage" style="padding: 0 16px 16px;">
-              <div class="aspect-preview-container">
-                <div class="aspect-label">背景预览</div>
-                <div
-                  class="preview-box"
-                  :class="editingHomeConfig.headerImagePosition === 'top' ? 'pos-top' : (editingHomeConfig.headerImagePosition === 'bottom' ? 'pos-bottom' : 'pos-center')"
-                  style="height: 200px;"
-                >
-                  <img :src="normalizeMediaUrl(editingHomeConfig.headerImage)" alt="preview" />
-                </div>
-              </div>
+              <img :src="normalizeMediaUrl(editingHomeConfig.headerImage)" style="width:100%; border-radius: 8px; display:block;" />
             </div>
           </van-cell-group>
-          <van-cell-group title="轮播消息（首页通知栏）">
-            <div v-for="(msg, idx) in editingHomeConfig.notices" :key="idx" style="display: flex; align-items: center; padding: 0 16px;">
+          <van-cell-group title="轮播消息">
+            <div v-for="(msg, idx) in editingHomeConfig.notices" :key="idx" class="list-item" style="padding: 4px 16px;">
               <van-field
                 :model-value="msg"
                 @update:model-value="v => editingHomeConfig.notices[idx] = v"
-                :label="'消息 ' + (idx + 1)"
                 placeholder="请输入通知消息"
+                dense
               />
-              <van-button size="mini" type="danger" icon="cross" @click="editingHomeConfig.notices.splice(idx, 1)" style="margin-left: 8px;" />
+              <van-button size="mini" type="danger" plain icon="cross" @click="editingHomeConfig.notices.splice(idx, 1)" />
             </div>
-            <div style="padding: 10px;">
+            <div class="list-add">
               <van-button size="small" type="primary" block plain icon="plus" @click="editingHomeConfig.notices.push('')">添加消息</van-button>
             </div>
           </van-cell-group>
@@ -236,7 +335,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, reactive, onMounted } from 'vue'
 import axios from '@/utils/http'
 import { showFailToast, showSuccessToast, showLoadingToast, closeToast } from 'vant'
 import DataToolbar from '../components/DataToolbar.vue'
@@ -259,6 +358,21 @@ const studyEditingItem = ref(null)
 const homeConfig = ref(JSON.parse(JSON.stringify(DEFAULT_HOME_CONFIG)))
 const editingHomeConfig = ref(JSON.parse(JSON.stringify(DEFAULT_HOME_CONFIG)))
 const showHomeConfigPopup = ref(false)
+
+// trainingInfo 拆分字段
+const trainingConditions = ref([])
+const trainingPrices = ref([])
+const trainingFeatures = ref([])
+const trainingCompanyTitle = ref('')
+const trainingCompanyContent = ref('')
+const trainingLicenseContent = ref('')
+const trainingLicenseQuote = ref('')
+
+// 研学课程包
+const studyPackages = ref({})
+const studyPackageIds = ref(['study-198', 'study-238'])
+const activeStudyPkgId = ref('study-198')
+const activeStudyPkg = computed(() => studyPackages.value[activeStudyPkgId.value] || null)
 
 const serviceConfigEntries = computed(() => {
   const entries = Object.entries(allServiceConfigs.value || {}).filter(([id]) => /^\d+$/.test(String(id)))
@@ -291,8 +405,8 @@ const onReadHomeHeaderImage = async (file) => {
   const url = await uploadFile(file)
   closeToast()
   if (url && editingHomeConfig.value) {
-    editingHomeConfig.value.headerImage = normalizeMediaUrl(url)
-    showSuccessToast('背景图已上传')
+    editingHomeConfig.value = { ...editingHomeConfig.value, headerImage: normalizeMediaUrl(url) }
+    showSuccessToast('上传成功')
   }
 }
 
@@ -316,19 +430,69 @@ const saveHomeConfig = async () => {
 // --- Service config ---
 const editServiceConfig = (id) => {
   editingServiceId.value = id
-  editingService.value = JSON.parse(JSON.stringify(allServiceConfigs.value[id]))
-  if (!editingService.value.projects) editingService.value.projects = []
-  if (!editingService.value.advantages) editingService.value.advantages = []
+  const raw = JSON.parse(JSON.stringify(allServiceConfigs.value[id]))
+  if (!raw.projects) raw.projects = []
+  if (!raw.advantages) raw.advantages = []
   if (['9', '6'].includes(id)) {
-    if (!editingService.value.highlights) editingService.value.highlights = []
-    if (!editingService.value.studyShowcase) editingService.value.studyShowcase = []
+    if (!raw.highlights) raw.highlights = []
+    if (!raw.studyShowcase) raw.studyShowcase = []
   }
+  editingService.value = raw
+
+  // 初始化研学课程包
+  if (id === '9') {
+    const pkgs = raw.packages || {}
+    studyPackages.value = JSON.parse(JSON.stringify(pkgs))
+    // 确保每个包有必需的字段
+    for (const pkgId of studyPackageIds.value) {
+      if (!studyPackages.value[pkgId]) {
+        studyPackages.value[pkgId] = { name: '', tag: pkgId === 'study-198' ? '半日营' : '亲子课程', price: pkgId === 'study-198' ? 198 : 238, headerBg: '', intro: '', schedule: [], highlights: [], audience: [], feeInfo: [], tips: [] }
+      }
+      const p = studyPackages.value[pkgId]
+      if (!p.schedule) p.schedule = []
+      if (!p.highlights) p.highlights = []
+      if (!p.audience) p.audience = []
+      if (!p.feeInfo) p.feeInfo = []
+      if (!p.tips) p.tips = []
+    }
+    activeStudyPkgId.value = 'study-198'
+  }
+
+  // 初始化 trainingInfo
+  if (id === '6') {
+    const ti = raw.trainingInfo || {}
+    trainingConditions.value = [...(ti.conditions || [])]
+    trainingPrices.value = (ti.prices || []).map(p => ({ ...p }))
+    trainingFeatures.value = (ti.features || []).map(f => ({ ...f }))
+    trainingCompanyTitle.value = ti.companyIntro?.title || ''
+    trainingCompanyContent.value = ti.companyIntro?.content || ''
+    trainingLicenseContent.value = ti.licenseFunction?.content || ''
+    trainingLicenseQuote.value = ti.licenseFunction?.quote || ''
+  }
+
   showServiceEditPopup.value = true
 }
 
 const saveServiceConfig = async () => {
   try {
     showLoadingToast({ message: '保存中...', forbidClick: true })
+
+    // 合并研学课程包
+    if (editingServiceId.value === '9') {
+      editingService.value.packages = JSON.parse(JSON.stringify(studyPackages.value))
+    }
+
+    // 合并 trainingInfo
+    if (editingServiceId.value === '6') {
+      editingService.value.trainingInfo = {
+        conditions: [...trainingConditions.value],
+        prices: trainingPrices.value.map(p => ({ ...p })),
+        features: trainingFeatures.value.map(f => ({ ...f })),
+        companyIntro: { title: trainingCompanyTitle.value, content: trainingCompanyContent.value },
+        licenseFunction: { content: trainingLicenseContent.value, quote: trainingLicenseQuote.value }
+      }
+    }
+
     const newConfigs = { ...allServiceConfigs.value }
     newConfigs[editingServiceId.value] = editingService.value
     await axios.post('/api/services/config', { config: newConfigs })
@@ -340,8 +504,7 @@ const saveServiceConfig = async () => {
     closeToast()
     const status = error?.response?.status
     const msg = error?.response?.data?.message
-    console.error('[ServiceConfig] 保存失败', status, msg, error)
-    showFailToast(status === 403 ? '无权限，请检查账号角色' : (msg || '保存失败'))
+    showFailToast(status === 403 ? '无权限' : (msg || '保存失败'))
   }
 }
 
@@ -350,13 +513,17 @@ const onReadServiceFile = async (file, field) => {
   const url = await uploadFile(file)
   closeToast()
   if (url && editingService.value) {
-    // 替换整个对象引用，确保 van-field 等 Vant 组件内部缓存刷新
     editingService.value = { ...editingService.value, [field]: normalizeMediaUrl(url) }
-    showSuccessToast('图片已上传')
+    showSuccessToast('上传成功')
   }
 }
 
-// --- Study showcase editing ---
+const addCourseStep = () => {
+  if (!editingService.value.courseSchedule) editingService.value.courseSchedule = []
+  editingService.value.courseSchedule.push({ time: '', content: '', remark: '' })
+}
+
+// --- Study showcase ---
 const innerAddStudyItem = () => {
   studyEditingIndex.value = -1
   studyEditingItem.value = { title: '', desc: '', image: '' }
@@ -364,9 +531,8 @@ const innerAddStudyItem = () => {
 }
 
 const innerEditStudyItem = (idx) => {
-  const it = editingService.value.studyShowcase[idx]
   studyEditingIndex.value = idx
-  studyEditingItem.value = { ...it }
+  studyEditingItem.value = { ...editingService.value.studyShowcase[idx] }
   showStudyItemEditPopup.value = true
 }
 
@@ -386,17 +552,14 @@ const onReadStudyImage = async (file) => {
   try {
     const formData = new FormData()
     formData.append('file', file.file)
-    const res = await axios.post('/api/upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    })
+    const res = await axios.post('/api/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
     if (res.data.success && studyEditingItem.value) {
-      studyEditingItem.value.image = res.data.url
+      studyEditingItem.value = { ...studyEditingItem.value, image: res.data.url }
     } else {
       showFailToast('上传失败')
     }
   } catch (error) {
     showFailToast('上传失败')
-    console.error(error)
   }
 }
 
@@ -405,22 +568,137 @@ onMounted(fetchAllServiceConfigs)
 
 <style scoped>
 .toolbar-label { font-size: 14px; font-weight: 500; color: var(--text-color); }
-.detail-content { padding: 16px 0; }
 
-.aspect-preview-container { width: 100%; padding: 10px 0; }
-.aspect-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; }
-.preview-box {
-  width: 100%; background: #f5f5f7; border-radius: 12px; overflow: hidden;
-  position: relative; border: 1px solid var(--border-color);
+/* 编辑弹窗 */
+.edit-popup {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--background-color, #f5f5f7);
 }
-.banner-box { aspect-ratio: 5 / 3; }
-.preview-box img { width: 100%; height: 100%; object-fit: cover; }
-.preview-box.pos-top img { object-position: top; }
-.preview-box.pos-center img { object-position: center; }
-.preview-box.pos-bottom img { object-position: bottom; }
-.safe-area-marker {
-  position: absolute; bottom: 10px; left: 10px;
-  background: rgba(0,113,227,0.6); color: #fff; font-size: 10px;
-  padding: 2px 6px; border-radius: 4px;
+.edit-popup :deep(.van-nav-bar) {
+  flex-shrink: 0;
+}
+.edit-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 0 80px;
+}
+.edit-body :deep(.van-cell-group--inset) {
+  margin: 12px 12px 0;
+}
+
+/* 列表项：单行 */
+.list-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 16px;
+}
+.list-item :deep(.van-field) {
+  flex: 1;
+  padding: 6px 0;
+}
+
+/* 列表项：多行 */
+.list-item-block {
+  padding: 8px 16px;
+  border-bottom: 1px solid #f5f5f7;
+}
+.list-item-block:last-of-type {
+  border-bottom: none;
+}
+.list-item-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2px;
+}
+.item-num {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-color, #0071e3);
+  background: var(--accent-light, #e8f2fc);
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 添加按钮 */
+.list-add {
+  padding: 8px 16px;
+}
+.list-add .van-button {
+  border-style: dashed;
+}
+
+/* 图文展示行 */
+.showcase-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid #f5f5f7;
+}
+.showcase-left {
+  width: 48px;
+  height: 36px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #f5f5f7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.showcase-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.showcase-mid {
+  flex: 1;
+  font-size: 14px;
+  color: var(--text-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 课程包 Tab */
+.pkg-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+}
+.pkg-tab {
+  flex: 1;
+  text-align: center;
+  padding: 10px 0;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #86868b;
+  background: #f5f5f7;
+  cursor: pointer;
+  transition: all 0.25s;
+}
+.pkg-tab.active {
+  background: var(--accent-color, #0071e3);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* 背景图预览 */
+.img-preview {
+  padding: 0 16px 12px;
+}
+.img-preview img {
+  width: 100%;
+  border-radius: 8px;
+  display: block;
 }
 </style>

@@ -55,12 +55,12 @@
       </div>
 
       <!-- 服务介绍 -->
-      <div class="section-card" v-if="serviceId !== '6' || !serviceConfig.trainingInfo">
+      <div class="section-card" v-if="(serviceId !== '6' || !serviceConfig.trainingInfo) && serviceConfig.intro">
         <h2 class="section-title">服务介绍</h2>
         <p class="section-text">{{ serviceConfig.intro }}</p>
 
         <!-- 研学往期活动 (已支持后台配置) -->
-        <div v-if="serviceId === '9'" class="study-showcase">
+        <div v-if="serviceId === '9' && studyShowcase && studyShowcase.length > 0" class="study-showcase">
           <div class="study-subtitle">精彩回顾</div>
           <div class="study-grid">
             <div
@@ -82,7 +82,7 @@
       </div>
 
       <!-- 服务项目 -->
-      <div class="section-card" v-if="serviceId !== '6' || !serviceConfig.trainingInfo">
+      <div class="section-card" v-if="(serviceId !== '6' || !serviceConfig.trainingInfo) && serviceConfig.projects && serviceConfig.projects.length > 0">
         <h2 class="section-title">服务项目</h2>
         <div class="project-grid">
           <div 
@@ -127,7 +127,7 @@
       </div>
 
       <!-- 服务优势 -->
-      <div class="section-card" v-if="serviceId !== '6' || !serviceConfig.trainingInfo">
+      <div class="section-card" v-if="(serviceId !== '6' || !serviceConfig.trainingInfo) && serviceConfig.advantages && serviceConfig.advantages.length > 0">
         <h2 class="section-title">服务优势</h2>
         <div class="advantage-list">
           <div v-for="(adv, index) in serviceConfig.advantages" :key="index" class="advantage-item">

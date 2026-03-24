@@ -10,7 +10,7 @@
     />
     <HomeFloatButton />
 
-    <div class="pkg-header" :style="{ background: pkg.headerBg }">
+    <div class="pkg-header" :style="headerStyle">
       <div class="header-mask" />
       <div class="header-inner">
         <span class="pkg-tag-top">{{ pkg.tag }}</span>
@@ -140,7 +140,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showImagePreview } from 'vant'
 import HomeFloatButton from '@/components/HomeFloatButton.vue'
@@ -159,135 +159,52 @@ const normalizeUrl = (url) => {
   return url
 }
 
-const studyShowcase = ref([])
+const headerStyle = computed(() => {
+  return { background: pkg.value?.headerBg || 'linear-gradient(135deg, #06b6d4 0%, #2563eb 100%)' }
+})
 
-const fetchShowcase = async () => {
-  try {
-    const configRes = await axios.get('/api/services/config')
-    const allConfigs = configRes?.data?.data || {}
-    const config = allConfigs['9'] || {}
-    if (config.studyShowcase && config.studyShowcase.length > 0) {
-      studyShowcase.value = config.studyShowcase
-    } else {
-      const showcaseRes = await axios.get('/api/study/showcase')
-      const items = showcaseRes?.data?.data || []
-      if (Array.isArray(items) && items.length > 0) {
-        studyShowcase.value = items
-      }
-    }
-  } catch (e) {
-    console.warn('Failed to load showcase:', e)
-  }
-}
+const studyShowcase = ref([])
 
 const previewShowcase = (item) => {
   if (!item?.image) return
   showImagePreview([normalizeUrl(item.image)])
 }
 
-const packageData = {
-  'study-198': {
-    id: 'study-198',
-    name: '无人机研学实践中心半日营',
-    tag: '半日营',
-    price: 198,
-    headerBg: 'linear-gradient(135deg, #06b6d4 0%, #2563eb 100%)',
-    intro: '走进温州低空经济发展有限公司无人机研学实践中心，通过展厅参观、科普启蒙、木质无人机组装与无人机调试穿越飞行四大环节，让青少年在半天时间内系统了解无人机基础知识，亲手体验组装与飞行的乐趣，激发对低空科技的探索热情。',
-    schedule: [
-      { amTime: '08:50', pmTime: '13:50', name: '集合签到', desc: '研学中心集合，签到报到' },
-      { amTime: '09:00', pmTime: '14:00', name: '开营破冰', desc: '破冰互动，营造轻松氛围' },
-      { amTime: '09:10', pmTime: '14:10', name: '展厅参观', desc: '无人机机型讲解及各领域场景应用介绍' },
-      { amTime: '09:40', pmTime: '14:40', name: '授课：科普启蒙', desc: '讲解无人机飞行原理及应用' },
-      { amTime: '10:10', pmTime: '15:10', name: '木质无人机组装', desc: '在导师指导下动手组装木质无人机' },
-      { amTime: '11:10', pmTime: '16:10', name: '无人机调试与穿越飞行', desc: '对组装完成的无人机进行调试并体验穿越飞行' },
-      { amTime: '11:30', pmTime: '16:30', name: '结营仪式', desc: '拍照留念，圆满结营' }
-    ],
-    highlights: [
-      { emoji: '🏛️', name: '展厅参观', desc: '无人机机型及场景应用讲解' },
-      { emoji: '📚', name: '科普启蒙', desc: '无人机飞行原理与应用科普' },
-      { emoji: '🔧', name: '木质无人机组装', desc: '亲手组装专属木质无人机' },
-      { emoji: '🚁', name: '调试与穿越飞行', desc: '调试无人机并完成穿越飞行' }
-    ],
-    audience: [
-      '6-16 岁青少年',
-      '对无人机/航空科技有兴趣的学生',
-      '学校/机构团体组织研学活动'
-    ],
-    feeInfo: [
-      { label: '课程价格', value: '¥198/人' },
-      { label: '课程时长', value: '半天（约 2.5 小时）' },
-      { label: '费用包含', value: '教学费、器材使用费、保险费、证书费' },
-      { label: '成团人数', value: '10 人起' }
-    ],
-    showcase: [
-      { title: '低空科普课堂', desc: '从基础原理到安全规范，互动式讲解让孩子更易理解。', image: '/images/study/science-class.svg' },
-      { title: '真机飞行体验', desc: '在专业导师指导下完成基础操控与任务闯关，提升动手能力。', image: '/images/study/flight-experience.svg' },
-      { title: '成果与纪念', desc: '完成学习任务与展示，记录成长瞬间，获得满满成就感。', image: '/images/study/achievement.svg' }
-    ],
-    tips: [
-      '请提前 3 个工作日预约，以便安排场地和导师。',
-      '活动当天请穿着运动服装及运动鞋，便于户外实操。',
-      '恶劣天气情况下，室外环节将调整为室内模拟训练。',
-      '每位学员需签署安全协议，未成年人需家长签字。'
-    ]
-  },
-  'study-238': {
-    id: 'study-238',
-    name: '无人机亲子研学课程',
-    tag: '亲子课程',
-    price: 238,
-    headerBg: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
-    intro: '专为家庭设计的无人机亲子研学课程，家长与孩子共同参与无人机组装、编程飞行与亲子协作飞行任务，在互动中增进亲子关系，让科技教育成为家庭的共同记忆。',
-    schedule: [
-      { amTime: '08:50', pmTime: '13:50', name: '集合签到', desc: '亲子家庭签到，领取活动礼包与手册' },
-      { amTime: '09:00', pmTime: '14:00', name: '开营破冰', desc: '破冰互动，营造轻松氛围' },
-      { amTime: '09:10', pmTime: '14:10', name: '展厅参观', desc: '参观无人机研学实践中心展厅' },
-      { amTime: '09:30', pmTime: '14:30', name: '无人机启蒙课程', desc: '趣味讲解无人机原理，亲子互动问答' },
-      { amTime: '10:00', pmTime: '15:00', name: '拼搭无人机组装', desc: '家长与孩子协作完成无人机拼搭组装' },
-      { amTime: '11:00', pmTime: '16:00', name: '无人机调试试飞', desc: '亲手调试并完成无人机试飞体验' },
-      { amTime: '11:20', pmTime: '16:20', name: '球幕影院观影', desc: '沉浸式球幕影院，感受低空飞行视觉盛宴' },
-      { amTime: '11:55', pmTime: '16:55', name: '结营仪式', desc: '拍照留念，颁发结业证书' }
-    ],
-    highlights: [
-      { emoji: '👨‍👩‍👧', name: '亲子协作', desc: '家长孩子共同完成任务' },
-      { emoji: '🔧', name: '动手组装', desc: '亲手拼搭一架无人机' },
-      { emoji: '🚁', name: '调试试飞', desc: '亲手操控无人机飞行' },
-      { emoji: '🎬', name: '球幕观影', desc: '沉浸式球幕影院体验' }
-    ],
-    audience: [
-      '6-14 岁儿童及家长（1大1小）',
-      '希望增进亲子关系的家庭',
-      '对科技教育感兴趣的亲子家庭'
-    ],
-    feeInfo: [
-      { label: '课程价格', value: '¥238/人（1大1小为一组）' },
-      { label: '课程时长', value: '半天（约 3 小时）' },
-      { label: '费用包含', value: '教学费、器材使用费、保险费、证书费、竞赛奖品' },
-      { label: '成团人数', value: '15 组起' }
-    ],
-    showcase: [
-      { title: '低空科普课堂', desc: '从基础原理到安全规范，互动式讲解让孩子更易理解。', image: '/images/study/science-class.svg' },
-      { title: '低空知识启蒙', desc: '通过趣味互动教学，带领亲子家庭走进无人机的世界，探索低空飞行的奥秘。', image: '/images/study/flight-experience.svg' },
-      { title: '球幕影院观影', desc: '沉浸式球幕影院，以震撼视角感受低空飞行的壮丽景象。', image: '/images/study/achievement.svg' },
-      { title: '真机飞行体验', desc: '在专业导师指导下完成基础操控与任务闯关，提升动手能力。', image: '/images/study/flight-experience.svg' },
-      { title: '成果与纪念', desc: '完成学习任务与展示，记录成长瞬间，获得满满成就感。', image: '/images/study/achievement.svg' }
-    ],
-    tips: [
-      '请提前 3 个工作日预约，以便安排场地和导师。',
-      '建议家长与孩子穿着舒适运动服装参加活动。',
-      '恶劣天气情况下，室外环节将调整为室内活动。',
-      '每组家庭限 1 位大人 + 1 位小孩，额外人员请另行报名。',
-      '活动中需签署安全协议，未成年人由随行家长签字。'
-    ]
-  }
-}
-
-onMounted(() => {
+onMounted(async () => {
   const id = route.params.id || 'study-198'
-  pkg.value = packageData[id] || packageData['study-198']
-  studyShowcase.value = pkg.value.showcase || []
-  fetchShowcase()
-  setTimeout(() => { contentReady.value = true }, 200)
+
+  try {
+    const configRes = await axios.get('/api/services/config')
+    const allConfigs = configRes?.data?.data || {}
+    const config = allConfigs['9'] || {}
+
+    // 加载精彩回顾
+    if (config.studyShowcase && config.studyShowcase.length > 0) {
+      studyShowcase.value = config.studyShowcase
+    }
+
+    // 直接使用后台课程包数据
+    if (config.packages && config.packages[id]) {
+      const remotePkg = config.packages[id]
+      pkg.value = {
+        id,
+        name: remotePkg.name || '',
+        tag: remotePkg.tag || '',
+        price: remotePkg.price || 0,
+        headerBg: remotePkg.headerBg || '',
+        intro: remotePkg.intro || '',
+        schedule: remotePkg.schedule || [],
+        highlights: remotePkg.highlights || [],
+        audience: remotePkg.audience || [],
+        feeInfo: remotePkg.feeInfo || [],
+        tips: remotePkg.tips || [],
+      }
+    }
+  } catch (e) {
+    console.warn('加载配置失败:', e)
+  }
+
+  contentReady.value = true
 })
 
 const onApply = () => {
@@ -326,7 +243,7 @@ const onApply = () => {
 .header-mask {
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 80% 20%, rgba(255,255,255,0.18) 0%, transparent 55%);
+  background: linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.35) 100%), radial-gradient(circle at 80% 20%, rgba(255,255,255,0.18) 0%, transparent 55%);
 }
 
 .header-inner {
