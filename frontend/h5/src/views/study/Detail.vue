@@ -34,7 +34,12 @@
         <h2 class="section-title">服务项目</h2>
         <div class="project-grid">
           <div v-for="(p, i) in pkg.projects" :key="i" class="project-item">
-            <van-icon :name="normalizeUrl(p.icon)" size="24" color="#424245" />
+            <template v-if="p.icon && p.icon.startsWith('http')">
+              <img :src="p.icon" style="width:24px;height:24px;object-fit:contain;" />
+            </template>
+            <template v-else>
+              <van-icon :name="p.icon || 'star-o'" size="24" color="#424245" />
+            </template>
             <span>{{ p.name }}</span>
           </div>
         </div>
