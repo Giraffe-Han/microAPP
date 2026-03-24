@@ -78,8 +78,8 @@ onMounted(async () => {
     const res = await axios.get('/api/services/config')
     const config = res?.data?.data?.['9'] || {}
     const pkgs = config.packages || {}
-    // 按固定顺序加载课程包
-    const ids = ['study-198', 'study-238']
+    // 动态获取所有课程包ID，优先使用语义化标识
+    const ids = Object.keys(pkgs).sort()
     packages.value = ids
       .filter(id => pkgs[id])
       .map(id => ({

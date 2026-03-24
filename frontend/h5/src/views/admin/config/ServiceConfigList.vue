@@ -134,6 +134,10 @@
                   @click="activeStudyPkgId = pkgId"
                 >
                   {{ studyPackages[pkgId]?.tag || pkgId }} (¥{{ studyPackages[pkgId]?.price || '' }})
+                  <van-icon name="cross" class="pkg-tab-close" @click.stop="removeStudyPackage(pkgId)" />
+                </div>
+                <div class="pkg-tab pkg-tab-add" @click="showAddPackageDialog">
+                  <van-icon name="plus" />
                 </div>
               </div>
             </van-cell-group>
@@ -331,6 +335,23 @@
         </div>
       </div>
     </van-popup>
+
+    <!-- 新增课程包弹窗 -->
+    <van-popup :show="showAddPackagePopup" @update:show="v => showAddPackagePopup = v" position="bottom" :style="{ height: '50%' }" round>
+      <div style="padding: 16px 0;">
+        <van-nav-bar title="新增课程包" left-text="取消" right-text="确定" @click-left="showAddPackagePopup = false" @click-right="confirmAddPackage" />
+        <div style="padding: 16px;">
+          <van-cell-group>
+            <van-field v-model="newPackage.id" label="标识" placeholder="如：study-fullday（英文，唯一）" />
+            <van-field v-model="newPackage.tag" label="标签" placeholder="如：全日营" />
+            <van-field v-model.number="newPackage.price" label="价格" placeholder="298" type="number" />
+          </van-cell-group>
+          <div style="margin-top: 16px; padding: 12px; background: #f5f5f7; border-radius: 8px; font-size: 12px; color: #666;">
+            <p>提示：标识建议使用 study- 前缀，如 study-fullday、study-summer 等</p>
+          </div>
+        </div>
+      </div>
+    </van-popup>
   </div>
 </template>
 
@@ -370,9 +391,13 @@ const trainingLicenseQuote = ref('')
 
 // 研学课程包
 const studyPackages = ref({})
-const studyPackageIds = ref(['study-198', 'study-238'])
-const activeStudyPkgId = ref('study-198')
+const studyPackageIds = ref(['study-halfday', 'study-family'])
+const activeStudyPkgId = ref('study-halfday')
 const activeStudyPkg = computed(() => studyPackages.value[activeStudyPkgId.value] || null)
+
+// 新增课程包
+const showAddPackagePopup = ref(false)
+const newPackage = ref({ id: '', tag: '', price: '' })
 
 const serviceConfigEntries = computed(() => {
   const entries = Object.entries(allServiceConfigs.value || {}).filter(([id]) => /^\d+$/.test(String(id)))
@@ -443,10 +468,14 @@ const editServiceConfig = (id) => {
   if (id === '9') {
     const pkgs = raw.packages || {}
     studyPackages.value = JSON.parse(JSON.stringify(pkgs))
+    // 动态获取所有课程包ID（兼容旧数据）
+    const existingIds = Object.keys(studyPackages.value)
+    // 合并默认ID和已有ID
+    studyPackageIds.value = [...new Set([...studyPackageIds.value, ...existingIds])]
     // 确保每个包有必需的字段
     for (const pkgId of studyPackageIds.value) {
       if (!studyPackages.value[pkgId]) {
-        studyPackages.value[pkgId] = { name: '', tag: pkgId === 'study-198' ? '半日营' : '亲子课程', price: pkgId === 'study-198' ? 198 : 238, headerBg: '', intro: '', schedule: [], highlights: [], audience: [], feeInfo: [], tips: [] }
+        studyPackages.value[pkgId] = createEmptyPackage(pkgId)
       }
       const p = studyPackages.value[pkgId]
       if (!p.schedule) p.schedule = []
@@ -455,7 +484,7 @@ const editServiceConfig = (id) => {
       if (!p.feeInfo) p.feeInfo = []
       if (!p.tips) p.tips = []
     }
-    activeStudyPkgId.value = 'study-198'
+    activeStudyPkgId.value = studyPackageIds.value[0] || 'study-halfday'
   }
 
   // 初始化 trainingInfo
@@ -515,6 +544,69 @@ const onReadServiceFile = async (file, field) => {
   if (url && editingService.value) {
     editingService.value = { ...editingService.value, [field]: normalizeMediaUrl(url) }
     showSuccessToast('上传成功')
+  }
+}
+
+// 创建空课程包模板
+const createEmptyPackage = (pkgId) => {
+  return {
+    id: pkgId,
+    name: '新课程',
+    tag: '新课程',
+    price: 0,
+    recommended: false,
+    desc: '',
+    cardHighlights: [],
+    headerBg: 'linear-gradient(135deg, #06b6d4 0%, #2563eb 100%)',
+    intro: '',
+    schedule: [],
+    highlights: [],
+    audience: [],
+    feeInfo: [],
+    tips: []
+  }
+}
+
+// 显示新增课程包弹窗
+const showAddPackageDialog = () => {
+  newPackage.value = { id: '', tag: '', price: '' }
+  showAddPackagePopup.value = true
+}
+
+// 确认新增课程包
+const confirmAddPackage = () => {
+  const { id, tag, price } = newPackage.value
+  if (!id || !tag) {
+    showFailToast('请填写完整信息')
+    return
+  }
+  if (studyPackageIds.value.includes(id)) {
+    showFailToast('课程包标识已存在')
+    return
+  }
+  // 创建新课程包
+  studyPackages.value[id] = createEmptyPackage(id)
+  studyPackages.value[id].tag = tag
+  studyPackages.value[id].price = Number(price) || 0
+  studyPackageIds.value.push(id)
+  activeStudyPkgId.value = id
+  showAddPackagePopup.value = false
+  showSuccessToast('添加成功')
+}
+
+// 删除课程包
+const removeStudyPackage = (pkgId) => {
+  if (studyPackageIds.value.length <= 1) {
+    showFailToast('至少保留一个课程包')
+    return
+  }
+  const idx = studyPackageIds.value.indexOf(pkgId)
+  if (idx > -1) {
+    studyPackageIds.value.splice(idx, 1)
+    delete studyPackages.value[pkgId]
+    // 切换到第一个课程包
+    activeStudyPkgId.value = studyPackageIds.value[0]
+    showSuccessToast('删除成功')
   }
 }
 
@@ -673,11 +765,14 @@ onMounted(fetchAllServiceConfigs)
   display: flex;
   gap: 8px;
   padding: 12px 16px;
+  flex-wrap: wrap;
 }
 .pkg-tab {
+  position: relative;
   flex: 1;
+  min-width: 100px;
   text-align: center;
-  padding: 10px 0;
+  padding: 10px 8px;
   border-radius: 8px;
   font-size: 13px;
   font-weight: 500;
@@ -690,6 +785,23 @@ onMounted(fetchAllServiceConfigs)
   background: var(--accent-color, #0071e3);
   color: #fff;
   font-weight: 600;
+}
+.pkg-tab-close {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  font-size: 10px;
+  padding: 2px;
+  opacity: 0.6;
+}
+.pkg-tab-close:hover {
+  opacity: 1;
+}
+.pkg-tab-add {
+  flex: 0 0 auto;
+  min-width: 40px;
+  background: #e8f2fc;
+  color: var(--accent-color, #0071e3);
 }
 
 /* 背景图预览 */
