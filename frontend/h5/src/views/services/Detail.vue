@@ -35,7 +35,7 @@
       <!-- [普通] 服务图标头部 -->
       <template v-else>
         <div class="service-header">
-          <div class="service-icon-big" :style="{ background: serviceConfig.color }">
+          <div class="service-icon-big" :style="{ background: serviceConfig.mainColor || '#0071e3' }">
             <van-icon :name="normalizeUrl(serviceConfig.icon)" size="48" color="#ffffff" />
           </div>
           <h1 class="service-name">{{ serviceConfig.name }}</h1>
@@ -46,7 +46,9 @@
       <!-- [研学 ID: 9 & 培训 ID: 6] 核心卖点卡片 -->
       <div class="study-highlights-row" v-if="['9', '6'].includes(serviceId) && serviceConfig.highlights && serviceConfig.highlights.length > 0">
         <div v-for="(hl, idx) in serviceConfig.highlights" :key="idx" class="hl-card">
-          <van-icon :name="hl.icon || 'star'" class="hl-icon" />
+          <div class="hl-icon-wrap">
+            <van-icon :name="hl.icon || 'star'" class="hl-icon" />
+          </div>
           <div class="hl-text">
             <div class="hl-title">{{ hl.title }}</div>
             <div class="hl-desc">{{ hl.desc }}</div>
@@ -467,9 +469,7 @@ onMounted(() => {
   border: 1px solid rgba(255,255,255,0.8);
 }
 
-.hl-icon {
-  font-size: 28px;
-  color: #0071e3; /* Apple Blue */
+.hl-icon-wrap {
   background: #f5f5f7;
   width: 52px;
   height: 52px;
@@ -477,6 +477,12 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   border-radius: 14px;
+  flex-shrink: 0;
+}
+
+.hl-icon {
+  font-size: 28px;
+  color: #0071e3; /* Apple Blue */
 }
 
 .hl-title {
