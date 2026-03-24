@@ -56,8 +56,8 @@
             <van-field v-model="editingService.address" label="地址" placeholder="选填" type="textarea" rows="1" autosize />
           </van-cell-group>
 
-          <!-- 服务项目 -->
-          <van-cell-group inset :title="'服务项目（' + (editingService.projects?.length || 0) + '）'">
+          <!-- 服务项目（非研学服务显示） -->
+          <van-cell-group inset :title="'服务项目（' + (editingService.projects?.length || 0) + '）'" v-if="editingServiceId !== '9'">
             <div v-for="(p, idx) in editingService.projects" :key="idx" class="list-item">
               <van-field v-model="p.name" placeholder="项目名称" dense />
               <van-button size="mini" type="danger" plain icon="cross" @click="editingService.projects.splice(idx, 1)" />
@@ -67,8 +67,8 @@
             </div>
           </van-cell-group>
 
-          <!-- 服务优势 -->
-          <van-cell-group inset :title="'服务优势（' + (editingService.advantages?.length || 0) + '）'">
+          <!-- 服务优势（非研学服务显示） -->
+          <van-cell-group inset :title="'服务优势（' + (editingService.advantages?.length || 0) + '）'" v-if="editingServiceId !== '9'">
             <div v-for="(adv, idx) in editingService.advantages" :key="idx" class="list-item">
               <van-field v-model="editingService.advantages[idx]" placeholder="优势描述" dense />
               <van-button size="mini" type="danger" plain icon="cross" @click="editingService.advantages.splice(idx, 1)" />
@@ -107,8 +107,8 @@
             </div>
           </van-cell-group>
 
-          <!-- 图文展示（研学/培训） -->
-          <van-cell-group inset :title="(editingServiceId === '9' ? '精彩回顾' : '图文展示') + '（' + (editingService.studyShowcase?.length || 0) + '）'" v-if="['9', '6'].includes(editingServiceId)">
+          <!-- 图文展示（仅培训显示，研学在课程包内管理） -->
+          <van-cell-group inset :title="'图文展示（' + (editingService.studyShowcase?.length || 0) + '）'" v-if="editingServiceId === '6'">
             <div v-for="(item, idx) in editingService.studyShowcase" :key="idx" class="showcase-item">
               <div class="showcase-left">
                 <img v-if="item.image" :src="normalizeMediaUrl(item.image)" class="showcase-img" />
