@@ -1,4 +1,5 @@
 <template>
+  <!-- v20250324-1: 课程包独立字段管理 -->
   <div class="config-page">
     <DataToolbar>
       <template #filters>
