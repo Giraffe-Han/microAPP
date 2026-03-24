@@ -29,12 +29,23 @@
         <p class="section-text">{{ pkg.intro }}</p>
       </div>
 
-      <!-- 往期活动展示（支持后台配置） -->
-      <div class="section-card" v-if="studyShowcase.length > 0">
+      <!-- 服务项目（课程包独立） -->
+      <div class="section-card" v-if="pkg.projects && pkg.projects.length > 0">
+        <h2 class="section-title">服务项目</h2>
+        <div class="project-grid">
+          <div v-for="(p, i) in pkg.projects" :key="i" class="project-item">
+            <van-icon :name="normalizeUrl(p.icon)" size="24" color="#424245" />
+            <span>{{ p.name }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 往期活动展示（课程包独立） -->
+      <div class="section-card" v-if="pkg.showcase && pkg.showcase.length > 0">
         <h2 class="section-title">精彩回顾</h2>
         <div class="showcase-grid">
           <div
-            v-for="(item, idx) in studyShowcase"
+            v-for="(item, idx) in pkg.showcase"
             :key="idx"
             class="showcase-item"
             @click="previewShowcase(item)"
@@ -107,6 +118,17 @@
         </div>
       </div>
 
+      <!-- 服务优势（课程包独立） -->
+      <div class="section-card" v-if="pkg.advantages && pkg.advantages.length > 0">
+        <h2 class="section-title">服务优势</h2>
+        <div class="advantage-list">
+          <div v-for="(adv, i) in pkg.advantages" :key="i" class="advantage-item">
+            <van-icon name="success" size="16" color="#0071e3" />
+            <span>{{ adv }}</span>
+          </div>
+        </div>
+      </div>
+
       <div class="section-card">
         <h2 class="section-title">温馨提示</h2>
         <div class="tips-list">
@@ -163,25 +185,18 @@ const headerStyle = computed(() => {
   return { background: pkg.value?.headerBg || 'linear-gradient(135deg, #06b6d4 0%, #2563eb 100%)' }
 })
 
-const studyShowcase = ref([])
-
 const previewShowcase = (item) => {
   if (!item?.image) return
   showImagePreview([normalizeUrl(item.image)])
 }
 
 onMounted(async () => {
-  const id = route.params.id || 'study-198'
+  const id = route.params.id || 'study-halfday'
 
   try {
     const configRes = await axios.get('/api/services/config')
     const allConfigs = configRes?.data?.data || {}
     const config = allConfigs['9'] || {}
-
-    // 加载精彩回顾
-    if (config.studyShowcase && config.studyShowcase.length > 0) {
-      studyShowcase.value = config.studyShowcase
-    }
 
     // 直接使用后台课程包数据
     if (config.packages && config.packages[id]) {
@@ -198,6 +213,9 @@ onMounted(async () => {
         audience: remotePkg.audience || [],
         feeInfo: remotePkg.feeInfo || [],
         tips: remotePkg.tips || [],
+        projects: remotePkg.projects || [],
+        advantages: remotePkg.advantages || [],
+        showcase: remotePkg.showcase || [],
       }
     }
   } catch (e) {
@@ -499,6 +517,41 @@ const onApply = () => {
 .highlight-desc {
   font-size: 11px;
   color: #86868b;
+}
+
+/* 服务项目 */
+.project-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.project-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 12px;
+  background: #f5f5f7;
+  border-radius: 18px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1d1d1f;
+}
+
+/* 服务优势 */
+.advantage-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.advantage-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: #424245;
 }
 
 /* 适合人群 */

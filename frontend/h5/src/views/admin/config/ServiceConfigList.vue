@@ -148,8 +148,71 @@
                 <van-field v-model="activeStudyPkg.name" label="课程名称" placeholder="如：无人机研学实践中心半日营" />
                 <van-field v-model="activeStudyPkg.tag" label="标签" placeholder="如：半日营" />
                 <van-field v-model.number="activeStudyPkg.price" label="票价" placeholder="198" type="number" />
-                <van-field v-model="activeStudyPkg.headerBg" label="渐变背景" placeholder="linear-gradient(135deg, #06b6d4 0%, #2563eb 100%)" />
+                
+                <!-- 头部背景 - 支持渐变或图片 -->
+                <van-field label="头部背景">
+                  <template #input>
+                    <div class="bg-input-wrap">
+                      <van-field v-model="activeStudyPkg.headerBg" placeholder="渐变色或图片URL" style="flex:1;" />
+                      <van-uploader :after-read="f => onReadPackageImage(f, 'headerBg')" max-count="1" accept="image/*">
+                        <van-button icon="photo-o" size="small" type="primary" plain>上传</van-button>
+                      </van-uploader>
+                    </div>
+                  </template>
+                </van-field>
+                <div v-if="activeStudyPkg.headerBg && activeStudyPkg.headerBg.startsWith('http')" class="img-preview">
+                  <img :src="activeStudyPkg.headerBg" @click="previewCrop(activeStudyPkg.headerBg, 'headerBg')" />
+                  <div class="img-actions">
+                    <van-button size="mini" type="primary" plain @click="previewCrop(activeStudyPkg.headerBg, 'headerBg')">裁剪</van-button>
+                  </div>
+                </div>
+                
                 <van-field v-model="activeStudyPkg.intro" label="介绍" type="textarea" rows="3" placeholder="课程介绍" autosize />
+              </van-cell-group>
+
+              <!-- 服务项目（每个课程包独立） -->
+              <van-cell-group inset :title="activeStudyPkg.tag + ' - 服务项目（' + (activeStudyPkg.projects?.length || 0) + '）'">
+                <div v-for="(p, idx) in activeStudyPkg.projects" :key="idx" class="list-item-block">
+                  <div class="list-item-head">
+                    <span class="item-num">{{ idx + 1 }}</span>
+                    <van-button size="mini" type="danger" plain icon="cross" @click="activeStudyPkg.projects.splice(idx, 1)" />
+                  </div>
+                  <van-field v-model="p.name" label="名称" placeholder="如：展厅参观" dense />
+                  <van-field v-model="p.icon" label="图标" placeholder="Vant图标名或图片URL" dense />
+                  <div v-if="p.icon && p.icon.startsWith('http')" class="icon-preview">
+                    <img :src="p.icon" style="width:40px;height:40px;border-radius:8px;object-fit:cover;" />
+                  </div>
+                </div>
+                <div class="list-add">
+                  <van-button size="small" type="primary" block plain icon="plus" @click="activeStudyPkg.projects.push({ name: '', icon: 'star-o' })">添加项目</van-button>
+                </div>
+              </van-cell-group>
+
+              <!-- 服务优势（每个课程包独立） -->
+              <van-cell-group inset :title="activeStudyPkg.tag + ' - 服务优势（' + (activeStudyPkg.advantages?.length || 0) + '）'">
+                <div v-for="(adv, idx) in activeStudyPkg.advantages" :key="idx" class="list-item">
+                  <van-field v-model="activeStudyPkg.advantages[idx]" placeholder="优势描述，如：专业导师全程指导" dense />
+                  <van-button size="mini" type="danger" plain icon="cross" @click="activeStudyPkg.advantages.splice(idx, 1)" />
+                </div>
+                <div class="list-add">
+                  <van-button size="small" type="primary" block plain icon="plus" @click="activeStudyPkg.advantages.push('')">添加优势</van-button>
+                </div>
+              </van-cell-group>
+
+              <!-- 精彩回顾（每个课程包独立） -->
+              <van-cell-group inset :title="activeStudyPkg.tag + ' - 精彩回顾（' + (activeStudyPkg.showcase?.length || 0) + '）'">
+                <div v-for="(item, idx) in activeStudyPkg.showcase" :key="idx" class="showcase-item">
+                  <div class="showcase-left">
+                    <img v-if="item.image" :src="item.image" class="showcase-img" @click="previewCrop(item.image, 'showcase', idx)" />
+                    <van-icon v-else name="photo-o" size="24" color="#ddd" />
+                  </div>
+                  <div class="showcase-mid">{{ item.title || '未命名' }}</div>
+                  <van-button size="mini" type="primary" plain @click="editShowcaseItem(idx)">编辑</van-button>
+                  <van-button size="mini" type="danger" plain icon="cross" @click="activeStudyPkg.showcase.splice(idx, 1)" />
+                </div>
+                <div class="list-add">
+                  <van-button size="small" type="primary" block plain icon="plus" @click="addShowcaseItem">添加展示</van-button>
+                </div>
               </van-cell-group>
 
               <!-- 课程安排 -->
@@ -301,6 +364,41 @@
       </div>
     </van-popup>
 
+    <!-- 图片裁剪弹窗 -->
+    <ImageCropper
+      v-model:show="showCropper"
+      :image-url="cropperImageUrl"
+      :aspect-ratio="cropperAspectRatio"
+      :title="cropperTitle"
+      @confirm="onCropConfirm"
+    />
+
+    <!-- 精彩回顾编辑弹窗 -->
+    <van-popup :show="showShowcaseEditPopup" @update:show="v => showShowcaseEditPopup = v" position="bottom" :style="{ height: '65%' }" round>
+      <div style="padding: 16px 0;" v-if="showcaseEditingItem">
+        <van-cell-group title="编辑精彩回顾">
+          <van-field v-model="showcaseEditingItem.title" label="标题" placeholder="请输入标题" />
+          <van-field v-model="showcaseEditingItem.desc" label="描述" type="textarea" rows="2" placeholder="请输入描述" />
+          <van-field label="图片">
+            <template #input>
+              <van-uploader :after-read="onReadShowcaseImage" max-count="1" accept="image/*">
+                <van-button icon="plus" type="primary" size="small" plain>上传图片</van-button>
+              </van-uploader>
+            </template>
+          </van-field>
+          <div v-if="showcaseEditingItem.image" style="padding: 0 16px 16px;">
+            <img :src="showcaseEditingItem.image" style="width:100%; border-radius: 8px; display:block;" @click="previewCrop(showcaseEditingItem.image, 'showcaseEditing')" />
+            <div style="margin-top:8px; text-align:center;">
+              <van-button size="small" type="primary" plain @click="previewCrop(showcaseEditingItem.image, 'showcaseEditing')">裁剪图片</van-button>
+            </div>
+          </div>
+        </van-cell-group>
+        <div style="margin: 16px;">
+          <van-button round block type="primary" @click="confirmShowcaseEdit">确定</van-button>
+        </div>
+      </div>
+    </van-popup>
+
     <!-- 首页配置弹窗 -->
     <van-popup :show="showHomeConfigPopup" @update:show="v => showHomeConfigPopup = v" position="bottom" :style="{ height: '70%' }" round>
       <div style="padding: 16px 0;" v-if="editingHomeConfig">
@@ -359,6 +457,7 @@
 import { ref, computed, reactive, onMounted } from 'vue'
 import axios from '@/utils/http'
 import { showFailToast, showSuccessToast, showLoadingToast, closeToast } from 'vant'
+import ImageCropper from './ImageCropper.vue'
 import DataToolbar from '../components/DataToolbar.vue'
 import { normalizeMediaUrl, uploadFile } from '../composables/useMedia'
 
@@ -398,6 +497,18 @@ const activeStudyPkg = computed(() => studyPackages.value[activeStudyPkgId.value
 // 新增课程包
 const showAddPackagePopup = ref(false)
 const newPackage = ref({ id: '', tag: '', price: '' })
+
+// 图片裁剪
+const showCropper = ref(false)
+const cropperImageUrl = ref('')
+const cropperAspectRatio = ref('16:9')
+const cropperTitle = ref('图片裁剪')
+const cropperTarget = ref({ type: '', field: '', index: -1 })
+
+// 精彩回顾编辑
+const showShowcaseEditPopup = ref(false)
+const showcaseEditingItem = ref(null)
+const showcaseEditingIndex = ref(-1)
 
 const serviceConfigEntries = computed(() => {
   const entries = Object.entries(allServiceConfigs.value || {}).filter(([id]) => /^\d+$/.test(String(id)))
@@ -563,7 +674,103 @@ const createEmptyPackage = (pkgId) => {
     highlights: [],
     audience: [],
     feeInfo: [],
-    tips: []
+    tips: [],
+    projects: [],
+    advantages: [],
+    showcase: []
+  }
+}
+
+// 上传课程包图片
+const onReadPackageImage = async (file, field) => {
+  showLoadingToast({ message: '上传中...', forbidClick: true })
+  const url = await uploadFile(file)
+  closeToast()
+  if (url && activeStudyPkg.value) {
+    activeStudyPkg.value[field] = normalizeMediaUrl(url)
+    showSuccessToast('上传成功')
+  }
+}
+
+// 预览裁剪
+const previewCrop = (imageUrl, type, index = -1) => {
+  cropperImageUrl.value = imageUrl
+  cropperTarget.value = { type, field: type, index }
+  
+  // 根据类型设置裁剪比例
+  if (type === 'headerBg') {
+    cropperAspectRatio.value = '16:9'
+    cropperTitle.value = '裁剪头部背景'
+  } else if (type === 'showcase' || type === 'showcaseEditing') {
+    cropperAspectRatio.value = '4:3'
+    cropperTitle.value = '裁剪展示图片'
+  } else {
+    cropperAspectRatio.value = 'free'
+    cropperTitle.value = '裁剪图片'
+  }
+  
+  showCropper.value = true
+}
+
+// 裁剪确认
+const onCropConfirm = async (croppedFile) => {
+  showLoadingToast({ message: '上传中...', forbidClick: true })
+  const url = await uploadFile(croppedFile)
+  closeToast()
+  
+  if (url) {
+    const normalizedUrl = normalizeMediaUrl(url)
+    const { type, index } = cropperTarget.value
+    
+    if (type === 'headerBg' && activeStudyPkg.value) {
+      activeStudyPkg.value.headerBg = normalizedUrl
+    } else if (type === 'showcase' && activeStudyPkg.value && index >= 0) {
+      activeStudyPkg.value.showcase[index].image = normalizedUrl
+    } else if (type === 'showcaseEditing' && showcaseEditingItem.value) {
+      showcaseEditingItem.value.image = normalizedUrl
+    }
+    
+    showSuccessToast('裁剪上传成功')
+  }
+}
+
+// 添加精彩回顾
+const addShowcaseItem = () => {
+  showcaseEditingIndex.value = -1
+  showcaseEditingItem.value = { title: '', desc: '', image: '' }
+  showShowcaseEditPopup.value = true
+}
+
+// 编辑精彩回顾
+const editShowcaseItem = (idx) => {
+  if (!activeStudyPkg.value?.showcase) return
+  showcaseEditingIndex.value = idx
+  showcaseEditingItem.value = { ...activeStudyPkg.value.showcase[idx] }
+  showShowcaseEditPopup.value = true
+}
+
+// 确认精彩回顾编辑
+const confirmShowcaseEdit = () => {
+  if (!showcaseEditingItem.value || !activeStudyPkg.value) return
+  if (!activeStudyPkg.value.showcase) activeStudyPkg.value.showcase = []
+  
+  if (showcaseEditingIndex.value >= 0) {
+    activeStudyPkg.value.showcase[showcaseEditingIndex.value] = { ...showcaseEditingItem.value }
+  } else {
+    activeStudyPkg.value.showcase.push({ ...showcaseEditingItem.value })
+  }
+  
+  showShowcaseEditPopup.value = false
+}
+
+// 上传精彩回顾图片
+const onReadShowcaseImage = async (file) => {
+  showLoadingToast({ message: '上传中...', forbidClick: true })
+  const url = await uploadFile(file)
+  closeToast()
+  if (url && showcaseEditingItem.value) {
+    showcaseEditingItem.value.image = normalizeMediaUrl(url)
+    showSuccessToast('上传成功')
   }
 }
 
@@ -802,6 +1009,35 @@ onMounted(fetchAllServiceConfigs)
   min-width: 40px;
   background: #e8f2fc;
   color: var(--accent-color, #0071e3);
+}
+
+/* 背景输入 */
+.bg-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+/* 图片预览 */
+.img-preview {
+  padding: 0 16px 12px;
+}
+.img-preview img {
+  width: 100%;
+  max-height: 150px;
+  object-fit: cover;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.img-actions {
+  margin-top: 8px;
+  text-align: center;
+}
+
+/* 图标预览 */
+.icon-preview {
+  padding: 8px 16px;
 }
 
 /* 背景图预览 */
