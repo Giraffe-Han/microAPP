@@ -594,6 +594,9 @@ const editServiceConfig = (id) => {
       if (!p.audience) p.audience = []
       if (!p.feeInfo) p.feeInfo = []
       if (!p.tips) p.tips = []
+      if (!p.projects) p.projects = []
+      if (!p.advantages) p.advantages = []
+      if (!p.showcase) p.showcase = []
     }
     activeStudyPkgId.value = studyPackageIds.value[0] || 'study-halfday'
   }
