@@ -706,7 +706,7 @@ const previewCrop = (imageUrl, type, index = -1) => {
     cropperAspectRatio.value = '16:9'
     cropperTitle.value = '裁剪头部背景'
   } else if (type === 'showcase' || type === 'showcaseEditing') {
-    cropperAspectRatio.value = '4:3'
+    cropperAspectRatio.value = '16:9'
     cropperTitle.value = '裁剪展示图片'
   } else {
     cropperAspectRatio.value = 'free'
@@ -767,14 +767,18 @@ const confirmShowcaseEdit = () => {
   showShowcaseEditPopup.value = false
 }
 
-// 上传精彩回顾图片
+// 上传精彩回顾图片 - 上传后自动打开裁剪
 const onReadShowcaseImage = async (file) => {
   showLoadingToast({ message: '上传中...', forbidClick: true })
   const url = await uploadFile(file)
   closeToast()
   if (url && showcaseEditingItem.value) {
     showcaseEditingItem.value.image = normalizeMediaUrl(url)
-    showSuccessToast('上传成功')
+    showSuccessToast('上传成功，请裁剪图片')
+    // 自动打开裁剪工具
+    setTimeout(() => {
+      previewCrop(showcaseEditingItem.value.image, 'showcaseEditing')
+    }, 300)
   }
 }
 
