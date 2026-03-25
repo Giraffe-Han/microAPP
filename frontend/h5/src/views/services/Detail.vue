@@ -57,31 +57,48 @@
       </div>
 
       <!-- 服务介绍 -->
-      <div class="section-card" v-if="(serviceId !== '6' || !serviceConfig.trainingInfo) && serviceConfig.intro">
+      <div class="section-card" v-if="(serviceId !== '6' || !serviceConfig.trainingInfo) && serviceConfig.intro && serviceId !== '9'">
         <h2 class="section-title">服务介绍</h2>
         <p class="section-text">{{ serviceConfig.intro }}</p>
+      </div>
 
-        <!-- 研学往期活动 (已支持后台配置) -->
-        <div v-if="serviceId === '9' && studyShowcase && studyShowcase.length > 0" class="study-showcase">
-          <div class="study-subtitle">精彩回顾</div>
-          <div class="study-grid">
+      <!-- 研学课程包列表 -->
+      <template v-if="serviceId === '9' && studyPackagesList.length > 0">
+        <div class="section-card">
+          <h2 class="section-title">选择课程</h2>
+          <p class="section-text" style="margin-bottom: 16px;">我们为您精心准备了以下研学课程，点击卡片查看详情：</p>
+          <div class="study-package-list">
             <div
-              v-for="(item, idx) in studyShowcase"
-              :key="idx"
-              class="study-item"
-              @click="previewStudy(item)"
+              v-for="pkg in studyPackagesList"
+              :key="pkg.id"
+              class="study-package-card"
+              :class="{ recommended: pkg.recommended }"
+              @click="goToStudyDetail(pkg.id)"
             >
-              <div class="study-image">
-                <van-image :src="normalizeUrl(item.image)" fit="cover" width="100%" height="140" radius="12" />
+              <div v-if="pkg.recommended" class="recommend-badge">推荐</div>
+              <div class="pkg-card-header">
+                <div class="pkg-card-name">{{ pkg.name }}</div>
+                <div class="pkg-card-tag">{{ pkg.tag }}</div>
               </div>
-              <div class="study-info">
-                <div class="study-title">{{ item.title }}</div>
-                <div class="study-desc">{{ item.desc }}</div>
+              <div class="pkg-card-price">
+                <span class="currency">¥</span>
+                <span class="amount">{{ pkg.price }}</span>
+                <span class="unit">/人</span>
+              </div>
+              <div class="pkg-card-desc">{{ pkg.desc }}</div>
+              <div class="pkg-card-highlights" v-if="pkg.highlights && pkg.highlights.length > 0">
+                <div v-for="(h, i) in pkg.highlights.slice(0, 4)" :key="i" class="pkg-highlight-item">
+                  <van-icon name="success" size="12" color="#06b6d4" />
+                  <span>{{ h }}</span>
+                </div>
+              </div>
+              <div class="pkg-card-action">
+                <van-button type="primary" size="small" round color="#0071e3">查看详情</van-button>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </template>
 
       <!-- 服务项目 -->
       <div class="section-card" v-if="(serviceId !== '6' || !serviceConfig.trainingInfo) && serviceConfig.projects && serviceConfig.projects.length > 0">
@@ -292,6 +309,29 @@ const loading = ref(true)
 const serviceConfig = ref({})
 const studyShowcase = ref([])
 
+// 研学课程包列表
+const studyPackagesList = computed(() => {
+  if (serviceId !== '9') return []
+  const packages = serviceConfig.value?.packages || {}
+  return Object.entries(packages)
+    .filter(([_, pkg]) => pkg)
+    .map(([id, pkg]) => ({
+      id,
+      name: pkg.name || '',
+      tag: pkg.tag || '',
+      price: pkg.price || 0,
+      recommended: pkg.recommended || false,
+      desc: pkg.desc || pkg.intro || '',
+      highlights: pkg.cardHighlights || []
+    }))
+    .sort((a, b) => (b.recommended ? 1 : 0) - (a.recommended ? 1 : 0))
+})
+
+// 跳转到研学课程包详情
+const goToStudyDetail = (pkgId) => {
+  router.push(`/study/${pkgId}`)
+}
+
 const normalizeUrl = (url) => {
   if (!url) return ''
   // 如果是远程地址、base64 或已经以 / 开头，直接返回
@@ -346,6 +386,16 @@ const actionButtonText = computed(() => {
 const onApply = () => {
   if (serviceId === '8') {
     window.location.href = 'https://app.wzsjy.com:8446/h5/#/pages/diy/diy?pageId=130&title=%E6%97%A0%E4%BA%BA%E6%9C%BA%E5%A4%96%E5%8D%96%E9%85%8D%E9%80%81&jyauthcode='
+  } else if (serviceId === '9') {
+    // 研学服务：如果有课程包，跳转到第一个推荐的或第一个课程包
+    const packages = studyPackagesList.value
+    if (packages.length > 0) {
+      const recommended = packages.find(p => p.recommended)
+      const targetPkg = recommended || packages[0]
+      router.push(`/study/${targetPkg.id}`)
+    } else {
+      router.push(`/service-apply/${serviceId}`)
+    }
   } else {
     router.push(`/service-apply/${serviceId}`)
   }
@@ -950,5 +1000,118 @@ onMounted(() => {
 
 .service-icon-big :deep(.van-icon__image) {
   filter: brightness(0) invert(1);
+}
+
+/* 研学课程包列表样式 */
+.study-package-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.study-package-card {
+  background: #fff;
+  border-radius: 20px;
+  padding: 20px;
+  position: relative;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  border: 2px solid transparent;
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+.study-package-card:active {
+  transform: scale(0.98);
+}
+
+.study-package-card.recommended {
+  border-color: #0071e3;
+}
+
+.recommend-badge {
+  position: absolute;
+  top: -1px;
+  right: 16px;
+  background: linear-gradient(135deg, #0071e3 0%, #06b6d4 100%);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 0 0 10px 10px;
+}
+
+.pkg-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.pkg-card-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1d1d1f;
+  flex: 1;
+}
+
+.pkg-card-tag {
+  font-size: 11px;
+  color: #0071e3;
+  background: rgba(0, 113, 227, 0.08);
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-weight: 500;
+}
+
+.pkg-card-price {
+  display: flex;
+  align-items: baseline;
+  margin-bottom: 10px;
+}
+
+.pkg-card-price .currency {
+  font-size: 14px;
+  font-weight: 700;
+  color: #ee0a24;
+}
+
+.pkg-card-price .amount {
+  font-size: 28px;
+  font-weight: 800;
+  color: #ee0a24;
+  line-height: 1;
+  margin: 0 2px;
+}
+
+.pkg-card-price .unit {
+  font-size: 12px;
+  color: #86868b;
+}
+
+.pkg-card-desc {
+  font-size: 13px;
+  color: #86868b;
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+
+.pkg-card-highlights {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.pkg-highlight-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #424245;
+}
+
+.pkg-card-action {
+  display: flex;
+  justify-content: flex-end;
 }
 </style>
