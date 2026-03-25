@@ -35,10 +35,17 @@ export function normalizeMediaUrl(raw) {
 
 /**
  * Upload a single file via /api/upload and return the normalised URL.
+ * Supports both { file: File } object and direct File/Blob object.
  */
 export async function uploadFile(file) {
   const formData = new FormData()
-  formData.append('file', file.file)
+  // Handle both { file: File } wrapper and direct File/Blob
+  const actualFile = file.file || file
+  if (!actualFile) {
+    showFailToast('没有可上传的文件')
+    return null
+  }
+  formData.append('file', actualFile)
   try {
     const res = await axios.post('/api/upload', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
