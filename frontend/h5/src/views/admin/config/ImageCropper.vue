@@ -14,7 +14,7 @@
           :img="imageUrl"
           :output-size="1"
           :output-type="'png'"
-          :info="true"
+          :info="false"
           :can-scale="true"
           :auto-crop="true"
           :auto-crop-width="cropWidth"
@@ -22,19 +22,20 @@
           :fixed="fixed"
           :fixed-number="fixedNumber"
           :center-box="true"
-          :full="true"
+          :full="false"
           :mode="'contain'"
+          :can-move="true"
+          :can-move-box="false"
+          :fixed-box="true"
         />
       </div>
       <div class="cropper-tools">
-        <van-button size="small" icon="replay" @click="rotateLeft">左转</van-button>
-        <van-button size="small" icon="replay" @click="rotateRight">右转</van-button>
         <van-button size="small" icon="enlarge-o" @click="zoomIn">放大</van-button>
         <van-button size="small" icon="shrink-o" @click="zoomOut">缩小</van-button>
         <van-button size="small" icon="aim" @click="reset">重置</van-button>
       </div>
       <div class="cropper-tips">
-        提示：拖动选框调整裁剪区域，双指缩放调整图片大小
+        提示：拖动图片调整位置，双指缩放调整大小
       </div>
     </div>
   </van-popup>
@@ -126,6 +127,40 @@ const confirm = () => {
 .cropper-container {
   flex: 1;
   overflow: hidden;
+  background: #1a1a1a;
+}
+
+/* 自定义裁剪框样式 - 类似微信头像选择 */
+:deep(.vue-cropper) {
+  background: #1a1a1a;
+}
+
+:deep(.cropper-view-box) {
+  outline: 2px solid #fff;
+  outline-color: rgba(255, 255, 255, 0.8);
+}
+
+:deep(.cropper-face) {
+  background-color: transparent !important;
+}
+
+:deep(.cropper-line) {
+  background-color: #0071e3;
+}
+
+:deep(.cropper-point) {
+  background-color: #0071e3;
+  width: 8px;
+  height: 8px;
+}
+
+:deep(.cropper-bg) {
+  background-image: none;
+  background-color: #1a1a1a;
+}
+
+:deep(.cropper-modal) {
+  background-color: rgba(0, 0, 0, 0.6);
 }
 
 .cropper-tools {
