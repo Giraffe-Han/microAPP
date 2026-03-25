@@ -43,6 +43,7 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { VueCropper } from 'vue-cropper'
+import 'vue-cropper/dist/index.css'
 import { showLoadingToast, closeToast, showFailToast } from 'vant'
 
 const props = defineProps({
