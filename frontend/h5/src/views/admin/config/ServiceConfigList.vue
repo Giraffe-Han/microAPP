@@ -10,8 +10,8 @@
       </template>
     </DataToolbar>
 
-    <!-- 首页配置 -->
-    <van-cell-group inset title="首页配置" style="margin-bottom: 12px; border-radius: var(--card-radius);">
+    <!-- 首页配置（仅管理员可见） -->
+    <van-cell-group v-if="isAdmin" inset title="首页配置" style="margin-bottom: 12px; border-radius: var(--card-radius);">
       <van-cell
         title="首页背景图 & 轮播消息"
         :label="(homeConfig?.headerImage ? '背景图已配置' : '背景图未配置') + '  ·  ' + (homeConfig?.notices?.length || 0) + ' 条轮播消息'"
@@ -466,6 +466,9 @@ import { showFailToast, showSuccessToast, showLoadingToast, closeToast } from 'v
 import ImageCropper from './ImageCropper.vue'
 import DataToolbar from '../components/DataToolbar.vue'
 import { normalizeMediaUrl, uploadFile } from '../composables/useMedia'
+import { useAuth } from '../composables/useAuth'
+
+const { userRole, isAdmin, isStudyAdmin } = useAuth()
 
 const DEFAULT_HOME_CONFIG = {
   headerImage: '',
@@ -524,18 +527,20 @@ const serviceConfigEntries = computed(() => {
 
 // 按前端服务分类进行分组
 const serviceGroupsConfig = [
-  { title: '核心服务', ids: ['2', '8', '1'] },
-  { title: '商业应用', ids: ['4', '5', '3', '7', '13'] },
-  { title: '教育培训', ids: ['6', '9'] },
-  { title: '增值服务', ids: ['10', '11', '12'] }
+  { title: '核心服务', ids: ['2', '8', '1'], roles: ['admin'] },
+  { title: '商业应用', ids: ['4', '5', '3', '7', '13'], roles: ['admin', 'dsl_admin'] },
+  { title: '教育培训', ids: ['6', '9'], roles: ['admin', 'study_admin'] },
+  { title: '增值服务', ids: ['10', '11', '12'], roles: ['admin'] }
 ]
 
 const groupedServiceEntries = computed(() => {
   const allEntries = serviceConfigEntries.value
   const entryMap = Object.fromEntries(allEntries)
   const usedIds = new Set()
+  const role = userRole.value
 
   const groups = serviceGroupsConfig
+    .filter(group => group.roles.includes(role))
     .map(group => {
       const items = group.ids
         .filter(id => entryMap[id])
@@ -547,10 +552,12 @@ const groupedServiceEntries = computed(() => {
     })
     .filter(Boolean)
 
-  // 未归类的服务放到最后
-  const ungrouped = allEntries.filter(([id]) => !usedIds.has(id))
-  if (ungrouped.length > 0) {
-    groups.push({ title: '其他服务', items: ungrouped })
+  // 未归类的服务放到最后（仅 admin 可见）
+  if (isAdmin.value) {
+    const ungrouped = allEntries.filter(([id]) => !usedIds.has(id))
+    if (ungrouped.length > 0) {
+      groups.push({ title: '其他服务', items: ungrouped })
+    }
   }
 
   return groups

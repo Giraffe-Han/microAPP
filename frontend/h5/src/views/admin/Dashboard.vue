@@ -2,32 +2,39 @@
   <div class="dashboard">
     <!-- Metric Cards -->
     <div class="metrics-grid">
-      <MetricCard label="总订单" :value="stats.overview.totalOrders" sub="所有服务申请" />
+      <MetricCard label="总订单" :value="stats.overview.totalOrders" :sub="roleLabel + '申请'" />
       <MetricCard label="待处理" :value="stats.overview.pendingOrders" value-color="#ff9f0a" sub="需跟进" />
       <MetricCard label="处理中" :value="stats.overview.processingOrders" value-color="#0071e3" />
       <MetricCard label="已完成" :value="stats.overview.completedOrders" value-color="#34c759" />
-      <MetricCard label="赛事报名" :value="stats.overview.totalCompetition" value-color="#5856d6" />
-      <MetricCard label="用户数" :value="stats.overview.totalUsers" />
+      <MetricCard v-if="isAdmin || isDslAdmin" label="赛事报名" :value="stats.overview.totalCompetition" value-color="#5856d6" />
+      <MetricCard v-if="isAdmin" label="用户数" :value="stats.overview.totalUsers" />
     </div>
 
     <!-- Charts -->
     <div class="charts-row">
-      <div class="chart-card chart-wide">
+      <div class="chart-card" :class="isAdmin || isDslAdmin ? 'chart-wide' : 'chart-full'">
         <h3 class="chart-title">订单趋势（近14天）</h3>
         <v-chart :option="trendOption" autoresize class="chart" />
       </div>
-      <div class="chart-card chart-narrow">
+      <div v-if="isAdmin || isDslAdmin" class="chart-card chart-narrow">
         <h3 class="chart-title">赛事报名分布</h3>
         <v-chart :option="pieOption" autoresize class="chart" />
       </div>
     </div>
 
-    <div class="charts-row">
+    <div class="charts-row" v-if="isAdmin">
       <div class="chart-card chart-wide">
         <h3 class="chart-title">用户增长</h3>
         <v-chart :option="userGrowthOption" autoresize class="chart" />
       </div>
       <div class="chart-card chart-narrow">
+        <h3 class="chart-title">订单状态分布</h3>
+        <v-chart :option="statusOption" autoresize class="chart" />
+      </div>
+    </div>
+
+    <div class="charts-row" v-if="!isAdmin">
+      <div class="chart-card chart-full">
         <h3 class="chart-title">订单状态分布</h3>
         <v-chart :option="statusOption" autoresize class="chart" />
       </div>
@@ -50,6 +57,15 @@ import VChart from 'vue-echarts'
 import axios from '@/utils/http'
 import { showFailToast } from 'vant'
 import MetricCard from './components/MetricCard.vue'
+import { useAuth } from './composables/useAuth'
+
+const { userRole, isAdmin, isDslAdmin, isStudyAdmin } = useAuth()
+
+const roleLabel = computed(() => {
+  if (isStudyAdmin.value) return '研学'
+  if (isDslAdmin.value) return '赛事'
+  return '所有服务'
+})
 
 use([CanvasRenderer, LineChart, PieChart, BarChart, TitleComponent, TooltipComponent, LegendComponent, GridComponent])
 
@@ -228,6 +244,10 @@ onMounted(fetchStats)
   grid-column: span 1;
 }
 
+.chart-full {
+  grid-column: span 2;
+}
+
 .chart-card {
   background: var(--bg-primary, #fff);
   border-radius: var(--card-radius, 12px);
@@ -266,6 +286,9 @@ onMounted(fetchStats)
     grid-template-columns: 1fr;
     gap: 12px;
     margin-bottom: 12px;
+  }
+  .chart-full {
+    grid-column: span 1;
   }
   .chart {
     height: 200px;

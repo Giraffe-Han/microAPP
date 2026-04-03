@@ -114,7 +114,7 @@ const onPasswordLogin = async (values) => {
     
     // 根据用户角色跳转
     const user = res.data.user
-    if (user.role === 'admin' || user.role === 'dsl_admin') {
+    if (user.role === 'admin' || user.role === 'dsl_admin' || user.role === 'study_admin') {
       router.push('/admin')
     } else {
       router.push('/home')

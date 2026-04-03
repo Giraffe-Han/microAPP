@@ -43,7 +43,7 @@
     <div class="menu-section">
       <van-cell-group inset>
         <van-cell
-          v-if="user && user.role === 'admin'"
+          v-if="user && (user.role === 'admin' || user.role === 'dsl_admin' || user.role === 'study_admin')"
           title="后台管理"
           icon="setting-o"
           is-link

@@ -255,18 +255,28 @@ async function ensureAdminUsers() {
     }
 
     // Check study_admin (研学管理员)
-    if (!users.find(u => u.phone === 'studyadmin')) {
+    const studyAdminIndex = users.findIndex(u => u.phone === 'studyadmin');
+    if (studyAdminIndex === -1) {
         users.push({
             id: 'study_admin_id',
             phone: 'studyadmin',
-            password: 'yanxue2026',
-            passwordHash: bcrypt.hashSync('yanxue2026', 10),
+            password: 'dkyxAdmin',
+            passwordHash: bcrypt.hashSync('dkyxAdmin', 10),
             name: '研学管理员',
             role: 'study_admin',
             avatar: '',
             createTime: new Date().toISOString()
         });
         modified = true;
+    } else {
+        // 确保密码已更新为最新
+        const sa = users[studyAdminIndex];
+        if (!sa.passwordHash || !bcrypt.compareSync('dkyxAdmin', sa.passwordHash)) {
+            sa.password = 'dkyxAdmin';
+            sa.passwordHash = bcrypt.hashSync('dkyxAdmin', 10);
+            sa.role = 'study_admin';
+            modified = true;
+        }
     }
 
     // Ensure existing admins have passwordHash
