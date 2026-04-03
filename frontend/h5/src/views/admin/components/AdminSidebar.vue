@@ -13,14 +13,12 @@
         :class="{ active: isActive(item.path) }"
         @click="$emit('update:modelValue', false)"
       >
-        <span class="nav-icon">{{ item.icon }}</span>
         <span class="nav-label">{{ item.label }}</span>
       </router-link>
     </nav>
 
     <div class="sidebar-footer">
       <router-link to="/" class="nav-item" @click="$emit('update:modelValue', false)">
-        <span class="nav-icon">&#8962;</span>
         <span class="nav-label">返回首页</span>
       </router-link>
     </div>
@@ -107,7 +105,6 @@ const isActive = (path) => route.path === path
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 10px;
   padding: 10px 20px;
   margin: 2px 8px;
   border-radius: 8px;
@@ -127,13 +124,6 @@ const isActive = (path) => route.path === path
   background: var(--accent-light, #e8f2fc);
   color: var(--accent-color, #0071e3);
   font-weight: 500;
-}
-
-.nav-icon {
-  font-size: 16px;
-  width: 20px;
-  text-align: center;
-  flex-shrink: 0;
 }
 
 .nav-label {

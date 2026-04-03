@@ -20,13 +20,18 @@
       />
     </van-cell-group>
 
-    <!-- 服务列表 -->
-    <van-cell-group inset title="服务列表" style="border-radius: var(--card-radius);">
+    <!-- 服务列表（按分区） -->
+    <van-cell-group
+      v-for="group in groupedServiceEntries"
+      :key="group.title"
+      inset
+      :title="group.title"
+      style="margin-bottom: 12px; border-radius: var(--card-radius);"
+    >
       <van-cell
-        v-for="[id, cfg] in serviceConfigEntries"
+        v-for="[id, cfg] in group.items"
         :key="id"
         :title="cfg.name"
-        :label="cfg.intro ? (cfg.intro.length > 20 ? cfg.intro.slice(0, 20) + '...' : cfg.intro) : '暂无介绍'"
         is-link
         @click="editServiceConfig(id)"
       />
@@ -515,6 +520,40 @@ const serviceConfigEntries = computed(() => {
   const entries = Object.entries(allServiceConfigs.value || {}).filter(([id]) => /^\d+$/.test(String(id)))
   entries.sort((a, b) => Number(a[0]) - Number(b[0]))
   return entries
+})
+
+// 按前端服务分类进行分组
+const serviceGroupsConfig = [
+  { title: '核心服务', ids: ['2', '8', '1'] },
+  { title: '商业应用', ids: ['4', '5', '3', '7', '13'] },
+  { title: '教育培训', ids: ['6', '9'] },
+  { title: '增值服务', ids: ['10', '11', '12'] }
+]
+
+const groupedServiceEntries = computed(() => {
+  const allEntries = serviceConfigEntries.value
+  const entryMap = Object.fromEntries(allEntries)
+  const usedIds = new Set()
+
+  const groups = serviceGroupsConfig
+    .map(group => {
+      const items = group.ids
+        .filter(id => entryMap[id])
+        .map(id => {
+          usedIds.add(id)
+          return [id, entryMap[id]]
+        })
+      return items.length > 0 ? { title: group.title, items } : null
+    })
+    .filter(Boolean)
+
+  // 未归类的服务放到最后
+  const ungrouped = allEntries.filter(([id]) => !usedIds.has(id))
+  if (ungrouped.length > 0) {
+    groups.push({ title: '其他服务', items: ungrouped })
+  }
+
+  return groups
 })
 
 const fetchAllServiceConfigs = async () => {
