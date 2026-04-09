@@ -1,6 +1,8 @@
 const fs = require('fs');
 const path = require('path');
 const { USE_POSTGRES, ensureJsonStoreTable, query } = require('./db/pg');
+const { cache, CacheKeys } = require('./cache');
+const { logger } = require('./logger');
 
 const DB_FILE = path.join(__dirname, 'data.json');
 const CASES_FILE = path.join(__dirname, 'cases.json');
@@ -20,7 +22,7 @@ function readJsonFile(filePath, fallback) {
         const data = fs.readFileSync(filePath);
         return JSON.parse(data);
     } catch (err) {
-        console.error(`[storage] Error reading ${filePath}:`, err);
+        logger.error(`Error reading ${filePath}`, { error: err.message });
         return fallback;
     }
 }
@@ -30,7 +32,7 @@ function writeJsonFile(filePath, data) {
         fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
         return true;
     } catch (err) {
-        console.error(`[storage] Error writing ${filePath}:`, err);
+        logger.error(`Error writing ${filePath}`, { error: err.message });
         return false;
     }
 }
@@ -121,34 +123,42 @@ async function writeJsonStore(key, data) {
 }
 
 async function readUsersDB() {
-    return readJsonStore(JSON_KEYS.users, []);
+    // 使用缓存,60秒过期
+    return cache.getOrSet(CacheKeys.USERS, () => readJsonStore(JSON_KEYS.users, []), 60 * 1000);
 }
 
 async function writeUsersDB(data) {
+    cache.delete(CacheKeys.USERS); // 清除缓存
     return writeJsonStore(JSON_KEYS.users, data);
 }
 
 async function readCasesDB() {
-    return readJsonStore(JSON_KEYS.cases, []);
+    // 案例数据变化不频繁,缓存5分钟
+    return cache.getOrSet(CacheKeys.CASES, () => readJsonStore(JSON_KEYS.cases, []), 5 * 60 * 1000);
 }
 
 async function writeCasesDB(data) {
+    cache.delete(CacheKeys.CASES);
     return writeJsonStore(JSON_KEYS.cases, data);
 }
 
 async function readApplicationsDB() {
-    return readJsonStore(JSON_KEYS.applications, []);
+    // 申请数据缓存1分钟
+    return cache.getOrSet(CacheKeys.APPLICATIONS, () => readJsonStore(JSON_KEYS.applications, []), 60 * 1000);
 }
 
 async function writeApplicationsDB(data) {
+    cache.delete(CacheKeys.APPLICATIONS);
     return writeJsonStore(JSON_KEYS.applications, data);
 }
 
 async function readServicesConfig() {
-    return readJsonStore(JSON_KEYS.services_config, {});
+    // 服务配置缓存5分钟
+    return cache.getOrSet(CacheKeys.SERVICES_CONFIG, () => readJsonStore(JSON_KEYS.services_config, {}), 5 * 60 * 1000);
 }
 
 async function writeServicesConfig(data) {
+    cache.delete(CacheKeys.SERVICES_CONFIG);
     return writeJsonStore(JSON_KEYS.services_config, data);
 }
 

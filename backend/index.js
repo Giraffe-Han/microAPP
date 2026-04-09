@@ -1,18 +1,32 @@
+// Load environment variables
+require('dotenv').config();
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 const XLSX = require('xlsx');
-const multer = require('multer'); // Import multer
+const multer = require('multer');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { randomUUID } = require('crypto');
 const axios = require('axios');
 const { queryMemberByAuthCode } = require('./platformAuth');
+const { config, validateConfig, printConfig } = require('./config');
+const { logger } = require('./logger');
+const { sanitizeBody } = require('./middleware/validation');
+const { errorHandler, notFoundHandler, asyncHandler } = require('./middleware/error');
 
 const app = express();
-const PORT = process.env.PORT || 3000; //读取 process.env.PORT
+const PORT = config.server.port;
+
+// 验证配置
+const configValidation = validateConfig();
+if (configValidation.warnings.length > 0) {
+    configValidation.warnings.forEach(warning => logger.warn(warning));
+}
+
 const {
     initStorage,
     readUsersDB,
@@ -24,13 +38,14 @@ const {
     readServicesConfig,
     writeServicesConfig
 } = require('./storage');
-const JWT_SECRET = process.env.JWT_SECRET || 'low-altitude-platform-secret';
-const ACCESS_TOKEN_TTL = process.env.ACCESS_TOKEN_TTL || '30m';
-const REFRESH_TOKEN_TTL = process.env.REFRESH_TOKEN_TTL || '7d';
-const SUPER_ADMIN_PHONE = process.env.SUPER_ADMIN_PHONE || 'wzdkjjfzyxgs';
 
-const WX_APPID = process.env.WX_APPID || '';
-const WX_SECRET = process.env.WX_SECRET || '';
+// 使用配置模块中的值
+const JWT_SECRET = config.jwt.secret;
+const ACCESS_TOKEN_TTL = config.jwt.accessTokenTTL;
+const REFRESH_TOKEN_TTL = config.jwt.refreshTokenTTL;
+const SUPER_ADMIN_PHONE = config.admin.superAdminPhone;
+const WX_APPID = config.wechat.appId;
+const WX_SECRET = config.wechat.appSecret;
 
 let wxAccessTokenCache = { token: '', expiresAt: 0 };
 
@@ -50,12 +65,34 @@ async function getWxAccessToken() {
     return data.access_token;
 }
 
-app.use(cors());
+// CORS 配置
+app.use(cors({
+    origin: config.server.corsOrigin,
+    credentials: true
+}));
+
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 
+// 输入消毒
+app.use(sanitizeBody);
+
 // Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
+
+// 请求日志
+app.use((req, res, next) => {
+    const start = Date.now();
+    res.on('finish', () => {
+        const duration = Date.now() - start;
+        logger.info(`${req.method} ${req.originalUrl}`, {
+            status: res.statusCode,
+            duration: `${duration}ms`,
+            ip: req.ip
+        });
+    });
+    next();
+});
 
 function getClientIp(req) {
     const xf = req.headers['x-forwarded-for'];
@@ -1200,17 +1237,30 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// 404 handler for API routes
+app.use(notFoundHandler);
+
+// Global error handler
+app.use(errorHandler);
+
 async function bootstrap() {
+    // 打印配置信息
+    printConfig();
+
+    // 初始化存储
     await initStorage();
     await ensureDefaultCases();
     await ensureAdminUsers();
 
+    // 启动服务器
     app.listen(PORT, () => {
-        console.log('Server is running on http://localhost:' + PORT);
+        logger.info(`Server is running on http://localhost:${PORT}`);
+        logger.info(`Environment: ${config.server.env}`);
+        logger.info(`Database: ${config.database.usePostgres ? 'PostgreSQL' : 'JSON File'}`);
     });
 }
 
 bootstrap().catch(err => {
-    console.error('Failed to start server:', err);
+    logger.error('Failed to start server', { error: err.message, stack: err.stack });
     process.exit(1);
 });

@@ -25,8 +25,19 @@
 
     <div class="detail-body" v-if="contentReady">
       <div class="section-card">
-        <h2 class="section-title">课程介绍</h2>
+        <h2 class="section-title">研学内容</h2>
         <p class="section-text">{{ pkg.intro }}</p>
+      </div>
+
+      <!-- 研学目标 -->
+      <div class="section-card" v-if="pkg.studyGoals && pkg.studyGoals.length > 0">
+        <h2 class="section-title">研学目标</h2>
+        <div class="goals-list">
+          <div v-for="(goal, i) in pkg.studyGoals" :key="i" class="goal-item">
+            <div class="goal-label">{{ goal.label }}</div>
+            <div class="goal-content">{{ goal.content }}</div>
+          </div>
+        </div>
       </div>
 
       <!-- 服务项目（课程包独立） -->
@@ -86,19 +97,16 @@
             </div>
             <div class="schedule-content">
               <div class="schedule-name">{{ item.name }}</div>
+              <div class="schedule-location" v-if="item.location">
+                <van-icon name="location-o" size="12" color="#0071e3" />
+                <span>{{ item.location }}</span>
+              </div>
               <div class="schedule-desc">{{ item.desc }}</div>
+              <div class="schedule-purpose" v-if="item.purpose">
+                <span class="purpose-label">课程目的</span>
+                <span>{{ item.purpose }}</span>
+              </div>
             </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="section-card">
-        <h2 class="section-title">课程亮点</h2>
-        <div class="highlight-grid">
-          <div v-for="(h, i) in pkg.highlights" :key="i" class="highlight-card">
-            <span class="highlight-emoji">{{ h.emoji }}</span>
-            <div class="highlight-name">{{ h.name }}</div>
-            <div class="highlight-desc">{{ h.desc }}</div>
           </div>
         </div>
       </div>
@@ -132,6 +140,23 @@
             <span>{{ adv }}</span>
           </div>
         </div>
+      </div>
+
+      <!-- 安全宣讲 -->
+      <div class="section-card" v-if="pkg.safetyBriefing && pkg.safetyBriefing.length > 0">
+        <h2 class="section-title">安全宣讲</h2>
+        <div class="safety-list">
+          <div v-for="(item, i) in pkg.safetyBriefing" :key="i" class="safety-item">
+            <van-icon name="shield-o" size="16" color="#0071e3" />
+            <span>{{ item }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 研学总结 -->
+      <div class="section-card" v-if="pkg.studySummary">
+        <h2 class="section-title">研学总结</h2>
+        <p class="section-text">{{ pkg.studySummary }}</p>
       </div>
 
       <div class="section-card">
@@ -187,7 +212,22 @@ const normalizeUrl = (url) => {
 }
 
 const headerStyle = computed(() => {
-  return { background: pkg.value?.headerBg || 'linear-gradient(135deg, #06b6d4 0%, #2563eb 100%)' }
+  const bg = pkg.value?.headerBg
+  if (!bg) {
+    return { background: 'linear-gradient(135deg, #06b6d4 0%, #2563eb 100%)' }
+  }
+  // 如果是图片URL（http或相对路径），使用background-image
+  if (bg.startsWith('http') || bg.startsWith('/') || bg.startsWith('uploads/')) {
+    const imageUrl = bg.startsWith('uploads/') ? `/${bg}` : bg
+    return {
+      backgroundImage: `url(${imageUrl})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat'
+    }
+  }
+  // 否则使用渐变色
+  return { background: bg }
 })
 
 const previewShowcase = (item) => {
@@ -213,14 +253,16 @@ onMounted(async () => {
         price: remotePkg.price || 0,
         headerBg: remotePkg.headerBg || '',
         intro: remotePkg.intro || '',
+        studyGoals: remotePkg.studyGoals || [],
         schedule: remotePkg.schedule || [],
-        highlights: remotePkg.highlights || [],
         audience: remotePkg.audience || [],
         feeInfo: remotePkg.feeInfo || [],
         tips: remotePkg.tips || [],
         projects: remotePkg.projects || [],
         advantages: remotePkg.advantages || [],
         showcase: remotePkg.showcase || [],
+        safetyBriefing: remotePkg.safetyBriefing || [],
+        studySummary: remotePkg.studySummary || '',
       }
     }
   } catch (e) {
@@ -492,36 +534,81 @@ const onApply = () => {
   line-height: 1.5;
 }
 
-/* 课程亮点 */
-.highlight-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-}
-
-.highlight-card {
-  background: #f5f5f7;
-  border-radius: 14px;
-  padding: 16px 14px;
-  text-align: center;
-}
-
-.highlight-emoji {
-  font-size: 28px;
-  display: block;
-  margin-bottom: 8px;
-}
-
-.highlight-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: #1d1d1f;
+.schedule-location {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #0071e3;
   margin-bottom: 4px;
 }
 
-.highlight-desc {
+.schedule-purpose {
+  font-size: 12px;
+  color: #636366;
+  line-height: 1.5;
+  margin-top: 6px;
+  padding: 8px 10px;
+  background: #f5f5f7;
+  border-radius: 8px;
+}
+
+.purpose-label {
+  display: inline-block;
   font-size: 11px;
-  color: #86868b;
+  font-weight: 600;
+  color: #0071e3;
+  background: rgba(0, 113, 227, 0.08);
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-right: 6px;
+}
+
+/* 研学目标 */
+.goals-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.goal-item {
+  padding: 14px;
+  background: #f5f5f7;
+  border-radius: 12px;
+}
+
+.goal-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0071e3;
+  margin-bottom: 6px;
+}
+
+.goal-content {
+  font-size: 14px;
+  color: #424245;
+  line-height: 1.7;
+}
+
+/* 安全宣讲 */
+.safety-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.safety-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  color: #424245;
+  line-height: 1.6;
+}
+
+.safety-item .van-icon {
+  flex-shrink: 0;
+  margin-top: 3px;
 }
 
 /* 服务项目 */
@@ -542,6 +629,13 @@ const onApply = () => {
   font-size: 14px;
   font-weight: 500;
   color: #1d1d1f;
+  overflow: visible;
+}
+
+.project-item .van-icon {
+  flex-shrink: 0;
+  min-width: 24px;
+  min-height: 24px;
 }
 
 /* 服务优势 */

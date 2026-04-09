@@ -16,8 +16,19 @@
 
       <view v-if="contentReady">
         <view class="section-card">
-          <view class="section-title">课程介绍</view>
+          <view class="section-title">研学内容</view>
           <text class="section-text">{{ pkg.intro }}</text>
+        </view>
+
+        <!-- 研学目标 -->
+        <view class="section-card" v-if="pkg.studyGoals && pkg.studyGoals.length > 0">
+          <view class="section-title">研学目标</view>
+          <view class="goals-list">
+            <view v-for="(goal, i) in pkg.studyGoals" :key="i" class="goal-item">
+              <view class="goal-label">{{ goal.label }}</view>
+              <view class="goal-content">{{ goal.content }}</view>
+            </view>
+          </view>
         </view>
 
         <!-- 往期活动展示（支持后台配置） -->
@@ -66,7 +77,15 @@
               </view>
               <view class="schedule-content">
                 <view class="schedule-name">{{ item.name }}</view>
+                <view class="schedule-location" v-if="item.location">
+                  <text class="location-icon">📍</text>
+                  <text>{{ item.location }}</text>
+                </view>
                 <view class="schedule-desc">{{ item.desc }}</view>
+                <view class="schedule-purpose" v-if="item.purpose">
+                  <text class="purpose-label">课程目的</text>
+                  <text>{{ item.purpose }}</text>
+                </view>
               </view>
             </view>
           </view>
@@ -101,6 +120,23 @@
               <text class="fee-value">{{ f.value }}</text>
             </view>
           </view>
+        </view>
+
+        <!-- 安全宣讲 -->
+        <view class="section-card" v-if="pkg.safetyBriefing && pkg.safetyBriefing.length > 0">
+          <view class="section-title">安全宣讲</view>
+          <view class="safety-list">
+            <view v-for="(item, i) in pkg.safetyBriefing" :key="i" class="safety-item">
+              <text class="safety-icon">🛡️</text>
+              <text>{{ item }}</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 研学总结 -->
+        <view class="section-card" v-if="pkg.studySummary">
+          <view class="section-title">研学总结</view>
+          <text class="section-text">{{ pkg.studySummary }}</text>
         </view>
 
         <view class="section-card">
@@ -149,26 +185,48 @@ const activeSession = ref('am')
 
 const studyShowcase = ref([])
 
-const fetchShowcase = async () => {
+onLoad(async (options) => {
+  const id = options.package || 'study-halfday'
+
   try {
     const res = await request({ url: '/api/services/config' })
     const allConfigs = res?.data || res || {}
     const config = allConfigs['9'] || {}
-    if (config.studyShowcase && config.studyShowcase.length > 0) {
+
+    // 从API获取课程包数据
+    if (config.packages && config.packages[id]) {
+      const remotePkg = config.packages[id]
+      pkg.value = {
+        id,
+        name: remotePkg.name || '',
+        tag: remotePkg.tag || '',
+        price: remotePkg.price || 0,
+        headerBg: remotePkg.headerBg || 'linear-gradient(135deg, #06b6d4 0%, #2563eb 100%)',
+        intro: remotePkg.intro || '',
+        studyGoals: remotePkg.studyGoals || [],
+        schedule: remotePkg.schedule || [],
+        highlights: remotePkg.highlights || [],
+        audience: remotePkg.audience || [],
+        feeInfo: remotePkg.feeInfo || [],
+        tips: remotePkg.tips || [],
+        safetyBriefing: remotePkg.safetyBriefing || [],
+        studySummary: remotePkg.studySummary || '',
+      }
+      studyShowcase.value = remotePkg.showcase || []
+    }
+
+    // 全局精彩回顾作为备选
+    if (studyShowcase.value.length === 0 && config.studyShowcase) {
       studyShowcase.value = config.studyShowcase
-    } else {
-      try {
-        const showcaseRes = await request({ url: '/api/study/showcase' })
-        const items = showcaseRes?.data || showcaseRes || []
-        if (Array.isArray(items) && items.length > 0) {
-          studyShowcase.value = items
-        }
-      } catch (e) { /* use default */ }
     }
   } catch (e) {
-    console.warn('Failed to load showcase:', e)
+    console.warn('加载配置失败:', e)
   }
-}
+
+  if (pkg.value) {
+    uni.setNavigationBarTitle({ title: pkg.value.name })
+  }
+})
 
 const previewShowcase = (index) => {
   const urls = studyShowcase.value.map(item => item.image).filter(Boolean)
@@ -176,111 +234,6 @@ const previewShowcase = (index) => {
     uni.previewImage({ urls, current: urls[index] || urls[0] })
   }
 }
-
-const packageData = {
-  'study-198': {
-    id: 'study-198',
-    name: '无人机研学实践中心半日营',
-    tag: '半日营',
-    price: 198,
-    headerBg: 'linear-gradient(135deg, #06b6d4 0%, #2563eb 100%)',
-    intro: '走进无人机研学实践中心，通过低空科普讲座、模拟飞行训练与真机操控实践三大环节，让青少年在半天时间内系统了解无人机基础知识，亲身体验飞行操控的乐趣，激发对低空科技的探索热情。',
-    schedule: [
-      { amTime: '09:00', pmTime: '14:00', name: '签到集合', desc: '研学中心集合，领取学习资料与活动手册' },
-      { amTime: '09:15', pmTime: '14:15', name: '低空科普课堂', desc: '无人机发展历程、飞行原理、安全知识讲解' },
-      { amTime: '10:00', pmTime: '15:00', name: '模拟飞行体验', desc: '专业模拟器操作训练，掌握基本飞行技巧' },
-      { amTime: '10:45', pmTime: '15:45', name: '真机操控实践', desc: '在专业导师指导下完成真机飞行任务' },
-      { amTime: '11:30', pmTime: '16:30', name: '结业总结', desc: '成果展示、颁发结业证书、合影留念' }
-    ],
-    highlights: [
-      { emoji: '📚', name: '科普讲座', desc: '从原理到应用的系统科普' },
-      { emoji: '🎮', name: '模拟飞行', desc: '专业模拟器安全体验' },
-      { emoji: '🚁', name: '真机操控', desc: '导师一对一指导飞行' },
-      { emoji: '🏆', name: '结业证书', desc: '完成课程获颁证书' }
-    ],
-    audience: [
-      '6-16 岁青少年',
-      '对无人机/航空科技有兴趣的学生',
-      '学校/机构团体组织研学活动'
-    ],
-    feeInfo: [
-      { label: '课程价格', value: '¥198/人' },
-      { label: '课程时长', value: '半天（约 2.5 小时）' },
-      { label: '费用包含', value: '教学费、器材使用费、保险费、证书费' },
-      { label: '成团人数', value: '10 人起' }
-    ],
-    showcase: [
-      { title: '低空科普课堂', desc: '从基础原理到安全规范，互动式讲解让孩子更易理解。', image: '/static/images/study/science-class.svg' },
-      { title: '真机飞行体验', desc: '在专业导师指导下完成基础操控与任务闯关，提升动手能力。', image: '/static/images/study/flight-experience.svg' },
-      { title: '成果与纪念', desc: '完成学习任务与展示，记录成长瞬间，获得满满成就感。', image: '/static/images/study/achievement.svg' }
-    ],
-    tips: [
-      '请提前 3 个工作日预约，以便安排场地和导师。',
-      '活动当天请穿着运动服装及运动鞋，便于户外实操。',
-      '恶劣天气情况下，室外环节将调整为室内模拟训练。',
-      '每位学员需签署安全协议，未成年人需家长签字。'
-    ]
-  },
-  'study-238': {
-    id: 'study-238',
-    name: '无人机亲子研学课程',
-    tag: '亲子课程',
-    price: 238,
-    headerBg: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
-    intro: '专为家庭设计的无人机亲子研学课程，家长与孩子共同参与无人机组装、编程飞行与亲子协作飞行任务，在互动中增进亲子关系，让科技教育成为家庭的共同记忆。',
-    schedule: [
-      { amTime: '08:50', pmTime: '13:50', name: '集合签到', desc: '亲子家庭签到，领取活动礼包与手册' },
-      { amTime: '09:00', pmTime: '14:00', name: '开营破冰', desc: '破冰互动，营造轻松氛围' },
-      { amTime: '09:10', pmTime: '14:10', name: '展厅参观', desc: '参观无人机研学实践中心展厅' },
-      { amTime: '09:30', pmTime: '14:30', name: '无人机启蒙课程', desc: '趣味讲解无人机原理，亲子互动问答' },
-      { amTime: '10:00', pmTime: '15:00', name: '拼搭无人机组装', desc: '家长与孩子协作完成无人机拼搭组装' },
-      { amTime: '11:00', pmTime: '16:00', name: '无人机调试试飞', desc: '亲手调试并完成无人机试飞体验' },
-      { amTime: '11:20', pmTime: '16:20', name: '球幕影院观影', desc: '沉浸式球幕影院，感受低空飞行视觉盛宴' },
-      { amTime: '11:55', pmTime: '16:55', name: '结营仪式', desc: '拍照留念，颁发结业证书' }
-    ],
-    highlights: [
-      { emoji: '👨‍👩‍👧', name: '亲子协作', desc: '家长孩子共同完成任务' },
-      { emoji: '🔧', name: '动手组装', desc: '亲手拼搭一架无人机' },
-      { emoji: '🚁', name: '调试试飞', desc: '亲手操控无人机飞行' },
-      { emoji: '🎬', name: '球幕观影', desc: '沉浸式球幕影院体验' }
-    ],
-    audience: [
-      '6-14 岁儿童及家长（1大1小）',
-      '希望增进亲子关系的家庭',
-      '对科技教育感兴趣的亲子家庭'
-    ],
-    feeInfo: [
-      { label: '课程价格', value: '¥238/人（1大1小为一组）' },
-      { label: '课程时长', value: '半天（约 3 小时）' },
-      { label: '费用包含', value: '教学费、器材使用费、保险费、证书费、竞赛奖品' },
-      { label: '成团人数', value: '5 组家庭起' }
-    ],
-    showcase: [
-      { title: '低空科普课堂', desc: '从基础原理到安全规范，互动式讲解让孩子更易理解。', image: '/static/images/study/science-class.svg' },
-      { title: '低空知识启蒙', desc: '通过趣味互动教学，带领亲子家庭走进无人机的世界，探索低空飞行的奥秘。', image: '/static/images/study/flight-experience.svg' },
-      { title: '球幕影院观影', desc: '沉浸式球幕影院，以震撼视角感受低空飞行的壮丽景象。', image: '/static/images/study/achievement.svg' },
-      { title: '真机飞行体验', desc: '在专业导师指导下完成基础操控与任务闯关，提升动手能力。', image: '/static/images/study/flight-experience.svg' },
-      { title: '成果与纪念', desc: '完成学习任务与展示，记录成长瞬间，获得满满成就感。', image: '/static/images/study/achievement.svg' }
-    ],
-    tips: [
-      '请提前 3 个工作日预约，以便安排场地和导师。',
-      '建议家长与孩子穿着舒适运动服装参加活动。',
-      '恶劣天气情况下，室外环节将调整为室内活动。',
-      '每组家庭限 1 位大人 + 1 位小孩，额外人员请另行报名。',
-      '活动中需签署安全协议，未成年人由随行家长签字。'
-    ]
-  }
-}
-
-onLoad((options) => {
-  const id = options.package || 'study-198'
-  pkg.value = packageData[id] || packageData['study-198']
-  if (pkg.value) {
-    uni.setNavigationBarTitle({ title: pkg.value.name })
-    studyShowcase.value = pkg.value.showcase || []
-  }
-  fetchShowcase()
-})
 
 onReady(() => {
   setTimeout(() => { contentReady.value = true }, 150)
@@ -511,6 +464,88 @@ const makeCall = (phone) => {
   font-size: 12px;
   color: #969799;
   line-height: 1.5;
+}
+
+.schedule-location {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #2563eb;
+  margin-bottom: 4px;
+}
+
+.location-icon {
+  font-size: 12px;
+}
+
+.schedule-purpose {
+  font-size: 12px;
+  color: #636366;
+  line-height: 1.5;
+  margin-top: 6px;
+  padding: 8px 10px;
+  background: #f7f8fa;
+  border-radius: 8px;
+}
+
+.purpose-label {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #2563eb;
+  background: rgba(37, 99, 235, 0.08);
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-right: 6px;
+}
+
+/* 研学目标 */
+.goals-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.goal-item {
+  padding: 14px;
+  background: #f7f8fa;
+  border-radius: 10px;
+}
+
+.goal-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #2563eb;
+  margin-bottom: 6px;
+}
+
+.goal-content {
+  font-size: 14px;
+  color: #646566;
+  line-height: 1.7;
+}
+
+/* 安全宣讲 */
+.safety-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.safety-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 14px;
+  color: #646566;
+  line-height: 1.6;
+}
+
+.safety-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+  margin-top: 2px;
 }
 
 /* 课程亮点 */

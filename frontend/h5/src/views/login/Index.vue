@@ -62,8 +62,24 @@
           <span @click="goRegister">还没有账号？立即注册</span>
         </div>
 
+        <div class="wechat-login">
+          <van-divider>其他登录方式</van-divider>
+          <div class="wechat-btn-wrapper">
+            <van-button
+              round
+              block
+              type="primary"
+              color="#07c160"
+              icon="wechat"
+              @click="onWechatLogin"
+              :loading="wechatLoading"
+            >
+              微信授权登录
+            </van-button>
+          </div>
+        </div>
+
         <div class="sso-tip">
-          <van-divider>其他方式</van-divider>
           <p>从畅行温州平台进入将自动登录</p>
         </div>
       </template>
@@ -82,6 +98,7 @@ const route = useRoute()
 
 const loading = ref(false)
 const autoLoginStatus = ref(false)
+const wechatLoading = ref(false)
 
 const loginForm = ref({
   username: '',
@@ -127,6 +144,67 @@ const onPasswordLogin = async (values) => {
   }
 }
 
+// 微信授权登录
+const onWechatLogin = async () => {
+  wechatLoading.value = true
+  try {
+    const res = await axios.get('/api/auth/wechat-oauth-url', {
+      params: {
+        redirectUrl: window.location.origin + '/home'
+      }
+    })
+    
+    if (!res.data?.success || !res.data?.authUrl) {
+      throw new Error(res.data?.message || '获取微信授权URL失败')
+    }
+    
+    // 重定向到微信授权页面
+    window.location.href = res.data.authUrl
+  } catch (error) {
+    console.error(error)
+    showFailToast(error?.response?.data?.message || error?.message || '微信授权登录失败')
+  } finally {
+    wechatLoading.value = false
+  }
+}
+
+// 处理微信授权回调
+const handleWechatCallback = () => {
+  const wechatAuth = route.query.wechat_auth
+  const userData = route.query.user
+  const tokensData = route.query.tokens
+  
+  if (wechatAuth === '1' && userData && tokensData) {
+    try {
+      // 解析用户信息
+      const user = JSON.parse(atob(userData))
+      const tokens = JSON.parse(atob(tokensData))
+      
+      // 保存到本地存储
+      localStorage.setItem('user', JSON.stringify(user))
+      authStorage.setTokens(tokens.accessToken, tokens.refreshToken)
+      
+      showSuccessToast('微信授权登录成功')
+      
+      // 根据用户角色跳转
+      if (user.role === 'admin' || user.role === 'dsl_admin' || user.role === 'study_admin') {
+        router.push('/admin')
+      } else {
+        router.push('/home')
+      }
+    } catch (error) {
+      console.error('解析微信登录数据失败:', error)
+      showFailToast('微信授权登录失败，请重试')
+    }
+  }
+  
+  // 处理错误
+  const error = route.query.error
+  if (error) {
+    showFailToast('微信授权登录失败，请重试')
+  }
+}
+
 // 授权码自动登录（SSO）- 从畅行温州平台跳转时自动触发
 const ssoLogin = async (code) => {
   autoLoginStatus.value = true
@@ -148,6 +226,9 @@ const ssoLogin = async (code) => {
 }
 
 onMounted(() => {
+  // 检查是否是微信授权回调
+  handleWechatCallback()
+  
   // 检查 URL 中是否有授权码参数（从畅行温州平台跳转时自动携带）
   const code = route.query.authcode || route.query.jyauthcode
   if (typeof code === 'string' && code.trim()) {
@@ -210,6 +291,14 @@ onMounted(() => {
   color: #667eea;
   font-size: 14px;
   cursor: pointer;
+}
+
+.wechat-login {
+  margin-top: 24px;
+}
+
+.wechat-btn-wrapper {
+  padding: 0 16px;
 }
 
 .auto-login-area {

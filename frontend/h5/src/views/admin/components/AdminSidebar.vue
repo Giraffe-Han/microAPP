@@ -54,6 +54,9 @@ const allMenus = [
   { path: '/admin/config', label: '服务配置', icon: '◇', roles: ['admin', 'study_admin'] }
 ]
 
+// 服务6(飞手培训)相关配置 - 研学管理员不可见
+const trainingServiceIds = ['6']
+
 const visibleMenus = computed(() => {
   return allMenus.filter(m => {
     if (props.isAdmin) return true

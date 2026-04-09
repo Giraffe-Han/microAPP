@@ -166,10 +166,10 @@
                     </div>
                   </template>
                 </van-field>
-                <div v-if="activeStudyPkg.headerBg && activeStudyPkg.headerBg.startsWith('http')" class="img-preview">
-                  <img :src="activeStudyPkg.headerBg" @click="previewCrop(activeStudyPkg.headerBg, 'headerBg')" />
+                <div v-if="activeStudyPkg.headerBg" class="img-preview">
+                  <img :src="normalizeMediaUrl(activeStudyPkg.headerBg)" @click="previewCrop(normalizeMediaUrl(activeStudyPkg.headerBg), 'headerBg')" />
                   <div class="img-actions">
-                    <van-button size="mini" type="primary" plain @click="previewCrop(activeStudyPkg.headerBg, 'headerBg')">裁剪</van-button>
+                    <van-button size="mini" type="primary" plain @click="previewCrop(normalizeMediaUrl(activeStudyPkg.headerBg), 'headerBg')">裁剪</van-button>
                   </div>
                 </div>
                 
@@ -232,26 +232,43 @@
                   <van-field v-model="step.pmTime" label="下午" placeholder="13:50" dense />
                   <van-field v-model="step.name" label="环节" placeholder="集合签到" dense />
                   <van-field v-model="step.desc" label="说明" placeholder="研学中心集合，签到报到" dense />
+                  <van-field v-model="step.location" label="地点" placeholder="研学中心A教室" dense />
+                  <van-field v-model="step.purpose" label="课程目的" placeholder="了解无人机基本原理" dense type="textarea" rows="2" autosize />
                 </div>
                 <div class="list-add">
-                  <van-button size="small" type="primary" block plain icon="plus" @click="activeStudyPkg.schedule.push({ amTime: '', pmTime: '', name: '', desc: '' })">添加步骤</van-button>
+                  <van-button size="small" type="primary" block plain icon="plus" @click="activeStudyPkg.schedule.push({ amTime: '', pmTime: '', name: '', desc: '', location: '', purpose: '' })">添加步骤</van-button>
                 </div>
               </van-cell-group>
 
-              <!-- 课程亮点 -->
-              <van-cell-group inset :title="activeStudyPkg.tag + ' - 课程亮点（' + (activeStudyPkg.highlights?.length || 0) + '）'">
-                <div v-for="(hl, idx) in activeStudyPkg.highlights" :key="idx" class="list-item-block">
+              <!-- 研学目标 -->
+              <van-cell-group inset :title="activeStudyPkg.tag + ' - 研学目标（' + (activeStudyPkg.studyGoals?.length || 0) + '）'">
+                <div v-for="(goal, idx) in activeStudyPkg.studyGoals" :key="idx" class="list-item-block">
                   <div class="list-item-head">
                     <span class="item-num">{{ idx + 1 }}</span>
-                    <van-button size="mini" type="danger" plain icon="cross" @click="activeStudyPkg.highlights.splice(idx, 1)" />
+                    <van-button size="mini" type="danger" plain icon="cross" @click="activeStudyPkg.studyGoals.splice(idx, 1)" />
                   </div>
-                  <van-field v-model="hl.emoji" label="图标" placeholder="🏛️" dense />
-                  <van-field v-model="hl.name" label="名称" placeholder="展厅参观" dense />
-                  <van-field v-model="hl.desc" label="描述" placeholder="无人机机型及场景应用讲解" dense />
+                  <van-field v-model="goal.label" label="目标类型" placeholder="如：知识目标、能力目标" dense />
+                  <van-field v-model="goal.content" label="具体内容" placeholder="掌握无人机基本原理" dense type="textarea" rows="3" autosize />
                 </div>
                 <div class="list-add">
-                  <van-button size="small" type="primary" block plain icon="plus" @click="activeStudyPkg.highlights.push({ emoji: '', name: '', desc: '' })">添加亮点</van-button>
+                  <van-button size="small" type="primary" block plain icon="plus" @click="activeStudyPkg.studyGoals.push({ label: '', content: '' })">添加目标</van-button>
                 </div>
+              </van-cell-group>
+
+              <!-- 安全宣讲 -->
+              <van-cell-group inset :title="activeStudyPkg.tag + ' - 安全宣讲（' + (activeStudyPkg.safetyBriefing?.length || 0) + '）'">
+                <div v-for="(item, idx) in activeStudyPkg.safetyBriefing" :key="idx" class="list-item">
+                  <van-field v-model="activeStudyPkg.safetyBriefing[idx]" placeholder="如：操作前检查设备电量" dense />
+                  <van-button size="mini" type="danger" plain icon="cross" @click="activeStudyPkg.safetyBriefing.splice(idx, 1)" />
+                </div>
+                <div class="list-add">
+                  <van-button size="small" type="primary" block plain icon="plus" @click="activeStudyPkg.safetyBriefing.push('')">添加安全提示</van-button>
+                </div>
+              </van-cell-group>
+
+              <!-- 研学总结 -->
+              <van-cell-group inset :title="activeStudyPkg.tag + ' - 研学总结'">
+                <van-field v-model="activeStudyPkg.studySummary" label="总结内容" type="textarea" rows="4" placeholder="课程总结内容..." autosize show-word-limit maxlength="500" />
               </van-cell-group>
 
               <!-- 适合人群 -->
@@ -529,7 +546,7 @@ const serviceConfigEntries = computed(() => {
 const serviceGroupsConfig = [
   { title: '核心服务', ids: ['2', '8', '1'], roles: ['admin'] },
   { title: '商业应用', ids: ['4', '5', '3', '7', '13'], roles: ['admin', 'dsl_admin'] },
-  { title: '教育培训', ids: ['6', '9'], roles: ['admin', 'study_admin'] },
+  { title: '研学教育', ids: ['9'], roles: ['admin', 'study_admin'] },
   { title: '增值服务', ids: ['10', '11', '12'], roles: ['admin'] }
 ]
 
@@ -616,7 +633,7 @@ const editServiceConfig = (id) => {
   const raw = JSON.parse(JSON.stringify(allServiceConfigs.value[id]))
   if (!raw.projects) raw.projects = []
   if (!raw.advantages) raw.advantages = []
-  if (['9', '6'].includes(id)) {
+  if (id === '6') {
     if (!raw.highlights) raw.highlights = []
     if (!raw.studyShowcase) raw.studyShowcase = []
   }
@@ -637,13 +654,15 @@ const editServiceConfig = (id) => {
       }
       const p = studyPackages.value[pkgId]
       if (!p.schedule) p.schedule = []
-      if (!p.highlights) p.highlights = []
+      if (!p.studyGoals) p.studyGoals = []
       if (!p.audience) p.audience = []
       if (!p.feeInfo) p.feeInfo = []
       if (!p.tips) p.tips = []
       if (!p.projects) p.projects = []
       if (!p.advantages) p.advantages = []
       if (!p.showcase) p.showcase = []
+      if (!p.safetyBriefing) p.safetyBriefing = []
+      if (!p.studySummary) p.studySummary = ''
     }
     activeStudyPkgId.value = studyPackageIds.value[0] || 'study-halfday'
   }
@@ -721,13 +740,15 @@ const createEmptyPackage = (pkgId) => {
     headerBg: 'linear-gradient(135deg, #06b6d4 0%, #2563eb 100%)',
     intro: '',
     schedule: [],
-    highlights: [],
+    studyGoals: [],
     audience: [],
     feeInfo: [],
     tips: [],
     projects: [],
     advantages: [],
-    showcase: []
+    showcase: [],
+    safetyBriefing: [],
+    studySummary: ''
   }
 }
 

@@ -79,7 +79,13 @@ onMounted(async () => {
     const config = res?.data?.data?.['9'] || {}
     const pkgs = config.packages || {}
     // 动态获取所有课程包ID，优先使用语义化标识
-    const ids = Object.keys(pkgs).sort()
+    const ids = Object.keys(pkgs).sort((a, b) => {
+      // 推荐课程排在最前面
+      if (pkgs[a].recommended && !pkgs[b].recommended) return -1
+      if (!pkgs[a].recommended && pkgs[b].recommended) return 1
+      // 其次按价格从高到低排序
+      return (pkgs[b].price || 0) - (pkgs[a].price || 0)
+    })
     packages.value = ids
       .filter(id => pkgs[id])
       .map(id => ({

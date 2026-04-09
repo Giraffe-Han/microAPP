@@ -1116,9 +1116,12 @@ const saveServiceConfig = async () => {
 };
 
 const onReadServiceFile = async (file, field) => {
+    showLoadingToast({ message: '上传中...', forbidClick: true });
     const url = await uploadFile(file);
+    closeToast();
     if (url && editingService.value) {
-        editingService.value[field] = url;
+        editingService.value[field] = normalizeMediaUrl(url);
+        showSuccessToast('上传成功');
     }
 };
 

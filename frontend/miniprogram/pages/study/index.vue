@@ -55,38 +55,34 @@
 
 <script setup>
 import { ref } from 'vue'
+import { onLoad } from '@dcloudio/uni-app'
 import HomeFloatButton from '@/components/HomeFloatButton.vue'
+import { request } from '../../utils/request'
 
-const packages = ref([
-  {
-    id: 'study-198',
-    name: '无人机研学实践中心半日营',
-    tag: '半日营',
-    price: 198,
-    recommended: false,
-    desc: '走进无人机研学实践中心，通过科普讲座与飞行实操，激发青少年对低空科技的兴趣。',
-    highlights: [
-      '低空科普课堂',
-      '模拟飞行体验',
-      '真机操控实践',
-      '结业证书颁发'
-    ]
-  },
-  {
-    id: 'study-238',
-    name: '无人机亲子研学课程',
-    tag: '亲子课程',
-    price: 238,
-    recommended: true,
-    desc: '家长与孩子共同参与无人机研学课程，在亲子互动中体验飞行乐趣，增进亲子关系。',
-    highlights: [
-      '亲子协作飞行任务',
-      '无人机拼搭组装',
-      '无人机调试试飞',
-      '球幕影院观影'
-    ]
+const packages = ref([])
+
+onLoad(async () => {
+  try {
+    const res = await request({ url: '/api/services/config' })
+    const allConfigs = res?.data || res || {}
+    const config = allConfigs['9'] || {}
+    const pkgs = config.packages || {}
+    const ids = Object.keys(pkgs).sort()
+    packages.value = ids
+      .filter(id => pkgs[id])
+      .map(id => ({
+        id,
+        name: pkgs[id].name || '',
+        tag: pkgs[id].tag || '',
+        price: pkgs[id].price || 0,
+        recommended: pkgs[id].recommended || false,
+        desc: pkgs[id].desc || pkgs[id].intro || '',
+        highlights: pkgs[id].cardHighlights || []
+      }))
+  } catch (e) {
+    console.warn('加载研学配置失败:', e)
   }
-])
+})
 
 const goToDetail = (id) => {
   uni.navigateTo({ url: `/pages/study/detail?package=${id}` })
