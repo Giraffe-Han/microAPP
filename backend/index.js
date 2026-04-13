@@ -80,6 +80,36 @@ app.use(sanitizeBody);
 // Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Image compression endpoint
+app.get('/api/image', asyncHandler(async (req, res) => {
+    const { url, width, quality } = req.query;
+    const imagePath = url ? path.join(__dirname, 'public', url.replace(/^\//, '')) : null;
+
+    if (!imagePath || !fs.existsSync(imagePath)) {
+        return res.status(404).json({ error: 'Image not found' });
+    }
+
+    try {
+        const sharp = require('sharp');
+        const imgWidth = parseInt(width) || 800;
+        const imgQuality = parseInt(quality) || 75;
+
+        res.set('Content-Type', 'image/jpeg');
+        res.set('Cache-Control', 'public, max-age=86400'); // 24 hours
+
+        await sharp(imagePath)
+            .resize(imgWidth, null, { fit: 'inside', withoutEnlargement: true })
+            .jpeg({ quality: imgQuality, progressive: true })
+            .pipe(res);
+    } catch (err) {
+        // Fallback: serve original image
+        logger.warn('Image compression failed, serving original:', err.message);
+        res.set('Content-Type', 'image/jpeg');
+        res.set('Cache-Control', 'public, max-age=3600');
+        res.sendFile(imagePath);
+    }
+}));
+
 // 请求日志
 app.use((req, res, next) => {
     const start = Date.now();

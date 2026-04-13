@@ -66,7 +66,26 @@
             class="showcase-item"
             @click="previewShowcase(item)"
           >
-            <van-image :src="normalizeUrl(item.image)" fit="cover" width="100%" height="140" radius="12" />
+            <van-image
+              :src="item.image ? getCompressedImage(item.image, 600) : ''"
+              fit="cover"
+              width="100%"
+              height="140"
+              radius="12"
+              lazy-load
+            >
+              <template #loading>
+                <div class="image-loading">
+                  <van-loading type="spinner" size="20" />
+                </div>
+              </template>
+              <template #error>
+                <div class="image-error">
+                  <van-icon name="photo-fail" size="24" color="#c8c8c8" />
+                  <span>加载失败</span>
+                </div>
+              </template>
+            </van-image>
             <div class="showcase-info">
               <div class="showcase-title">{{ item.title }}</div>
               <div class="showcase-desc">{{ item.desc }}</div>
@@ -209,6 +228,16 @@ const normalizeUrl = (url) => {
   if (url.startsWith('http') || url.startsWith('data:') || url.startsWith('/')) return url
   if (url.includes('.') || url.includes('/')) return `/${url}`
   return url
+}
+
+// 获取压缩后的图片URL
+const getCompressedImage = (url, width = 800) => {
+  if (!url) return ''
+  const normalizedUrl = normalizeUrl(url)
+  // 对于空图片返回空字符串
+  if (!normalizedUrl) return ''
+  // 使用后端压缩接口
+  return `/api/image?url=${encodeURIComponent(normalizedUrl)}&width=${width}&quality=75`
 }
 
 const headerStyle = computed(() => {
@@ -420,6 +449,30 @@ const onApply = () => {
 
 .showcase-info {
   padding: 14px 16px 16px;
+}
+
+/* 图片加载状态 */
+.image-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 140px;
+  background: #f5f5f7;
+}
+
+.image-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 140px;
+  background: #f5f5f7;
+  gap: 8px;
+}
+
+.image-error span {
+  font-size: 12px;
+  color: #c8c8c8;
 }
 
 .showcase-title {
