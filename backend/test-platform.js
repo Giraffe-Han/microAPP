@@ -59,9 +59,10 @@ const buildSignContent = (payload) => {
 const signPayload = (payload) => {
   const signContent = buildSignContent(payload);
   const digestHex = crypto.createHash('sha1').update(signContent).digest('hex');
+  const userIdHex = Buffer.from(JOIN_INST_ID, 'utf8').toString('hex');
   const signatureHex = sm2.doSignature(digestHex, SM2_PRIVATE_KEY, {
     hash: false,
-    userId: JOIN_INST_ID
+    userId: userIdHex
   });
   return Buffer.from(signatureHex, 'hex').toString('base64');
 };

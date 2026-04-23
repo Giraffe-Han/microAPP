@@ -11,7 +11,8 @@ const {
   readUsersDB, writeUsersDB,
   readApplicationsDB, writeApplicationsDB,
   readCasesDB, writeCasesDB,
-  readServicesConfig, writeServicesConfig
+  readServicesConfig, writeServicesConfig,
+  readReviewsDB, writeReviewsDB
 } = require('../storage');
 const { authRequired, roleRequired } = require('../middleware/auth');
 const { sanitizeBody, requireFields, validateQuery } = require('../middleware/validation');
@@ -399,6 +400,113 @@ router.post('/study/showcase', sanitizeBody, asyncHandler(async (req, res) => {
   res.json({
     success: true,
     message: '研学展示更新成功'
+  });
+}));
+
+/**
+ * 获取所有评价（管理员）
+ */
+router.get('/reviews', asyncHandler(async (req, res) => {
+  const { section, status, page = 1, limit = 20 } = req.query;
+
+  let reviews = await readReviewsDB();
+
+  if (section) {
+    reviews = reviews.filter(r => r.section === section);
+  }
+  if (status) {
+    reviews = reviews.filter(r => r.status === status);
+  }
+
+  reviews.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+
+  const total = reviews.length;
+  const start = (parseInt(page) - 1) * parseInt(limit);
+  const paginated = reviews.slice(start, start + parseInt(limit));
+
+  res.json({
+    success: true,
+    data: paginated,
+    pagination: {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      total,
+      totalPages: Math.ceil(total / parseInt(limit))
+    }
+  });
+}));
+
+/**
+ * 审核评价（通过/拒绝）
+ */
+router.post('/reviews/:id', sanitizeBody, asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  if (!status || !['approved', 'rejected'].includes(status)) {
+    return res.status(400).json({
+      success: false,
+      message: '状态必须为 approved 或 rejected'
+    });
+  }
+
+  const reviews = await readReviewsDB();
+  const index = reviews.findIndex(r => r.id === id);
+
+  if (index === -1) {
+    return res.status(404).json({
+      success: false,
+      message: '评价不存在'
+    });
+  }
+
+  reviews[index] = {
+    ...reviews[index],
+    status,
+    reviewTime: new Date().toISOString()
+  };
+
+  await writeReviewsDB(reviews);
+
+  logger.info('Review updated', {
+    reviewId: id,
+    status,
+    adminId: req.user.id
+  });
+
+  res.json({
+    success: true,
+    data: reviews[index]
+  });
+}));
+
+/**
+ * 删除评价
+ */
+router.delete('/reviews/:id', asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const reviews = await readReviewsDB();
+  const index = reviews.findIndex(r => r.id === id);
+
+  if (index === -1) {
+    return res.status(404).json({
+      success: false,
+      message: '评价不存在'
+    });
+  }
+
+  reviews.splice(index, 1);
+  await writeReviewsDB(reviews);
+
+  logger.info('Review deleted', {
+    reviewId: id,
+    adminId: req.user.id
+  });
+
+  res.json({
+    success: true,
+    message: '评价已删除'
   });
 }));
 

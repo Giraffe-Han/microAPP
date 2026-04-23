@@ -199,15 +199,16 @@ const quickServices = ref([
   { id: 'flight', name: '飞行服务', icon: '/icons/flight.svg', color: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)' }, // 蓝紫色
   { id: 8, name: '无人机外卖', icon: '/icons/delivery.svg', color: 'linear-gradient(135deg, #38bdf8 0%, #3b82f6 100%)' }, // 淡蓝色
   { id: 1, name: '无人机物流', icon: '/icons/logistics-drone.svg', color: 'linear-gradient(135deg, #06b6d4 0%, #2563eb 100%)' }, // 海蓝色
-  { id: 4, name: '无人机吊运', icon: '/icons/lifting.svg', color: 'linear-gradient(135deg, #fbbf24 0%, #ea580c 100%)' }, // 橙色
-  { id: 13, name: '无人机赛事', icon: '/icons/competition.svg', color: 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)' }, // 红色渐变
+  { id: 10, name: '无人机销售', icon: '/icons/shop.svg', color: 'linear-gradient(135deg, #fbbf24 0%, #ea580c 100%)' }, // 橙色
+  { id: 'reviews', name: '服务评价', icon: 'comment-o', color: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' }, // 粉红色
   { id: 6, name: '飞手培训', icon: '/icons/training-v2.svg', color: 'linear-gradient(135deg, #fbbf24 0%, #ea580c 100%)' }, // 橙色
   { id: 9, name: '低空研学', icon: '/icons/study.svg', color: 'linear-gradient(135deg, #06b6d4 0%, #2563eb 100%)' }, // 海蓝色
+  { id: 13, name: '无人机赛事', icon: '/icons/competition.svg', color: 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)' }, // 红色渐变
   { id: 2, name: '政务服务', icon: 'eye-o', color: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)' }, // 蓝紫色
   { id: 3, name: '无人机托管', icon: '/icons/maintenance.svg', color: 'linear-gradient(135deg, #06b6d4 0%, #2563eb 100%)' }, // 归类为海蓝色
   { id: 5, name: '无人机表演', icon: '/icons/drone-show-v2.svg', color: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)' }, // 归类为蓝紫色
   { id: 7, name: '无人机租赁', icon: 'coupon-o', color: 'linear-gradient(135deg, #38bdf8 0%, #3b82f6 100%)' }, // 归类为淡蓝色
-  { id: 10, name: '二手交易', icon: 'exchange', color: 'linear-gradient(135deg, #fbbf24 0%, #ea580c 100%)' }, // 归类为橙色
+  { id: 4, name: '无人机吊运', icon: '/icons/lifting.svg', color: 'linear-gradient(135deg, #fbbf24 0%, #ea580c 100%)' }, // 归类为橙色
   { id: 11, name: '金融服务', icon: '/icons/finance.svg', color: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)' }, // 归类为蓝紫色
   { id: 12, name: '维修服务', icon: 'setting-o', color: 'linear-gradient(135deg, #38bdf8 0%, #3b82f6 100%)' } // 归类为淡蓝色
 ])
@@ -246,6 +247,8 @@ const goToService = (id) => {
     goToDelivery()
   } else if (id === 9) {
     router.push('/study')
+  } else if (id === 'reviews') {
+    router.push('/reviews')
   } else if (id === 'more') {
     // 切换到服务列表 Tab (假设Tabbar中有这个路径，或者跳转到列表页)
     router.push('/services')

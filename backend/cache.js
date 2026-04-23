@@ -110,6 +110,7 @@ const CacheKeys = {
   APPLICATIONS: 'db:applications',
   CASES: 'db:cases',
   SERVICES_CONFIG: 'db:services_config',
+  REVIEWS: 'db:reviews',
   ADMIN_STATS: 'stats:admin',
   USER_INFO: (userId) => `user:${userId}`
 };

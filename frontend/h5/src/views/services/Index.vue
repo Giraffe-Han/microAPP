@@ -53,10 +53,11 @@ const rawServices = [
   { id: 7, name: '无人机租赁', description: '设备租赁、配件租赁', icon: 'coupon-o', color: 'linear-gradient(135deg, #38bdf8 0%, #3b82f6 100%)' },
   { id: 6, name: '飞手培训', description: 'CAAC执照、技能培训', icon: '/icons/training-v2.svg', color: 'linear-gradient(135deg, #fbbf24 0%, #ea580c 100%)' },
   { id: 9, name: '低空研学', description: '科普教育、实践体验', icon: '/icons/study.svg', color: 'linear-gradient(135deg, #06b6d4 0%, #2563eb 100%)' },
-  { id: 10, name: '二手交易', description: '设备买卖、以旧换新', icon: 'exchange', color: 'linear-gradient(135deg, #fbbf24 0%, #ea580c 100%)' },
+  { id: 10, name: '无人机销售', description: '设备买卖、以旧换新', icon: '/icons/shop.svg', color: 'linear-gradient(135deg, #fbbf24 0%, #ea580c 100%)' },
   { id: 11, name: '金融服务', description: '设备保险、飞行护航', icon: '/icons/finance.svg', color: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)' },
   { id: 12, name: '维修服务', description: '故障维修、定期保养', icon: 'setting-o', color: 'linear-gradient(135deg, #38bdf8 0%, #3b82f6 100%)' },
-  { id: 13, name: '无人机赛事', description: '竞技比赛、赛事组织', icon: '/icons/competition.svg', color: 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)' }
+  { id: 13, name: '无人机赛事', description: '竞技比赛、赛事组织', icon: '/icons/competition.svg', color: 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)' },
+  { id: 'reviews', name: '服务评价', description: '用户评价、服务反馈', icon: 'comment-o', color: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' }
 ]
 
 // 定义分组结构
@@ -80,6 +81,11 @@ const groupsConfig = [
     title: '增值服务',
     subtitle: 'Value-added Services',
     ids: [10, 11, 12]
+  },
+  {
+    title: '互动反馈',
+    subtitle: 'Feedback',
+    ids: ['reviews']
   }
 ]
 
@@ -107,6 +113,8 @@ const goToDetail = (id) => {
     window.location.href = 'https://app.wzsjy.com:8446/h5/#/pages/diy/diy?pageId=130&title=%E6%97%A0%E4%BA%BA%E6%9C%BA%E5%A4%96%E5%8D%96%E9%85%8D%E9%80%81&jyauthcode='
   } else if (id === 9) {
     router.push('/study')
+  } else if (id === 'reviews') {
+    router.push('/reviews')
   } else {
     router.push(`/service-detail/${id}`)
   }

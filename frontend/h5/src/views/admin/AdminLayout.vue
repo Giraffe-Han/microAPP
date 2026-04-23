@@ -37,7 +37,8 @@ const titleMap = {
   '/admin/cases': '案例管理',
   '/admin/users': '用户管理',
   '/admin/competition': '赛事管理',
-  '/admin/config': '服务配置'
+  '/admin/config': '服务配置',
+  '/admin/reviews': '评价管理'
 }
 
 const pageTitle = computed(() => titleMap[route.path] || '后台管理')

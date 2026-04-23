@@ -8,12 +8,14 @@ const DB_FILE = path.join(__dirname, 'data.json');
 const CASES_FILE = path.join(__dirname, 'cases.json');
 const USERS_FILE = path.join(__dirname, 'users.json');
 const SERVICES_CONFIG_FILE = path.join(__dirname, 'services_config.json');
+const REVIEWS_FILE = path.join(__dirname, 'reviews.json');
 
 const JSON_KEYS = {
     applications: 'applications',
     cases: 'cases',
     users: 'users',
-    services_config: 'services_config'
+    services_config: 'services_config',
+    reviews: 'reviews'
 };
 
 function readJsonFile(filePath, fallback) {
@@ -55,6 +57,9 @@ async function initStorage() {
     if (!fs.existsSync(SERVICES_CONFIG_FILE)) {
         fs.writeFileSync(SERVICES_CONFIG_FILE, JSON.stringify({}, null, 2));
     }
+    if (!fs.existsSync(REVIEWS_FILE)) {
+        fs.writeFileSync(REVIEWS_FILE, JSON.stringify([]));
+    }
 }
 
 async function readJsonStore(key, fallback) {
@@ -68,6 +73,8 @@ async function readJsonStore(key, fallback) {
                 return readJsonFile(SERVICES_CONFIG_FILE, fallback);
             case JSON_KEYS.applications:
                 return readJsonFile(DB_FILE, fallback);
+            case JSON_KEYS.reviews:
+                return readJsonFile(REVIEWS_FILE, fallback);
             default:
                 return fallback;
         }
@@ -103,6 +110,8 @@ async function writeJsonStore(key, data) {
                 return writeJsonFile(SERVICES_CONFIG_FILE, data);
             case JSON_KEYS.applications:
                 return writeJsonFile(DB_FILE, data);
+            case JSON_KEYS.reviews:
+                return writeJsonFile(REVIEWS_FILE, data);
             default:
                 return false;
         }
@@ -162,6 +171,15 @@ async function writeServicesConfig(data) {
     return writeJsonStore(JSON_KEYS.services_config, data);
 }
 
+async function readReviewsDB() {
+    return cache.getOrSet(CacheKeys.REVIEWS, () => readJsonStore(JSON_KEYS.reviews, []), 60 * 1000);
+}
+
+async function writeReviewsDB(data) {
+    cache.delete(CacheKeys.REVIEWS);
+    return writeJsonStore(JSON_KEYS.reviews, data);
+}
+
 module.exports = {
     initStorage,
     readUsersDB,
@@ -171,6 +189,8 @@ module.exports = {
     readApplicationsDB,
     writeApplicationsDB,
     readServicesConfig,
-    writeServicesConfig
+    writeServicesConfig,
+    readReviewsDB,
+    writeReviewsDB
 };
 

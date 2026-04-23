@@ -77,10 +77,12 @@ const signPayload = (payload) => {
   console.log('[SSO Debug] SHA1 digestHex:', digestHex);
   
   // SM2 签名 - 使用 joininstid 作为 userId
-  // 注意：sm-crypto 的 doSignature 接受 hex 字符串作为消息
+  // 关键：Java 端使用 joininstidStr.getBytes("utf-8") 获取 userId 字节，
+  // sm-crypto 期望 userId 为 hex 格式，因此需要将 UTF-8 字符串转为 hex
+  const userIdHex = Buffer.from(JOIN_INST_ID, 'utf8').toString('hex');
   const signatureHex = sm2.doSignature(digestHex, SM2_PRIVATE_KEY, {
     hash: false,  // 我们已经做了 SHA1，不需要再 hash
-    userId: JOIN_INST_ID
+    userId: userIdHex
   });
   console.log('[SSO Debug] signatureHex:', signatureHex);
   

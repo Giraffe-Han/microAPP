@@ -17,6 +17,7 @@ const { config, validateConfig, printConfig } = require('./config');
 const { logger } = require('./logger');
 const { sanitizeBody } = require('./middleware/validation');
 const { errorHandler, notFoundHandler, asyncHandler } = require('./middleware/error');
+const adminRouter = require('./routes/admin');
 
 const app = express();
 const PORT = config.server.port;
@@ -36,7 +37,9 @@ const {
     readApplicationsDB,
     writeApplicationsDB,
     readServicesConfig,
-    writeServicesConfig
+    writeServicesConfig,
+    readReviewsDB,
+    writeReviewsDB
 } = require('./storage');
 
 // 使用配置模块中的值
@@ -1167,6 +1170,104 @@ app.get('/api/export', authRequired, roleRequired(['admin', 'dsl_admin', 'study_
     res.send(buffer);
 });
 
+// ========== 服务评价 API ==========
+
+const REVIEW_SECTIONS = ['yanxue', 'sale', 'park'];
+
+// 获取板块对应的可选课程/服务列表（供评价时选择）
+app.get('/api/reviews/courses', async (req, res) => {
+    try {
+        const { section } = req.query;
+        const config = await readServicesConfig();
+        let courses = [];
+
+        if (section === 'yanxue') {
+            const pkgs = config?.['9']?.packages || {};
+            courses = Object.keys(pkgs).map(key => ({
+                id: key,
+                name: pkgs[key].name || key
+            })).filter(c => c.name);
+        }
+
+        res.json({ success: true, data: courses });
+    } catch (err) {
+        res.json({ success: true, data: [] });
+    }
+});
+
+// 获取已审核通过的评价（公开）
+app.get('/api/reviews', async (req, res) => {
+    try {
+        const reviews = await readReviewsDB();
+        const { section } = req.query;
+
+        let approved = reviews.filter(r => r.status === 'approved');
+
+        if (section && REVIEW_SECTIONS.includes(section)) {
+            approved = approved.filter(r => r.section === section);
+        }
+
+        approved.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+
+        res.json({ success: true, data: approved });
+    } catch (err) {
+        res.status(500).json({ success: false, message: '获取评价失败' });
+    }
+});
+
+// 提交评价（需登录）
+app.post('/api/reviews', authRequired, async (req, res) => {
+    try {
+        const { section, rating, content, isAnonymous, courseName, images } = req.body;
+
+        if (!section || !REVIEW_SECTIONS.includes(section)) {
+            return res.status(400).json({ success: false, message: '无效的评价板块' });
+        }
+        if (!rating || rating < 1 || rating > 5 || !Number.isInteger(rating)) {
+            return res.status(400).json({ success: false, message: '评分必须为1-5的整数' });
+        }
+        if (!content || typeof content !== 'string' || content.trim().length === 0) {
+            return res.status(400).json({ success: false, message: '评价内容不能为空' });
+        }
+        if (content.length > 500) {
+            return res.status(400).json({ success: false, message: '评价内容不能超过500字' });
+        }
+        // 校验图片：最多9张，每项必须为字符串URL
+        let validImages = [];
+        if (Array.isArray(images)) {
+            validImages = images.filter(u => typeof u === 'string' && u.trim()).slice(0, 9);
+        }
+
+        const reviews = await readReviewsDB();
+
+        // 根据是否匿名决定显示的名称和头像
+        const displayName = isAnonymous ? '匿名用户' : (req.user.name || '匿名用户');
+        const displayAvatar = isAnonymous ? '' : (req.user.avatar || '');
+
+        const newReview = {
+            id: randomUUID(),
+            userId: req.user.id,
+            userName: displayName,
+            userAvatar: displayAvatar,
+            isAnonymous: isAnonymous || false,
+            section,
+            rating,
+            content: content.trim(),
+            courseName: (typeof courseName === 'string' && courseName.trim()) ? courseName.trim() : '',
+            images: validImages,
+            status: 'pending',
+            createTime: new Date().toISOString()
+        };
+
+        reviews.push(newReview);
+        await writeReviewsDB(reviews);
+
+        res.json({ success: true, message: '评价提交成功，等待审核' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: '提交评价失败' });
+    }
+});
+
 // Get Cases (with pagination)
 app.get('/api/cases', async (req, res) => {
     let cases = await readCasesDB();
@@ -1249,6 +1350,9 @@ app.post('/api/cases/delete', async (req, res) => {
         res.status(404).json({ success: false, message: 'Case not found' });
     }
 });
+
+// 挂载管理后台路由 (必须在SPA路由处理器之前)
+app.use('/api/admin', adminRouter);
 
 // Handle SPA routing: Serve index.html for all non-API routes
 app.get('*', (req, res) => {

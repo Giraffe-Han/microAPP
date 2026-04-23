@@ -10,7 +10,7 @@ export const serviceList = [
   { id: '7', name: '无人机租赁', description: '设备租赁、配件租赁', icon: '/static/icons/rent.svg', color: 'linear-gradient(135deg, #38bdf8 0%, #3b82f6 100%)' },
   { id: '6', name: '飞手培训', description: 'CAAC执照、技能培训', icon: '/static/icons/training-v2.svg', color: 'linear-gradient(135deg, #fbbf24 0%, #ea580c 100%)' },
   { id: '9', name: '低空研学', description: '科普教育、实践体验', icon: '/static/icons/study.svg', color: 'linear-gradient(135deg, #06b6d4 0%, #2563eb 100%)' },
-  { id: '10', name: '二手交易', description: '设备买卖、以旧换新', icon: '/static/icons/exchange.svg', color: 'linear-gradient(135deg, #fbbf24 0%, #ea580c 100%)' },
+  { id: '10', name: '无人机销售', description: '设备买卖、以旧换新', icon: '/static/icons/shop.svg', color: 'linear-gradient(135deg, #fbbf24 0%, #ea580c 100%)' },
   { id: '11', name: '金融服务', description: '设备保险、飞行护航', icon: '/static/icons/finance.svg', color: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)' },
   { id: '12', name: '维修服务', description: '故障维修、定期保养', icon: '/static/icons/wrench.svg', color: 'linear-gradient(135deg, #38bdf8 0%, #3b82f6 100%)' },
   { id: '13', name: '无人机赛事', description: '竞技比赛、赛事组织', icon: '/static/icons/competition.svg', color: 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)' }

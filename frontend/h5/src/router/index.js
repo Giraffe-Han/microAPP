@@ -78,6 +78,12 @@ const routes = [
     meta: { title: '案例展示' }
   },
   {
+    path: '/reviews',
+    name: 'Reviews',
+    component: () => import('@/views/reviews/Index.vue'),
+    meta: { title: '服务评价' }
+  },
+  {
     path: '/admin',
     component: () => import('@/views/admin/AdminLayout.vue'),
     meta: { title: '后台管理' },
@@ -118,6 +124,12 @@ const routes = [
         name: 'AdminConfig',
         component: () => import('@/views/admin/config/ServiceConfigList.vue'),
         meta: { title: '服务配置' }
+      },
+      {
+        path: 'reviews',
+        name: 'AdminReviews',
+        component: () => import('@/views/admin/reviews/ReviewList.vue'),
+        meta: { title: '评价管理' }
       }
     ]
   },

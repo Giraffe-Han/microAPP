@@ -51,7 +51,8 @@ const allMenus = [
   { path: '/admin/cases', label: '案例管理', icon: '◈', roles: ['admin'] },
   { path: '/admin/users', label: '用户管理', icon: '◉', roles: ['admin'] },
   { path: '/admin/competition', label: '赛事管理', icon: '◆', roles: ['admin', 'dsl_admin'] },
-  { path: '/admin/config', label: '服务配置', icon: '◇', roles: ['admin', 'study_admin'] }
+  { path: '/admin/config', label: '服务配置', icon: '◇', roles: ['admin', 'study_admin'] },
+  { path: '/admin/reviews', label: '评价管理', icon: '★', roles: ['admin', 'study_admin'] }
 ]
 
 // 服务6(飞手培训)相关配置 - 研学管理员不可见
