@@ -245,11 +245,11 @@ const headerStyle = computed(() => {
   if (!bg) {
     return { background: 'linear-gradient(135deg, #06b6d4 0%, #2563eb 100%)' }
   }
-  // 如果是图片URL（http或相对路径），使用background-image
+  // 如果是图片URL（http或相对路径），使用压缩接口
   if (bg.startsWith('http') || bg.startsWith('/') || bg.startsWith('uploads/')) {
     const imageUrl = bg.startsWith('uploads/') ? `/${bg}` : bg
     return {
-      backgroundImage: `url(${imageUrl})`,
+      backgroundImage: `url(${getCompressedImage(imageUrl, 800)})`,
       backgroundSize: 'cover',
       backgroundPosition: 'center',
       backgroundRepeat: 'no-repeat'
@@ -261,7 +261,7 @@ const headerStyle = computed(() => {
 
 const previewShowcase = (item) => {
   if (!item?.image) return
-  showImagePreview([normalizeUrl(item.image)])
+  showImagePreview([getCompressedImage(item.image, 1200)])
 }
 
 onMounted(async () => {

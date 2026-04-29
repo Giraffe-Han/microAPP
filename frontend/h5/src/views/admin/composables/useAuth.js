@@ -26,8 +26,12 @@ export function useAuth() {
         isSuperAdmin.value = current.phone === SUPER_ADMIN_PHONE
       }
     } catch (error) {
-      authStorage.clearTokens()
-      localStorage.removeItem('user')
+      // 仅在明确的认证失败(401)时清除登录状态
+      // 网络错误、500等非认证问题不应导致登出
+      if (error?.response?.status === 401) {
+        authStorage.clearTokens()
+        localStorage.removeItem('user')
+      }
     }
   }
 

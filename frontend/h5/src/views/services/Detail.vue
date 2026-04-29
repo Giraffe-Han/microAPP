@@ -21,7 +21,7 @@
       <template v-if="['9', '6'].includes(serviceId)">
         <div class="study-banner">
           <img 
-            :src="normalizeUrl(serviceConfig.headerImage || (serviceId === '9' ? '/images/study/study-banner.jpg' : '/images/training/training-banner.jpg'))" 
+            :src="getCompressedImage(serviceConfig.headerImage || (serviceId === '9' ? '/images/study/study-banner.jpg' : '/images/training/training-banner.jpg'), 800)" 
             class="banner-img"
             :style="{ objectPosition: serviceConfig.headerImagePosition || 'center' }"
           />
@@ -198,7 +198,7 @@
               @click="previewStudy(item)"
             >
               <div class="training-showcase-image">
-                <van-image :src="normalizeUrl(item.image)" fit="cover" width="100%" height="100%" />
+                <van-image :src="getCompressedImage(item.image, 600)" fit="cover" width="100%" height="100%" />
               </div>
               <div class="training-showcase-info">
                 <div class="training-showcase-title">{{ item.title }}</div>
@@ -342,6 +342,14 @@ const normalizeUrl = (url) => {
   return url
 }
 
+// 获取压缩后的图片URL
+const getCompressedImage = (url, width = 800) => {
+  if (!url) return ''
+  const normalizedUrl = normalizeUrl(url)
+  if (!normalizedUrl) return ''
+  return `/api/image?url=${encodeURIComponent(normalizedUrl)}&width=${width}&quality=75`
+}
+
 // 苹果风品牌色常量
 const BRAND_COLOR = '#0071e3'
 
@@ -373,7 +381,7 @@ const fetchServiceData = async () => {
 
 const previewStudy = (item) => {
   if (!item?.image) return
-  showImagePreview([item.image])
+  showImagePreview([getCompressedImage(item.image, 1200)])
 }
 
 const actionButtonText = computed(() => {

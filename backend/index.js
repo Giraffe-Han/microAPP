@@ -80,30 +80,69 @@ app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 // 输入消毒
 app.use(sanitizeBody);
 
-// Serve static files
-app.use(express.static(path.join(__dirname, 'public')));
+// Serve static files with cache headers
+app.use(express.static(path.join(__dirname, 'public'), {
+    maxAge: '7d',
+    etag: true,
+    lastModified: true,
+    immutable: false
+}));
 
-// Image compression endpoint
+// Image compression endpoint with disk cache + WebP support
+const sharp = require('sharp');
+const IMAGE_CACHE_DIR = path.join(__dirname, '.image-cache');
+if (!fs.existsSync(IMAGE_CACHE_DIR)) {
+    fs.mkdirSync(IMAGE_CACHE_DIR, { recursive: true });
+}
+
 app.get('/api/image', asyncHandler(async (req, res) => {
-    const { url, width, quality } = req.query;
+    const { url, width, quality, format: formatParam } = req.query;
     const imagePath = url ? path.join(__dirname, 'public', url.replace(/^\//, '')) : null;
 
     if (!imagePath || !fs.existsSync(imagePath)) {
         return res.status(404).json({ error: 'Image not found' });
     }
 
+    const imgWidth = parseInt(width) || 800;
+    const imgQuality = parseInt(quality) || 75;
+
+    // Determine output format: prefer WebP if client supports it
+    const acceptHeader = req.headers['accept'] || '';
+    const supportsWebP = acceptHeader.includes('image/webp');
+    const outputFormat = formatParam || (supportsWebP ? 'webp' : 'jpeg');
+    const ext = outputFormat === 'webp' ? 'webp' : 'jpg';
+    const contentType = outputFormat === 'webp' ? 'image/webp' : 'image/jpeg';
+
+    // Generate cache key from source file mtime + params
+    const srcStat = fs.statSync(imagePath);
+    const cacheKey = `${path.basename(url, path.extname(url))}_${imgWidth}_${imgQuality}_${ext}_${srcStat.mtimeMs}`;
+    const cachePath = path.join(IMAGE_CACHE_DIR, `${cacheKey}.${ext}`);
+
+    // Serve from disk cache if available
+    if (fs.existsSync(cachePath)) {
+        res.set('Content-Type', contentType);
+        res.set('Cache-Control', 'public, max-age=2592000, immutable'); // 30 days
+        res.set('Vary', 'Accept');
+        return res.sendFile(cachePath);
+    }
+
     try {
-        const sharp = require('sharp');
-        const imgWidth = parseInt(width) || 800;
-        const imgQuality = parseInt(quality) || 75;
+        let pipeline = sharp(imagePath)
+            .resize(imgWidth, null, { fit: 'inside', withoutEnlargement: true });
 
-        res.set('Content-Type', 'image/jpeg');
-        res.set('Cache-Control', 'public, max-age=86400'); // 24 hours
+        if (outputFormat === 'webp') {
+            pipeline = pipeline.webp({ quality: imgQuality });
+        } else {
+            pipeline = pipeline.jpeg({ quality: imgQuality, progressive: true });
+        }
 
-        await sharp(imagePath)
-            .resize(imgWidth, null, { fit: 'inside', withoutEnlargement: true })
-            .jpeg({ quality: imgQuality, progressive: true })
-            .pipe(res);
+        // Write to disk cache, then serve
+        await pipeline.toFile(cachePath);
+
+        res.set('Content-Type', contentType);
+        res.set('Cache-Control', 'public, max-age=2592000, immutable'); // 30 days
+        res.set('Vary', 'Accept');
+        res.sendFile(cachePath);
     } catch (err) {
         // Fallback: serve original image
         logger.warn('Image compression failed, serving original:', err.message);
