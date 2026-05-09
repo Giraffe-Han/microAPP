@@ -154,6 +154,26 @@ const router = createRouter({
 
 router.beforeEach(async (to, from, next) => {
   document.title = to.meta.title || '低空综合服务平台'
+
+  // 处理微信OAuth回调（可能落在任意页面）
+  const wechatAuth = to.query.wechat_auth
+  const userData = to.query.user
+  const tokensData = to.query.tokens
+  if (wechatAuth === '1' && userData && tokensData) {
+    try {
+      const user = JSON.parse(atob(userData))
+      const tokens = JSON.parse(atob(tokensData))
+      localStorage.setItem('user', JSON.stringify(user))
+      authStorage.setTokens(tokens.accessToken, tokens.refreshToken)
+      // 清除URL中的认证参数，跳转到目标页面
+      const { wechat_auth: _w, user: _u, tokens: _t, ...rest } = to.query
+      const targetPath = ['admin', 'dsl_admin', 'study_admin'].includes(user.role) ? '/admin' : to.path
+      next({ path: targetPath, query: rest, replace: true })
+      return
+    } catch (e) {
+      console.error('解析微信登录数据失败:', e)
+    }
+  }
   
   // 支持 jyauthcode 和 authcode 两种参数名
   const authcode = (typeof to.query.jyauthcode === 'string' ? to.query.jyauthcode.trim() : '') ||

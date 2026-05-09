@@ -49,6 +49,8 @@ const REFRESH_TOKEN_TTL = config.jwt.refreshTokenTTL;
 const SUPER_ADMIN_PHONE = config.admin.superAdminPhone;
 const WX_APPID = config.wechat.appId;
 const WX_SECRET = config.wechat.appSecret;
+const WX_MP_APPID = config.wechat.mpAppId;
+const WX_MP_SECRET = config.wechat.mpAppSecret;
 
 let wxAccessTokenCache = { token: '', expiresAt: 0 };
 
@@ -846,6 +848,139 @@ app.post('/api/auth/wx-phone', authRequired, async (req, res) => {
     } catch (err) {
         console.error('[wx-phone] failed:', err);
         res.status(500).json({ success: false, message: err?.message || '获取手机号失败' });
+    }
+});
+
+// WeChat H5 OAuth - 公众号一键登录入口（直接跳转微信授权页）
+// 用法：公众号菜单/文章链接设为 https://gzhtest.zndkfx.com/api/auth/wechat-entry?redirect=/home
+app.get('/api/auth/wechat-entry', (req, res) => {
+    const { redirect } = req.query;
+
+    if (!WX_MP_APPID) {
+        return res.status(500).send('微信公众号未配置');
+    }
+
+    const callbackUrl = `${config.server.baseUrl}/api/auth/wechat-oauth/callback`;
+    const state = redirect || '/home';
+    const authUrl = `https://open.weixin.qq.com/connect/oauth2/authorize?appid=${WX_MP_APPID}&redirect_uri=${encodeURIComponent(callbackUrl)}&response_type=code&scope=snsapi_userinfo&state=${encodeURIComponent(state)}#wechat_redirect`;
+
+    res.redirect(authUrl);
+});
+
+// WeChat H5 OAuth - 获取公众号授权URL（前端AJAX调用）
+app.get('/api/auth/wechat-oauth-url', (req, res) => {
+    const { redirectUrl } = req.query;
+
+    if (!WX_MP_APPID || !WX_MP_SECRET) {
+        return res.status(500).json({
+            success: false,
+            message: '微信公众号未配置'
+        });
+    }
+
+    const redirectUri = encodeURIComponent(`${config.server.baseUrl}/api/auth/wechat-oauth/callback`);
+    const state = redirectUrl || 'home';
+    const authUrl = `https://open.weixin.qq.com/connect/oauth2/authorize?appid=${WX_MP_APPID}&redirect_uri=${redirectUri}&response_type=code&scope=snsapi_userinfo&state=${encodeURIComponent(state)}#wechat_redirect`;
+
+    res.json({ success: true, authUrl });
+});
+
+// WeChat H5 OAuth - 授权回调
+app.get('/api/auth/wechat-oauth/callback', async (req, res) => {
+    const { code, state } = req.query;
+
+    if (!code) {
+        return res.redirect(`${config.server.frontendUrl}/login?error=wechat_auth_failed`);
+    }
+
+    try {
+        // 1. 通过code获取access_token和openid
+        const tokenUrl = `https://api.weixin.qq.com/sns/oauth2/access_token?appid=${WX_MP_APPID}&secret=${WX_MP_SECRET}&code=${code}&grant_type=authorization_code`;
+        const { data: tokenData } = await axios.get(tokenUrl);
+
+        if (tokenData.errcode) {
+            console.error('[wechat-oauth] token failed:', tokenData);
+            return res.redirect(`${config.server.frontendUrl}/login?error=wechat_auth_failed`);
+        }
+
+        // 2. 通过access_token和openid获取用户信息
+        const userInfoUrl = `https://api.weixin.qq.com/sns/userinfo?access_token=${tokenData.access_token}&openid=${tokenData.openid}&lang=zh_CN`;
+        const { data: userInfo } = await axios.get(userInfoUrl);
+
+        if (userInfo.errcode) {
+            console.error('[wechat-oauth] userinfo failed:', userInfo);
+            return res.redirect(`${config.server.frontendUrl}/login?error=wechat_auth_failed`);
+        }
+
+        // 3. 查找或创建用户
+        const users = await readUsersDB();
+        let user = users.find(u => u.wxOpenid === userInfo.openid);
+
+        if (!user && userInfo.unionid) {
+            user = users.find(u => u.wxUnionid === userInfo.unionid);
+        }
+
+        if (!user) {
+            user = {
+                id: randomUUID(),
+                phone: '',
+                username: `wx_mp_${userInfo.openid.substring(0, 16)}`,
+                password: '',
+                passwordHash: '',
+                name: userInfo.nickname || '微信用户',
+                role: 'user',
+                avatar: userInfo.headimgurl || '',
+                wxOpenid: userInfo.openid,
+                wxUnionid: userInfo.unionid || '',
+                createTime: new Date().toISOString()
+            };
+            users.push(user);
+            await writeUsersDB(users);
+            console.log('[wechat-oauth] new user registered:', user.id);
+        } else {
+            // 更新头像和昵称（如果有变化）
+            if (userInfo.headimgurl && user.avatar !== userInfo.headimgurl) {
+                user.avatar = userInfo.headimgurl;
+            }
+            if (userInfo.nickname && user.name.startsWith('微信用户')) {
+                user.name = userInfo.nickname;
+            }
+            if (!user.wxOpenid) user.wxOpenid = userInfo.openid;
+            if (userInfo.unionid && !user.wxUnionid) user.wxUnionid = userInfo.unionid;
+        }
+
+        // 4. 生成token
+        const tokens = generateTokens(user);
+        const updatedUsers = users.map(u => {
+            if (u.id === user.id) {
+                return { ...u, ...user, refreshToken: tokens.refreshToken, refreshTokenExpiresAt: tokens.refreshTokenExpiresAt };
+            }
+            return u;
+        });
+        await writeUsersDB(updatedUsers);
+
+        // 5. 重定向到前端页面，携带token和用户信息
+        const decodedState = decodeURIComponent(state || '');
+        const redirectPath = decodedState && decodedState !== 'home' ? decodedState : '/home';
+        const userData = Buffer.from(JSON.stringify(sanitizeUser(user))).toString('base64');
+        const tokenDataEncoded = Buffer.from(JSON.stringify(tokens)).toString('base64');
+
+        // 判断前端URL是否已包含完整路径
+        let finalRedirectUrl;
+        if (redirectPath.startsWith('http')) {
+            const url = new URL(redirectPath);
+            url.searchParams.set('wechat_auth', '1');
+            url.searchParams.set('user', userData);
+            url.searchParams.set('tokens', tokenDataEncoded);
+            finalRedirectUrl = url.toString();
+        } else {
+            finalRedirectUrl = `${config.server.frontendUrl}${redirectPath.startsWith('/') ? '' : '/'}${redirectPath}?wechat_auth=1&user=${userData}&tokens=${tokenDataEncoded}`;
+        }
+
+        res.redirect(finalRedirectUrl);
+    } catch (err) {
+        console.error('[wechat-oauth] callback error:', err.message);
+        res.redirect(`${config.server.frontendUrl}/login?error=wechat_auth_error`);
     }
 });
 
