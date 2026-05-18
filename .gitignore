@@ -10,6 +10,7 @@
 backend/data.json
 backend/users.json
 backend/cases.json
+backend/case_categories.json
 backend/services_config.json
 backend/study_showcase.json
 backend/public/uploads/

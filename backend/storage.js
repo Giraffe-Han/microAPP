@@ -6,6 +6,7 @@ const { logger } = require('./logger');
 
 const DB_FILE = path.join(__dirname, 'data.json');
 const CASES_FILE = path.join(__dirname, 'cases.json');
+const CASE_CATEGORIES_FILE = path.join(__dirname, 'case_categories.json');
 const USERS_FILE = path.join(__dirname, 'users.json');
 const SERVICES_CONFIG_FILE = path.join(__dirname, 'services_config.json');
 const REVIEWS_FILE = path.join(__dirname, 'reviews.json');
@@ -13,6 +14,7 @@ const REVIEWS_FILE = path.join(__dirname, 'reviews.json');
 const JSON_KEYS = {
     applications: 'applications',
     cases: 'cases',
+    case_categories: 'case_categories',
     users: 'users',
     services_config: 'services_config',
     reviews: 'reviews'
@@ -51,6 +53,15 @@ async function initStorage() {
     if (!fs.existsSync(CASES_FILE)) {
         fs.writeFileSync(CASES_FILE, JSON.stringify([]));
     }
+    if (!fs.existsSync(CASE_CATEGORIES_FILE)) {
+        // 默认分类（兼容历史数据的 categoryId）
+        const defaultCats = [
+            { id: 1, name: '无人机物流', service: '无人机物流服务' },
+            { id: 4, name: '无人机吊运', service: '无人机吊运服务' },
+            { id: 5, name: '无人机表演', service: '航空表演' }
+        ];
+        fs.writeFileSync(CASE_CATEGORIES_FILE, JSON.stringify(defaultCats, null, 2));
+    }
     if (!fs.existsSync(USERS_FILE)) {
         fs.writeFileSync(USERS_FILE, JSON.stringify([]));
     }
@@ -69,6 +80,8 @@ async function readJsonStore(key, fallback) {
                 return readJsonFile(USERS_FILE, fallback);
             case JSON_KEYS.cases:
                 return readJsonFile(CASES_FILE, fallback);
+            case JSON_KEYS.case_categories:
+                return readJsonFile(CASE_CATEGORIES_FILE, fallback);
             case JSON_KEYS.services_config:
                 return readJsonFile(SERVICES_CONFIG_FILE, fallback);
             case JSON_KEYS.applications:
@@ -106,6 +119,8 @@ async function writeJsonStore(key, data) {
                 return writeJsonFile(USERS_FILE, data);
             case JSON_KEYS.cases:
                 return writeJsonFile(CASES_FILE, data);
+            case JSON_KEYS.case_categories:
+                return writeJsonFile(CASE_CATEGORIES_FILE, data);
             case JSON_KEYS.services_config:
                 return writeJsonFile(SERVICES_CONFIG_FILE, data);
             case JSON_KEYS.applications:
@@ -151,6 +166,31 @@ async function writeCasesDB(data) {
     return writeJsonStore(JSON_KEYS.cases, data);
 }
 
+async function readCaseCategoriesDB() {
+    // 分类数据基本不变,缓存10分钟
+    const defaults = [
+        { id: 1, name: '无人机物流', service: '无人机物流服务' },
+        { id: 4, name: '无人机吊运', service: '无人机吊运服务' },
+        { id: 5, name: '无人机表演', service: '航空表演' }
+    ];
+    return cache.getOrSet(
+        CacheKeys.CASE_CATEGORIES,
+        async () => {
+            const data = await readJsonStore(JSON_KEYS.case_categories, null);
+            if (Array.isArray(data) && data.length) return data;
+            // 若为空则写入默认分类并返回
+            await writeJsonStore(JSON_KEYS.case_categories, defaults);
+            return defaults;
+        },
+        10 * 60 * 1000
+    );
+}
+
+async function writeCaseCategoriesDB(data) {
+    cache.delete(CacheKeys.CASE_CATEGORIES);
+    return writeJsonStore(JSON_KEYS.case_categories, data);
+}
+
 async function readApplicationsDB() {
     // 申请数据缓存1分钟
     return cache.getOrSet(CacheKeys.APPLICATIONS, () => readJsonStore(JSON_KEYS.applications, []), 60 * 1000);
@@ -186,6 +226,8 @@ module.exports = {
     writeUsersDB,
     readCasesDB,
     writeCasesDB,
+    readCaseCategoriesDB,
+    writeCaseCategoriesDB,
     readApplicationsDB,
     writeApplicationsDB,
     readServicesConfig,

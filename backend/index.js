@@ -34,6 +34,8 @@ const {
     writeUsersDB,
     readCasesDB,
     writeCasesDB,
+    readCaseCategoriesDB,
+    writeCaseCategoriesDB,
     readApplicationsDB,
     writeApplicationsDB,
     readServicesConfig,
@@ -1538,6 +1540,79 @@ app.post('/api/cases/delete', async (req, res) => {
         }
     } else {
         res.status(404).json({ success: false, message: 'Case not found' });
+    }
+});
+
+// ==================== 案例分类 CRUD ====================
+// 获取分类列表（公开）
+app.get('/api/case-categories', async (req, res) => {
+    const categories = await readCaseCategoriesDB();
+    res.json(Array.isArray(categories) ? categories : []);
+});
+
+// 新增分类
+app.post('/api/case-categories/create', async (req, res) => {
+    const { name, service } = req.body || {};
+    if (!name || !String(name).trim()) {
+        return res.status(400).json({ success: false, message: '分类名称不能为空' });
+    }
+    const categories = (await readCaseCategoriesDB()) || [];
+    // 自动分配 id：取现有最大 id + 1，且不小于 1
+    const maxId = categories.reduce((m, c) => Math.max(m, Number(c.id) || 0), 0);
+    const newCat = {
+        id: maxId + 1,
+        name: String(name).trim(),
+        service: service ? String(service).trim() : String(name).trim()
+    };
+    categories.push(newCat);
+    if (await writeCaseCategoriesDB(categories)) {
+        res.json({ success: true, data: newCat });
+    } else {
+        res.status(500).json({ success: false, message: '保存失败' });
+    }
+});
+
+// 更新分类
+app.post('/api/case-categories/update', async (req, res) => {
+    const { id, name, service } = req.body || {};
+    if (id == null) {
+        return res.status(400).json({ success: false, message: '缺少分类 id' });
+    }
+    const categories = (await readCaseCategoriesDB()) || [];
+    const index = categories.findIndex(c => Number(c.id) === Number(id));
+    if (index === -1) {
+        return res.status(404).json({ success: false, message: '分类不存在' });
+    }
+    if (name !== undefined) categories[index].name = String(name).trim();
+    if (service !== undefined) categories[index].service = String(service).trim();
+    if (await writeCaseCategoriesDB(categories)) {
+        res.json({ success: true, data: categories[index] });
+    } else {
+        res.status(500).json({ success: false, message: '保存失败' });
+    }
+});
+
+// 删除分类（若有案例引用该分类则拒绝）
+app.post('/api/case-categories/delete', async (req, res) => {
+    const { id } = req.body || {};
+    if (id == null) {
+        return res.status(400).json({ success: false, message: '缺少分类 id' });
+    }
+    const cases = (await readCasesDB()) || [];
+    const inUse = cases.some(c => Number(c.categoryId) === Number(id));
+    if (inUse) {
+        return res.status(400).json({ success: false, message: '该分类下仍有案例，无法删除' });
+    }
+    const categories = (await readCaseCategoriesDB()) || [];
+    const index = categories.findIndex(c => Number(c.id) === Number(id));
+    if (index === -1) {
+        return res.status(404).json({ success: false, message: '分类不存在' });
+    }
+    categories.splice(index, 1);
+    if (await writeCaseCategoriesDB(categories)) {
+        res.json({ success: true });
+    } else {
+        res.status(500).json({ success: false, message: '保存失败' });
     }
 });
 

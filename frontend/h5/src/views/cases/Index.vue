@@ -73,7 +73,10 @@
 
               <!-- 案例信息 -->
               <div class="case-info">
-                <h3 class="case-title">{{ caseItem.title }}</h3>
+                <h3 class="case-title">
+                  {{ caseItem.title }}
+                  <van-tag v-if="caseItem.subTag" type="warning" size="medium" style="margin-left:6px;">{{ caseItem.subTag }}</van-tag>
+                </h3>
                 <p class="case-desc">{{ caseItem.description }}</p>
                 <div class="case-meta">
                   <span class="meta-item">
@@ -112,7 +115,10 @@
       close-icon="close"
     >
       <div class="detail-content" v-if="currentCase">
-        <h2 class="detail-title">{{ currentCase.title }}</h2>
+        <h2 class="detail-title">
+          {{ currentCase.title }}
+          <van-tag v-if="currentCase.subTag" type="warning" size="medium" style="margin-left:8px; vertical-align:middle;">{{ currentCase.subTag }}</van-tag>
+        </h2>
         
         <!-- 媒体轮播 -->
         <van-swipe
@@ -246,13 +252,21 @@ const normalizeCaseItem = (item) => {
   return normalized
 }
 
-// 分类
-const categories = ref([
-  { id: 0, name: '全部案例' },
-  { id: 1, name: '无人机物流' },
-  { id: 4, name: '无人机吊运' },
-  { id: 5, name: '无人机表演' }
-])
+// 分类（从后端 /api/case-categories 动态加载，首项固定为"全部案例"）
+const categories = ref([{ id: 0, name: '全部案例' }])
+
+const fetchCategories = async () => {
+  try {
+    const res = await axios.get('/api/case-categories')
+    const list = Array.isArray(res.data) ? res.data : []
+    categories.value = [
+      { id: 0, name: '全部案例' },
+      ...list.map(c => ({ id: Number(c.id), name: c.name }))
+    ]
+  } catch (e) {
+    console.error('获取分类失败', e)
+  }
+}
 
 // activeCategory 直接存 categoryId（0/1/4/5），避免“index/id 混用”导致某些 tab 拉取异常
 const activeCategory = ref(0)
@@ -337,8 +351,9 @@ const onTabChange = () => {
     onLoad()
 }
 
-onMounted(() => {
-  // 兜底：确保首次进入“全部案例”也会触发一次拉取
+onMounted(async () => {
+  // 优先加载分类，再拉取案例
+  await fetchCategories()
   loadingMore.value = true
   onLoad()
 })

@@ -109,6 +109,7 @@ const CacheKeys = {
   USERS: 'db:users',
   APPLICATIONS: 'db:applications',
   CASES: 'db:cases',
+  CASE_CATEGORIES: 'db:case_categories',
   SERVICES_CONFIG: 'db:services_config',
   REVIEWS: 'db:reviews',
   ADMIN_STATS: 'stats:admin',
