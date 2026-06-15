@@ -422,6 +422,11 @@ const onProjectClick = (item) => {
 }
 
 onMounted(() => {
+  // 医疗配送服务直接跳转到专属下单页
+  if (serviceId === '14') {
+    router.replace('/medical/order/create')
+    return
+  }
   fetchServiceData()
 })
 </script>

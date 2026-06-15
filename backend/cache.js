@@ -112,6 +112,12 @@ const CacheKeys = {
   CASE_CATEGORIES: 'db:case_categories',
   SERVICES_CONFIG: 'db:services_config',
   REVIEWS: 'db:reviews',
+  MEDICAL_ORDERS: 'db:medical_orders',
+  MEDICAL_CERTIFICATIONS: 'db:medical_certifications',
+  MEDICAL_PADS: 'db:medical_pads',
+  MEDICAL_CONTACTS: 'db:medical_contacts',
+  MEDICAL_RATINGS: 'db:medical_ratings',
+  MEDICAL_SMS_LOGS: 'db:medical_sms_logs',
   ADMIN_STATS: 'stats:admin',
   USER_INFO: (userId) => `user:${userId}`
 };

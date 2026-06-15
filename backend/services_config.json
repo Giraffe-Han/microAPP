@@ -1218,6 +1218,41 @@
     "contactPhone": "0577-55558188",
     "address": "温州市鹿城区七都街道温州低空经济发展有限公司"
   },
+  "14": {
+    "name": "医疗配送服务",
+    "slogan": "时效优先 · 安全可靠 · 智能配送",
+    "icon": "/icons/logistics-drone.svg",
+    "color": "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
+    "mainColor": "#dc2626",
+    "intro": "无人机医疗配送服务利用先进的无人机技术，为医院、检验中心、药房等机构提供快速、安全的医疗物资即时配送服务，包括血液制品、检验样本、药品制剂等。",
+    "projects": [
+      {
+        "name": "血液配送",
+        "icon": "add-o"
+      },
+      {
+        "name": "样本转运",
+        "icon": "exchange"
+      },
+      {
+        "name": "药品配送",
+        "icon": "gift-o"
+      },
+      {
+        "name": "器械转运",
+        "icon": "setting-o"
+      }
+    ],
+    "advantages": [
+      "30分钟极速响应",
+      "全程温控保障",
+      "实名认证下单",
+      "全程状态跟踪"
+    ],
+    "contactPhone": "0577-55558188",
+    "address": "温州市鹿城区七都街道温州低空经济发展有限公司",
+    "isMedicalDelivery": true
+  },
   "_home": {
     "headerImage": "/uploads/1768188276421-341576585.jpeg",
     "headerImagePosition": "center",

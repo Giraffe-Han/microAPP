@@ -10,6 +10,12 @@ const CASE_CATEGORIES_FILE = path.join(__dirname, 'case_categories.json');
 const USERS_FILE = path.join(__dirname, 'users.json');
 const SERVICES_CONFIG_FILE = path.join(__dirname, 'services_config.json');
 const REVIEWS_FILE = path.join(__dirname, 'reviews.json');
+const MEDICAL_ORDERS_FILE = path.join(__dirname, 'medical_orders.json');
+const MEDICAL_CERTIFICATIONS_FILE = path.join(__dirname, 'medical_certifications.json');
+const MEDICAL_PADS_FILE = path.join(__dirname, 'medical_pads.json');
+const MEDICAL_CONTACTS_FILE = path.join(__dirname, 'medical_contacts.json');
+const MEDICAL_RATINGS_FILE = path.join(__dirname, 'medical_ratings.json');
+const MEDICAL_SMS_LOGS_FILE = path.join(__dirname, 'medical_sms_logs.json');
 
 const JSON_KEYS = {
     applications: 'applications',
@@ -17,7 +23,13 @@ const JSON_KEYS = {
     case_categories: 'case_categories',
     users: 'users',
     services_config: 'services_config',
-    reviews: 'reviews'
+    reviews: 'reviews',
+    medical_orders: 'medical_orders',
+    medical_certifications: 'medical_certifications',
+    medical_pads: 'medical_pads',
+    medical_contacts: 'medical_contacts',
+    medical_ratings: 'medical_ratings',
+    medical_sms_logs: 'medical_sms_logs'
 };
 
 function readJsonFile(filePath, fallback) {
@@ -71,6 +83,24 @@ async function initStorage() {
     if (!fs.existsSync(REVIEWS_FILE)) {
         fs.writeFileSync(REVIEWS_FILE, JSON.stringify([]));
     }
+    if (!fs.existsSync(MEDICAL_ORDERS_FILE)) {
+        fs.writeFileSync(MEDICAL_ORDERS_FILE, JSON.stringify([]));
+    }
+    if (!fs.existsSync(MEDICAL_CERTIFICATIONS_FILE)) {
+        fs.writeFileSync(MEDICAL_CERTIFICATIONS_FILE, JSON.stringify([]));
+    }
+    if (!fs.existsSync(MEDICAL_PADS_FILE)) {
+        fs.writeFileSync(MEDICAL_PADS_FILE, JSON.stringify([]));
+    }
+    if (!fs.existsSync(MEDICAL_CONTACTS_FILE)) {
+        fs.writeFileSync(MEDICAL_CONTACTS_FILE, JSON.stringify([]));
+    }
+    if (!fs.existsSync(MEDICAL_RATINGS_FILE)) {
+        fs.writeFileSync(MEDICAL_RATINGS_FILE, JSON.stringify([]));
+    }
+    if (!fs.existsSync(MEDICAL_SMS_LOGS_FILE)) {
+        fs.writeFileSync(MEDICAL_SMS_LOGS_FILE, JSON.stringify([]));
+    }
 }
 
 async function readJsonStore(key, fallback) {
@@ -88,6 +118,18 @@ async function readJsonStore(key, fallback) {
                 return readJsonFile(DB_FILE, fallback);
             case JSON_KEYS.reviews:
                 return readJsonFile(REVIEWS_FILE, fallback);
+            case JSON_KEYS.medical_orders:
+                return readJsonFile(MEDICAL_ORDERS_FILE, fallback);
+            case JSON_KEYS.medical_certifications:
+                return readJsonFile(MEDICAL_CERTIFICATIONS_FILE, fallback);
+            case JSON_KEYS.medical_pads:
+                return readJsonFile(MEDICAL_PADS_FILE, fallback);
+            case JSON_KEYS.medical_contacts:
+                return readJsonFile(MEDICAL_CONTACTS_FILE, fallback);
+            case JSON_KEYS.medical_ratings:
+                return readJsonFile(MEDICAL_RATINGS_FILE, fallback);
+            case JSON_KEYS.medical_sms_logs:
+                return readJsonFile(MEDICAL_SMS_LOGS_FILE, fallback);
             default:
                 return fallback;
         }
@@ -127,6 +169,18 @@ async function writeJsonStore(key, data) {
                 return writeJsonFile(DB_FILE, data);
             case JSON_KEYS.reviews:
                 return writeJsonFile(REVIEWS_FILE, data);
+            case JSON_KEYS.medical_orders:
+                return writeJsonFile(MEDICAL_ORDERS_FILE, data);
+            case JSON_KEYS.medical_certifications:
+                return writeJsonFile(MEDICAL_CERTIFICATIONS_FILE, data);
+            case JSON_KEYS.medical_pads:
+                return writeJsonFile(MEDICAL_PADS_FILE, data);
+            case JSON_KEYS.medical_contacts:
+                return writeJsonFile(MEDICAL_CONTACTS_FILE, data);
+            case JSON_KEYS.medical_ratings:
+                return writeJsonFile(MEDICAL_RATINGS_FILE, data);
+            case JSON_KEYS.medical_sms_logs:
+                return writeJsonFile(MEDICAL_SMS_LOGS_FILE, data);
             default:
                 return false;
         }
@@ -220,6 +274,62 @@ async function writeReviewsDB(data) {
     return writeJsonStore(JSON_KEYS.reviews, data);
 }
 
+// ==================== 医疗配送模块存储 ====================
+
+async function readMedicalOrdersDB() {
+    return cache.getOrSet(CacheKeys.MEDICAL_ORDERS, () => readJsonStore(JSON_KEYS.medical_orders, []), 30 * 1000);
+}
+
+async function writeMedicalOrdersDB(data) {
+    cache.delete(CacheKeys.MEDICAL_ORDERS);
+    return writeJsonStore(JSON_KEYS.medical_orders, data);
+}
+
+async function readMedicalCertificationsDB() {
+    return cache.getOrSet(CacheKeys.MEDICAL_CERTIFICATIONS, () => readJsonStore(JSON_KEYS.medical_certifications, []), 60 * 1000);
+}
+
+async function writeMedicalCertificationsDB(data) {
+    cache.delete(CacheKeys.MEDICAL_CERTIFICATIONS);
+    return writeJsonStore(JSON_KEYS.medical_certifications, data);
+}
+
+async function readMedicalPadsDB() {
+    return cache.getOrSet(CacheKeys.MEDICAL_PADS, () => readJsonStore(JSON_KEYS.medical_pads, []), 5 * 60 * 1000);
+}
+
+async function writeMedicalPadsDB(data) {
+    cache.delete(CacheKeys.MEDICAL_PADS);
+    return writeJsonStore(JSON_KEYS.medical_pads, data);
+}
+
+async function readMedicalContactsDB() {
+    return cache.getOrSet(CacheKeys.MEDICAL_CONTACTS, () => readJsonStore(JSON_KEYS.medical_contacts, []), 60 * 1000);
+}
+
+async function writeMedicalContactsDB(data) {
+    cache.delete(CacheKeys.MEDICAL_CONTACTS);
+    return writeJsonStore(JSON_KEYS.medical_contacts, data);
+}
+
+async function readMedicalRatingsDB() {
+    return cache.getOrSet(CacheKeys.MEDICAL_RATINGS, () => readJsonStore(JSON_KEYS.medical_ratings, []), 60 * 1000);
+}
+
+async function writeMedicalRatingsDB(data) {
+    cache.delete(CacheKeys.MEDICAL_RATINGS);
+    return writeJsonStore(JSON_KEYS.medical_ratings, data);
+}
+
+async function readMedicalSmsLogsDB() {
+    return cache.getOrSet(CacheKeys.MEDICAL_SMS_LOGS, () => readJsonStore(JSON_KEYS.medical_sms_logs, []), 60 * 1000);
+}
+
+async function writeMedicalSmsLogsDB(data) {
+    cache.delete(CacheKeys.MEDICAL_SMS_LOGS);
+    return writeJsonStore(JSON_KEYS.medical_sms_logs, data);
+}
+
 module.exports = {
     initStorage,
     readUsersDB,
@@ -233,6 +343,18 @@ module.exports = {
     readServicesConfig,
     writeServicesConfig,
     readReviewsDB,
-    writeReviewsDB
+    writeReviewsDB,
+    readMedicalOrdersDB,
+    writeMedicalOrdersDB,
+    readMedicalCertificationsDB,
+    writeMedicalCertificationsDB,
+    readMedicalPadsDB,
+    writeMedicalPadsDB,
+    readMedicalContactsDB,
+    writeMedicalContactsDB,
+    readMedicalRatingsDB,
+    writeMedicalRatingsDB,
+    readMedicalSmsLogsDB,
+    writeMedicalSmsLogsDB
 };
 

@@ -18,6 +18,7 @@ const { logger } = require('./logger');
 const { sanitizeBody } = require('./middleware/validation');
 const { errorHandler, notFoundHandler, asyncHandler } = require('./middleware/error');
 const adminRouter = require('./routes/admin');
+const { router: medicalRouter, startTimeoutChecker } = require('./routes/medical');
 
 const app = express();
 const PORT = config.server.port;
@@ -1619,6 +1620,9 @@ app.post('/api/case-categories/delete', async (req, res) => {
 // 挂载管理后台路由 (必须在SPA路由处理器之前)
 app.use('/api/admin', adminRouter);
 
+// 挂载医疗配送模块路由
+app.use('/api/medical', medicalRouter);
+
 // Handle SPA routing: Serve index.html for all non-API routes
 app.get('*', (req, res) => {
     // If it's an API request that wasn't handled above, return 404
@@ -1650,6 +1654,9 @@ async function bootstrap() {
     await initStorage();
     await ensureDefaultCases();
     await ensureAdminUsers();
+
+    // 启动医疗配送超时检查任务
+    startTimeoutChecker();
 
     // 启动服务器
     app.listen(PORT, () => {
