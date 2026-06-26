@@ -5,7 +5,7 @@
     <div class="form-container">
       <van-notice-bar
         left-icon="info-o"
-        text="医疗配送需实名认证后方可下单，请如实填写信息"
+        text="医疗配送需身份登记后方可下单，请如实填写信息"
       />
 
       <van-form @submit="onSubmit" ref="formRef">
@@ -23,17 +23,11 @@
             type="tel"
             :rules="[{ required: true, message: '请输入手机号' }, { pattern: /^1[3-9]\d{9}$/, message: '手机号格式不正确' }]"
           />
-          <van-field
-            v-model="form.id_card"
-            label="身份证号"
-            placeholder="请输入身份证号"
-            :rules="[{ required: true, message: '请输入身份证号' }]"
-          />
         </van-cell-group>
 
         <van-cell-group inset title="机构信息">
           <van-field
-            v-model="form.org_type"
+            v-model="orgTypeText"
             is-link
             readonly
             label="机构类型"
@@ -57,29 +51,6 @@
             label="职务"
             placeholder="如：医生、护士、检验师（选填）"
           />
-        </van-cell-group>
-
-        <van-cell-group inset title="身份证照片">
-          <div class="upload-section">
-            <div class="upload-item">
-              <p class="upload-label">身份证正面</p>
-              <van-uploader
-                v-model="idCardFront"
-                :max-count="1"
-                :after-read="(file) => onUpload(file, 'front')"
-                accept="image/*"
-              />
-            </div>
-            <div class="upload-item">
-              <p class="upload-label">身份证反面</p>
-              <van-uploader
-                v-model="idCardBack"
-                :max-count="1"
-                :after-read="(file) => onUpload(file, 'back')"
-                accept="image/*"
-              />
-            </div>
-          </div>
         </van-cell-group>
 
         <van-cell-group inset title="授权协议">
@@ -134,7 +105,6 @@ import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { showSuccessToast, showFailToast } from 'vant'
 import { useMedicalStore } from '@/stores/medical'
-import axios from '@/utils/http'
 
 const router = useRouter()
 const store = useMedicalStore()
@@ -142,19 +112,17 @@ const store = useMedicalStore()
 const form = reactive({
   real_name: '',
   phone: '',
-  id_card: '',
   org_type: '',
   org_name: '',
   org_address: '',
   position: ''
 })
 
-const idCardFront = ref([])
-const idCardBack = ref([])
 const agreed = ref(false)
 const submitting = ref(false)
 const showOrgTypePicker = ref(false)
 const showAgreement = ref(false)
+const orgTypeText = ref('')
 
 const orgTypeOptions = [
   { text: '医院', value: 'hospital' },
@@ -163,36 +131,13 @@ const orgTypeOptions = [
   { text: '其他', value: 'other' }
 ]
 
-let uploadedFront = ''
-let uploadedBack = ''
-
 function onOrgTypeConfirm({ selectedOptions }) {
   form.org_type = selectedOptions[0].value
+  orgTypeText.value = selectedOptions[0].text
   showOrgTypePicker.value = false
 }
 
-async function onUpload(file, side) {
-  const formData = new FormData()
-  formData.append('file', file.file)
-
-  try {
-    const res = await axios.post('/api/upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    })
-    if (res.data?.url) {
-      if (side === 'front') uploadedFront = res.data.url
-      else uploadedBack = res.data.url
-    }
-  } catch (e) {
-    showFailToast('上传失败')
-  }
-}
-
 async function onSubmit() {
-  if (!uploadedFront || !uploadedBack) {
-    showFailToast('请上传身份证正反面照片')
-    return
-  }
   if (!agreed.value) {
     showFailToast('请同意授权协议')
     return
@@ -200,11 +145,7 @@ async function onSubmit() {
 
   submitting.value = true
   try {
-    const data = {
-      ...form,
-      id_card_front: uploadedFront,
-      id_card_back: uploadedBack
-    }
+    const data = { ...form }
     const res = await store.submitCertification(data)
     if (res?.success) {
       showSuccessToast('提交成功')
@@ -238,20 +179,6 @@ async function onSubmit() {
 
 .form-container {
   padding-bottom: 80px;
-}
-.upload-section {
-  display: flex;
-  gap: 16px;
-  padding: 16px;
-}
-.upload-item {
-  flex: 1;
-  text-align: center;
-}
-.upload-label {
-  font-size: 13px;
-  color: #666;
-  margin-bottom: 8px;
 }
 .agreement-section {
   padding: 16px;

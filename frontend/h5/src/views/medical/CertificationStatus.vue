@@ -7,7 +7,7 @@
       <div v-if="!certification || certification.status === 'none'" class="status-card">
         <van-icon name="info-o" size="60" color="#999" />
         <p class="status-text">您尚未提交认证</p>
-        <p class="status-desc">医疗配送需通过实名认证后方可使用</p>
+        <p class="status-desc">医疗配送需通过身份登记后方可使用</p>
         <van-button type="primary" round @click="$router.push('/medical/certification')">立即认证</van-button>
       </div>
 
@@ -28,7 +28,7 @@
       <div v-else-if="certification.status === 'approved'" class="status-card">
         <van-icon name="checked" size="60" color="#52c41a" />
         <p class="status-text approved">认证已通过</p>
-        <p class="status-desc">您已完成寄件人认证，可正常使用医疗配送服务</p>
+        <p class="status-desc">您已完成身份登记，可正常使用医疗配送服务</p>
         <div class="info-list">
           <p><span>姓名：</span>{{ certification.real_name }}</p>
           <p><span>机构：</span>{{ certification.org_name }}</p>

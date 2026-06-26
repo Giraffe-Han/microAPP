@@ -75,29 +75,10 @@
         <van-cell-group title="申请人信息" inset>
           <van-cell title="真实姓名" :value="currentItem.real_name" />
           <van-cell title="手机号" :value="currentItem.phone" />
-          <van-cell title="身份证号" :value="currentItem.id_card || '-'" />
-          <van-cell title="所属机构" :value="currentItem.organization || '-'" />
+          <van-cell title="机构类型" :value="currentItem.org_type || '-'" />
+          <van-cell title="所属机构" :value="currentItem.org_name || currentItem.organization || '-'" />
           <van-cell title="职务" :value="currentItem.position || '-'" />
           <van-cell title="申请时间" :value="formatTime(currentItem.created_at)" />
-        </van-cell-group>
-
-        <van-cell-group title="证件照片" inset v-if="currentItem.id_card_front || currentItem.id_card_back">
-          <div class="id-card-images">
-            <div v-if="currentItem.id_card_front" class="id-card-img">
-              <p>身份证正面</p>
-              <van-image :src="currentItem.id_card_front" width="100%" fit="contain" @click="previewImage(currentItem.id_card_front)" />
-            </div>
-            <div v-if="currentItem.id_card_back" class="id-card-img">
-              <p>身份证反面</p>
-              <van-image :src="currentItem.id_card_back" width="100%" fit="contain" @click="previewImage(currentItem.id_card_back)" />
-            </div>
-          </div>
-        </van-cell-group>
-
-        <van-cell-group title="资质证明" inset v-if="currentItem.qualification_photo">
-          <div class="id-card-images">
-            <van-image :src="currentItem.qualification_photo" width="100%" fit="contain" @click="previewImage(currentItem.qualification_photo)" />
-          </div>
         </van-cell-group>
 
         <van-cell-group title="审核信息" inset v-if="currentItem.status !== 'pending'">

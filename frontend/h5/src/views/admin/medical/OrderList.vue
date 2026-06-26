@@ -91,7 +91,6 @@
         <van-cell-group title="基本信息" inset>
           <van-cell title="订单号" :value="currentOrder.order_no" />
           <van-cell title="紧急程度" :value="currentOrder.urgency_label || currentOrder.urgency" />
-          <van-cell title="预估费用" :value="'¥' + (currentOrder.estimated_fee || '-')" />
           <van-cell title="创建时间" :value="formatTime(currentOrder.created_at)" />
         </van-cell-group>
 

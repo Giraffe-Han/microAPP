@@ -269,6 +269,16 @@ router.beforeEach(async (to, from, next) => {
     }
   }
 
+  // Medical module route protection - require login
+  if (to.path.startsWith('/medical')) {
+    const accessToken = authStorage.getAccessToken()
+    if (!accessToken) {
+      showFailToast('请先登录后再使用医疗配送功能')
+      next('/login')
+      return
+    }
+  }
+
   // Admin route protection
   if (to.path.startsWith('/admin')) {
     const accessToken = authStorage.getAccessToken()

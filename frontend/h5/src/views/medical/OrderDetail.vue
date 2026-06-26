@@ -46,9 +46,8 @@
         </div>
       </van-cell-group>
 
-      <!-- 费用信息 -->
-      <van-cell-group inset title="费用信息">
-        <van-cell title="预估费用" :value="`¥${order.estimated_price}`" />
+      <!-- 配送预估 -->
+      <van-cell-group inset title="配送预估">
         <van-cell title="预估送达" :value="formatTime(order.estimated_delivery_time)" />
       </van-cell-group>
 

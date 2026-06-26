@@ -16,6 +16,7 @@
 
       <!-- 取货人信息 -->
       <van-cell-group inset title="取货人信息">
+        <van-notice-bar v-if="receiverNotCertified" left-icon="warning-o" type="warning" text="收货人需完成平台身份认证后方可接收配送" />
         <van-field v-model="form.receiver_name" label="姓名" placeholder="取货人姓名" :rules="[{ required: true }]">
           <template #button>
             <van-button size="small" type="primary" plain @click="selectContact('receiver')">选择联系人</van-button>
@@ -87,12 +88,10 @@
         </van-field>
       </van-cell-group>
 
-      <!-- 预估费用 -->
-      <van-cell-group inset title="配送费用预估" v-if="estimate">
-        <van-cell title="预估费用" :value="`¥${estimate.estimated_price}`" />
+      <!-- 预估时间 -->
+      <van-cell-group inset title="配送预估" v-if="estimate">
         <van-cell title="预计送达" :value="`约${estimate.estimated_minutes}分钟`" />
         <van-cell title="配送距离" :value="`${estimate.distance_km}km`" />
-        <div class="estimate-note">※ 一期不做在线支付，费用仅作展示</div>
       </van-cell-group>
 
       <div class="submit-section">
@@ -145,6 +144,7 @@ const arrivalName = ref('')
 const itemImages = ref([])
 const submitting = ref(false)
 const estimate = ref(null)
+const receiverNotCertified = ref(false)
 const contacts = computed(() => store.contacts)
 const pads = computed(() => store.pads)
 
@@ -188,7 +188,7 @@ onMounted(async () => {
   }
 })
 
-// 监听表单变化计算预估费用
+// 监听表单变化计算预估时间
 watch(() => [form.departure_pad_id, form.arrival_pad_id, form.urgency, form.temp_requirements], async () => {
   if (form.departure_pad_id && form.arrival_pad_id && form.urgency) {
     try {
@@ -263,16 +263,25 @@ async function onSubmit() {
   }
 
   submitting.value = true
+  receiverNotCertified.value = false
   try {
     const res = await store.createOrder(form)
     if (res?.success) {
       showSuccessToast('下单成功')
       router.replace('/medical/orders')
     } else {
-      showFailToast(res?.message || '下单失败')
+      const msg = res?.message || '下单失败'
+      if (msg.includes('收货人')) {
+        receiverNotCertified.value = true
+      }
+      showFailToast(msg)
     }
   } catch (e) {
-    showFailToast(e.response?.data?.message || '下单失败')
+    const msg = e.response?.data?.message || '下单失败'
+    if (msg.includes('收货人')) {
+      receiverNotCertified.value = true
+    }
+    showFailToast(msg)
   } finally {
     submitting.value = false
   }
@@ -296,12 +305,7 @@ async function onSubmit() {
   max-width: var(--page-max-width);
 }
 
-.estimate-note {
-  font-size: 12px;
-  color: #999;
-  padding: 8px 16px;
-  text-align: center;
-}
+
 .submit-section {
   padding: 24px 16px;
   padding-bottom: calc(24px + env(safe-area-inset-bottom));

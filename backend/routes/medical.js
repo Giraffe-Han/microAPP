@@ -37,22 +37,9 @@ async function generateOrderNo() {
 }
 
 /**
- * 预估费用计算
+ * 预估时间计算
  */
-function calculateEstimate(distanceKm, urgency, tempRequirements) {
-  const baseFee = 20;
-  const distanceFee = distanceKm * 6;
-  const urgencyMultiplier = { normal: 1.0, urgent: 1.5, critical: 2.0 };
-  const multiplier = urgencyMultiplier[urgency] || 1.0;
-
-  let tempExtra = 0;
-  if (tempRequirements && Array.isArray(tempRequirements)) {
-    if (tempRequirements.includes('refrigerated')) tempExtra += 10;
-    if (tempRequirements.includes('frozen')) tempExtra += 20;
-  }
-
-  const totalPrice = (baseFee + distanceFee) * multiplier + tempExtra;
-
+function calculateEstimate(distanceKm, urgency) {
   // 预估时间(分钟)
   const responseTime = { normal: 30, urgent: 15, critical: 5 };
   const prepTime = { normal: 20, urgent: 10, critical: 5 };
@@ -61,7 +48,6 @@ function calculateEstimate(distanceKm, urgency, tempRequirements) {
   const totalMinutes = (responseTime[urgency] || 30) + (prepTime[urgency] || 20) + flyTime;
 
   return {
-    price: Math.round(totalPrice * 100) / 100,
     estimatedMinutes: Math.round(totalMinutes)
   };
 }
@@ -216,17 +202,18 @@ router.get('/certification/status', authRequired, asyncHandler(async (req, res) 
     return res.json({ success: true, data: { status: 'none' } });
   }
 
-  // 隐藏敏感信息
+  // 隐藏敏感信息（历史数据兼容）
   const safeData = { ...myCert };
   delete safeData.id_card;
+  delete safeData.id_card_images;
   res.json({ success: true, data: safeData });
 }));
 
 // 提交认证申请
 router.post('/certification/apply', authRequired, asyncHandler(async (req, res) => {
-  const { real_name, phone, id_card, id_card_front, id_card_back, org_type, org_name, org_address, position } = req.body;
+  const { real_name, phone, org_type, org_name, org_address, position } = req.body;
 
-  if (!real_name || !phone || !id_card || !id_card_front || !id_card_back || !org_type || !org_name) {
+  if (!real_name || !phone || !org_type || !org_name) {
     return res.status(400).json({ success: false, message: '请填写完整的认证信息' });
   }
 
@@ -245,8 +232,6 @@ router.post('/certification/apply', authRequired, asyncHandler(async (req, res) 
     user_id: req.user.id,
     real_name,
     phone,
-    id_card, // 生产环境应加密存储
-    id_card_images: { front: id_card_front, back: id_card_back },
     org_type,
     org_name,
     org_address: org_address || '',
@@ -280,17 +265,16 @@ router.post('/certification/resubmit', authRequired, asyncHandler(async (req, re
     return res.status(400).json({ success: false, message: '无需重新提交' });
   }
 
-  const { real_name, phone, id_card, id_card_front, id_card_back, org_type, org_name, org_address, position } = req.body;
+  const { real_name, phone, org_type, org_name, org_address, position } = req.body;
 
-  if (!real_name || !phone || !id_card || !id_card_front || !id_card_back || !org_type || !org_name) {
+  if (!real_name || !phone || !org_type || !org_name) {
     return res.status(400).json({ success: false, message: '请填写完整的认证信息' });
   }
 
   const index = certs.findIndex(c => c.user_id === req.user.id);
   certs[index] = {
     ...certs[index],
-    real_name, phone, id_card,
-    id_card_images: { front: id_card_front, back: id_card_back },
+    real_name, phone,
     org_type, org_name,
     org_address: org_address || '',
     position: position || '',
@@ -493,13 +477,12 @@ router.get('/orders/estimate', asyncHandler(async (req, res) => {
   const distanceKm = R * c;
 
   const tempReqs = temp_requirements ? temp_requirements.split(',') : [];
-  const estimate = calculateEstimate(distanceKm, urgency || 'normal', tempReqs);
+  const estimate = calculateEstimate(distanceKm, urgency || 'normal');
 
   res.json({
     success: true,
     data: {
       distance_km: Math.round(distanceKm * 10) / 10,
-      estimated_price: estimate.price,
       estimated_minutes: estimate.estimatedMinutes
     }
   });
@@ -507,7 +490,7 @@ router.get('/orders/estimate', asyncHandler(async (req, res) => {
 
 // 创建配送订单
 router.post('/orders', authRequired, asyncHandler(async (req, res) => {
-  // 检查认证状态
+  // 检查寄件人认证状态
   const certs = await readMedicalCertificationsDB();
   const myCert = certs.find(c => c.user_id === req.user.id && c.status === 'approved');
   if (!myCert) {
@@ -528,6 +511,12 @@ router.post('/orders', authRequired, asyncHandler(async (req, res) => {
     !departure_pad_id || !arrival_pad_id ||
     !item_type || !item_weight || !urgency) {
     return res.status(400).json({ success: false, message: '请填写完整的订单信息' });
+  }
+
+  // 校验收货人也已通过认证（通过手机号匹配）
+  const receiverCert = certs.find(c => c.phone === receiver_phone && c.status === 'approved');
+  if (!receiverCert) {
+    return res.status(400).json({ success: false, message: '收货人尚未完成身份认证，请通知对方先在平台完成认证后再下单' });
   }
 
   // 校验图片
@@ -563,7 +552,7 @@ router.post('/orders', authRequired, asyncHandler(async (req, res) => {
   const distanceKm = R * c2;
 
   const tempReqs = temp_requirements || [];
-  const estimate = calculateEstimate(distanceKm, urgency, tempReqs);
+  const estimate = calculateEstimate(distanceKm, urgency);
 
   const orderNo = await generateOrderNo();
   const now = new Date().toISOString();
@@ -607,7 +596,6 @@ router.post('/orders', authRequired, asyncHandler(async (req, res) => {
     },
     urgency,
     urgency_label: urgencyLabels[urgency] || urgency,
-    estimated_price: estimate.price,
     estimated_delivery_time: estimatedDeliveryTime,
     status: 'pending',
     status_label: '待接单',
