@@ -13,8 +13,8 @@
     <!-- 首页配置（仅管理员可见） -->
     <van-cell-group v-if="isAdmin" inset title="首页配置" style="margin-bottom: 12px; border-radius: var(--card-radius);">
       <van-cell
-        title="首页背景图 & 轮播消息"
-        :label="(homeConfig?.headerImage ? '背景图已配置' : '背景图未配置') + '  ·  ' + (homeConfig?.notices?.length || 0) + ' 条轮播消息'"
+        title="首页背景图 & 轮播配置"
+        :label="(homeConfig?.headerImage ? '背景图已配置' : '背景图未配置') + '  ·  ' + (homeConfig?.banners?.length || 0) + ' 张Banner  ·  ' + (homeConfig?.notices?.length || 0) + ' 条轮播消息'"
         is-link
         @click="editHomeConfig"
       />
@@ -453,6 +453,30 @@
               <van-button size="small" type="primary" block plain icon="plus" @click="editingHomeConfig.notices.push('')">添加消息</van-button>
             </div>
           </van-cell-group>
+          <van-cell-group title="轮播 Banner">
+            <div v-for="(banner, idx) in editingHomeConfig.banners" :key="idx" style="padding: 8px 16px; border-bottom: 1px solid #f5f5f5;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                <span style="font-size: 12px; color: #999;">#{{ idx + 1 }}</span>
+                <van-button size="mini" type="danger" plain icon="cross" @click="editingHomeConfig.banners.splice(idx, 1)" />
+              </div>
+              <div v-if="banner.image" style="margin-bottom: 8px;">
+                <img :src="normalizeMediaUrl(banner.image)" style="width:100%; height: 80px; object-fit: cover; border-radius: 6px; display:block;" />
+              </div>
+              <van-uploader :after-read="file => onReadBannerImage(file, idx)" max-count="1" accept="image/*">
+                <van-button icon="photo-o" type="primary" size="mini" plain>{{ banner.image ? '更换图片' : '上传图片' }}</van-button>
+              </van-uploader>
+              <van-field
+                v-model="banner.link"
+                label="链接"
+                placeholder="如 delivery 或 /cases/1"
+                dense
+                style="margin-top: 4px;"
+              />
+            </div>
+            <div class="list-add">
+              <van-button size="small" type="primary" block plain icon="plus" @click="addBanner">添加 Banner</van-button>
+            </div>
+          </van-cell-group>
         </div>
       </div>
     </van-popup>
@@ -597,6 +621,9 @@ const editHomeConfig = () => {
   if (!Array.isArray(editingHomeConfig.value.notices)) {
     editingHomeConfig.value.notices = [...DEFAULT_HOME_CONFIG.notices]
   }
+  if (!Array.isArray(editingHomeConfig.value.banners)) {
+    editingHomeConfig.value.banners = []
+  }
   showHomeConfigPopup.value = true
 }
 
@@ -608,6 +635,23 @@ const onReadHomeHeaderImage = async (file) => {
     editingHomeConfig.value = { ...editingHomeConfig.value, headerImage: normalizeMediaUrl(url) }
     showSuccessToast('上传成功')
   }
+}
+
+const onReadBannerImage = async (file, idx) => {
+  showLoadingToast({ message: '上传中...', forbidClick: true })
+  const url = await uploadFile(file)
+  closeToast()
+  if (url && editingHomeConfig.value?.banners?.[idx]) {
+    editingHomeConfig.value.banners[idx].image = normalizeMediaUrl(url)
+    showSuccessToast('上传成功')
+  }
+}
+
+const addBanner = () => {
+  if (!editingHomeConfig.value.banners) {
+    editingHomeConfig.value.banners = []
+  }
+  editingHomeConfig.value.banners.push({ image: '', link: '' })
 }
 
 const saveHomeConfig = async () => {
