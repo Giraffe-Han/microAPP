@@ -274,8 +274,16 @@ const goToDetail = (id) => {
 // Banner 数据（从后端 _home.banners 配置加载，以下为默认兜底）
 const banners = ref([
   {
-    image: '/uploads/banner-default-1.jpg',
+    image: 'https://wenzhoumall-prod.oss-cn-shanghai.aliyuncs.com/test/shop/20250930/0fa02eb2dc8b4a6382784fedc0b44dc0.jpg?Expires=3337231191&OSSAccessKeyId=LTAI5tSbLByCMG16D3eoErCU&Signature=Zk8QXbZAJhw08908Er3iuy9dKg0%3D',
     link: 'delivery'
+  },
+  {
+    image: 'https://www-cdn.djiits.com/dps/3e196dbfade1b1734dbbb335dde5de12.jpg?w=1184&h=592',
+    link: '/cases/1'
+  },
+  {
+    image: 'https://images.unsplash.com/photo-1506947411487-a56738267384?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
+    link: '/cases/2'
   }
 ])
 
