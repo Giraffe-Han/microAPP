@@ -108,7 +108,7 @@
             v-for="(item, index) in serviceConfig.projects" 
             :key="index" 
             class="project-item"
-            :class="{ 'clickable-project': serviceId === '13' }"
+            :class="{ 'clickable-project': serviceId === '13' || isClickableProject(item) }"
             @click="onProjectClick(item)"
           >
             <van-icon :name="normalizeUrl(item.icon)" size="24" color="#424245" />
@@ -409,6 +409,12 @@ const onApply = () => {
   }
 }
 
+// 判断服务项目是否可点击跳转
+const isClickableProject = (item) => {
+  if (serviceId === '1' && item.name === '医疗运输') return true
+  return false
+}
+
 const onProjectClick = (item) => {
   if (serviceId === '13') {
     const roleMap = {
@@ -418,6 +424,8 @@ const onProjectClick = (item) => {
     if (role) {
       router.push({ path: `/service-apply/${serviceId}`, query: { role } })
     }
+  } else if (serviceId === '1' && item.name === '医疗运输') {
+    router.push('/medical/certification/status')
   }
 }
 
@@ -643,6 +651,24 @@ onMounted(() => {
 .project-item:active {
   background: #f5f5f7;
   transform: scale(0.96);
+}
+
+.clickable-project {
+  cursor: pointer;
+  border-color: #0071e3;
+  background: #f0f7ff;
+  position: relative;
+}
+.clickable-project::after {
+  content: '';
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 6px;
+  height: 6px;
+  border-top: 2px solid #0071e3;
+  border-right: 2px solid #0071e3;
+  transform: rotate(45deg);
 }
 
 /* 优势列表 */

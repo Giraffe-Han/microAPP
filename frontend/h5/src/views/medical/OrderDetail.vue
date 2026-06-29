@@ -39,7 +39,7 @@
         <van-cell title="重量" :value="`${order.item.weight} kg`" />
         <van-cell title="温控要求" :value="order.item.temp_labels?.join(', ') || '无'" />
         <van-cell title="紧急程度" :value="order.urgency_label" />
-        <van-cell v-if="order.item.description" title="物品描述" :label="order.item.description" />
+        <van-cell v-if="order.item.description" title="备注" :label="order.item.description" />
         <div class="item-images" v-if="order.item.images?.length">
           <p class="images-label">物品照片</p>
           <van-image v-for="(img, i) in order.item.images" :key="i" :src="img" width="80" height="80" fit="cover" radius="4" @click="previewImage(i)" />
@@ -65,9 +65,12 @@
 
       <!-- 底部操作 -->
       <div class="bottom-actions">
-        <van-button v-if="order.status === 'pending'" type="warning" block round @click="cancelOrder">取消订单</van-button>
-        <van-button v-if="order.status === 'completed' && !order.rating" type="primary" block round @click="$router.push(`/medical/orders/${order.id}/rate`)">评价配送</van-button>
-        <van-button v-if="['completed','cancelled'].includes(order.status)" plain block round @click="reorder">再次下单</van-button>
+        <!-- 收件人视角：签收确认 -->
+        <van-button v-if="order.status === 'delivered' && isReceiver" type="success" block round @click="confirmReceipt">确认签收</van-button>
+        <!-- 寄件人视角 -->
+        <van-button v-if="order.status === 'pending' && isSender" type="warning" block round @click="cancelOrder">取消订单</van-button>
+        <van-button v-if="order.status === 'completed' && !order.rating && isSender" type="primary" block round @click="$router.push(`/medical/orders/${order.id}/rate`)">评价配送</van-button>
+        <van-button v-if="['completed','cancelled'].includes(order.status) && isSender" plain block round @click="reorder">再次下单</van-button>
       </div>
     </div>
 
@@ -87,6 +90,24 @@ const router = useRouter()
 const route = useRoute()
 const store = useMedicalStore()
 const order = computed(() => store.currentOrder)
+
+// 判断当前用户角色
+const currentUserId = computed(() => {
+  try {
+    const user = JSON.parse(localStorage.getItem('user'))
+    return user?.id || null
+  } catch { return null }
+})
+const isSender = computed(() => order.value?.sender?.user_id === currentUserId.value)
+const isReceiver = computed(() => {
+  if (!order.value || !currentUserId.value) return false
+  if (order.value.receiver?.user_id === currentUserId.value) return true
+  // 兼容旧数据：通过手机号判断
+  try {
+    const user = JSON.parse(localStorage.getItem('user'))
+    return user?.phone && user.phone === order.value.receiver?.phone
+  } catch { return false }
+})
 
 const statusIcon = computed(() => {
   const map = { pending: 'clock-o', accepted: 'checked', pickup: 'logistics', delivering: 'logistics', delivered: 'location-o', completed: 'success', cancelled: 'close', exception: 'warning-o' }
@@ -122,6 +143,21 @@ async function reorder() {
   if (res?.success) {
     sessionStorage.setItem('reorderData', JSON.stringify(res.data))
     router.push('/medical/order/create?reorder=1')
+  }
+}
+
+async function confirmReceipt() {
+  try {
+    await showConfirmDialog({ title: '确认签收', message: '确认已收到配送物品？' })
+    const res = await store.confirmReceipt(order.value.id)
+    if (res?.success) {
+      showSuccessToast('签收成功')
+      await store.fetchOrderDetail(route.params.id)
+    } else {
+      showFailToast(res?.message || '签收失败')
+    }
+  } catch (e) {
+    if (e !== 'cancel') showFailToast(e.response?.data?.message || '签收失败')
   }
 }
 </script>

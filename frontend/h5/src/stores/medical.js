@@ -162,6 +162,18 @@ export const useMedicalStore = defineStore('medical', {
       return res.data
     },
 
+    // 收件人订单列表
+    async fetchReceivedOrders(params = {}) {
+      const res = await axios.get('/api/medical/orders/received', { params })
+      return res.data
+    },
+
+    // 收件人签收确认
+    async confirmReceipt(id) {
+      const res = await axios.post(`/api/medical/orders/${id}/confirm-receipt`)
+      return res.data
+    },
+
     async getReorderData(id) {
       const res = await axios.post(`/api/medical/orders/${id}/reorder`)
       return res.data

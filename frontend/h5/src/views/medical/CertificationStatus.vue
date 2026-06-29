@@ -34,7 +34,11 @@
           <p><span>机构：</span>{{ certification.org_name }}</p>
           <p><span>通过时间：</span>{{ formatTime(certification.review?.reviewed_at) }}</p>
         </div>
-        <van-button type="primary" round @click="$router.push('/medical/order/create')">去下单</van-button>
+        <div class="quick-actions">
+          <van-button type="primary" round @click="$router.push('/medical/order/create')">去下单</van-button>
+          <van-button plain round @click="$router.push('/medical/orders')">我的寄件</van-button>
+          <van-button plain round @click="$router.push('/medical/received')">寄给我的</van-button>
+        </div>
       </div>
 
       <!-- 已驳回 -->
@@ -124,6 +128,12 @@ function formatTime(time) {
 }
 .info-list span {
   color: #999;
+}
+.quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
 }
 .loading-container {
   display: flex;

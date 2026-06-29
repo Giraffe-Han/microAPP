@@ -574,9 +574,11 @@ router.post('/orders', authRequired, asyncHandler(async (req, res) => {
       certification_id: myCert.id
     },
     receiver: {
+      user_id: receiverCert.user_id || null,
       name: receiver_name,
       phone: receiver_phone,
-      org: receiver_org
+      org: receiver_org,
+      certification_id: receiverCert.id
     },
     route: {
       departure_pad_id,
@@ -623,6 +625,7 @@ router.post('/orders', authRequired, asyncHandler(async (req, res) => {
 
   // 发送通知
   await sendSmsNotification(sender_phone, 'order_created', { orderNo }, newOrder.id);
+  await sendSmsNotification(receiver_phone, 'order_created', { orderNo }, newOrder.id);
 
   logger.info('医疗配送订单已创建', { orderId: newOrder.id, orderNo });
   res.json({ success: true, data: { id: newOrder.id, order_no: orderNo } });
@@ -648,6 +651,83 @@ router.get('/orders/my', authRequired, asyncHandler(async (req, res) => {
   res.json({ success: true, data: paginated, total, page: parseInt(page), limit: parseInt(limit) });
 }));
 
+// C端：收件人订单列表（寄给我的）
+router.get('/orders/received', authRequired, asyncHandler(async (req, res) => {
+  const { status, page = 1, limit = 20 } = req.query;
+  let orders = await readMedicalOrdersDB();
+
+  // 通过 receiver.user_id 或者手机号匹配（兼容旧数据）
+  const certs = await readMedicalCertificationsDB();
+  const myCert = certs.find(c => c.user_id === req.user.id && c.status === 'approved');
+  const myPhone = myCert ? myCert.phone : null;
+
+  orders = orders.filter(o => {
+    if (o.receiver?.user_id === req.user.id) return true;
+    if (myPhone && o.receiver?.phone === myPhone) return true;
+    return false;
+  });
+
+  if (status) {
+    orders = orders.filter(o => o.status === status);
+  }
+
+  orders.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+  const total = orders.length;
+  const start = (parseInt(page) - 1) * parseInt(limit);
+  const paginated = orders.slice(start, start + parseInt(limit));
+
+  res.json({ success: true, data: paginated, total, page: parseInt(page), limit: parseInt(limit) });
+}));
+
+// C端：收件人签收确认
+router.post('/orders/:id/confirm-receipt', authRequired, asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const orders = await readMedicalOrdersDB();
+  const index = orders.findIndex(o => o.id === id);
+
+  if (index === -1) {
+    return res.status(404).json({ success: false, message: '订单不存在' });
+  }
+
+  const order = orders[index];
+
+  // 校验是否是收件人
+  const certs = await readMedicalCertificationsDB();
+  const myCert = certs.find(c => c.user_id === req.user.id && c.status === 'approved');
+  const myPhone = myCert ? myCert.phone : null;
+  const isReceiver = order.receiver?.user_id === req.user.id || (myPhone && order.receiver?.phone === myPhone);
+
+  if (!isReceiver) {
+    return res.status(403).json({ success: false, message: '只有收件人才能确认签收' });
+  }
+
+  // 只有“已送达”状态可以签收
+  if (order.status !== 'delivered') {
+    return res.status(400).json({ success: false, message: '订单当前状态不可签收' });
+  }
+
+  const now = new Date().toISOString();
+  orders[index].status = 'completed';
+  orders[index].status_label = '已签收';
+  orders[index].receipt_info = {
+    confirmed_by: req.user.id,
+    confirmed_at: now,
+    confirm_method: 'manual'
+  };
+  orders[index].operator.completed_at = now;
+  orders[index].timeline.push({ status: 'completed', label: '收件人已签收', time: now, operator: req.user.id });
+  orders[index].updated_at = now;
+
+  await writeMedicalOrdersDB(orders);
+
+  // 通知寄件人
+  await sendSmsNotification(order.sender.phone, 'order_completed', { orderNo: order.order_no }, id);
+
+  logger.info('收件人确认签收', { orderId: id, receiverId: req.user.id });
+  res.json({ success: true, message: '签收成功' });
+}));
+
 // 订单详情
 router.get('/orders/:id', authRequired, asyncHandler(async (req, res) => {
   const { id } = req.params;
@@ -658,8 +738,8 @@ router.get('/orders/:id', authRequired, asyncHandler(async (req, res) => {
     return res.status(404).json({ success: false, message: '订单不存在' });
   }
 
-  // 普通用户只能看自己的订单
-  if (req.user.role === 'user' && order.sender.user_id !== req.user.id) {
+  // 普通用户只能看自己的订单（寄件人或收件人）
+  if (req.user.role === 'user' && order.sender.user_id !== req.user.id && order.receiver?.user_id !== req.user.id) {
     return res.status(403).json({ success: false, message: '无权查看此订单' });
   }
 

@@ -133,6 +133,12 @@ const routes = [
     meta: { title: '订单评价' }
   },
   {
+    path: '/medical/received',
+    name: 'MedicalReceivedOrders',
+    component: () => import('@/views/medical/ReceivedOrders.vue'),
+    meta: { title: '寄给我的' }
+  },
+  {
     path: '/admin',
     component: () => import('@/views/admin/AdminLayout.vue'),
     meta: { title: '后台管理' },

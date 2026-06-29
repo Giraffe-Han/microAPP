@@ -61,7 +61,7 @@
             <van-uploader v-model="itemImages" :max-count="3" :after-read="onItemImageUpload" accept="image/*" />
           </template>
         </van-field>
-        <van-field v-model="form.item_description" label="物品描述" type="textarea" rows="2" placeholder="选填，如：血常规样本，已密封包装" />
+        <van-field v-model="form.item_description" label="备注" type="textarea" rows="2" placeholder="选填，如：血常规样本，已密封包装" />
       </van-cell-group>
 
       <!-- 紧急程度 -->
