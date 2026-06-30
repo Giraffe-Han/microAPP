@@ -33,6 +33,17 @@ axios.interceptors.response.use(
       return Promise.reject(error)
     }
 
+    // refresh 请求本身返回 401 时，不再重试，直接清除登录态
+    if (originalRequest.url === '/api/auth/refresh') {
+      localStorage.removeItem(ACCESS_TOKEN_KEY)
+      localStorage.removeItem(REFRESH_TOKEN_KEY)
+      localStorage.removeItem('user')
+      if (window.location.pathname.startsWith('/medical') || window.location.pathname.startsWith('/admin')) {
+        window.location.href = '/login'
+      }
+      return Promise.reject(error)
+    }
+
     if (originalRequest._retry) {
       return Promise.reject(error)
     }
@@ -40,6 +51,11 @@ axios.interceptors.response.use(
 
     const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY)
     if (!refreshToken) {
+      localStorage.removeItem(ACCESS_TOKEN_KEY)
+      localStorage.removeItem('user')
+      if (window.location.pathname.startsWith('/medical')) {
+        window.location.href = '/login'
+      }
       return Promise.reject(error)
     }
 
@@ -70,6 +86,10 @@ axios.interceptors.response.use(
       rejectQueue(refreshError)
       localStorage.removeItem(ACCESS_TOKEN_KEY)
       localStorage.removeItem(REFRESH_TOKEN_KEY)
+      localStorage.removeItem('user')
+      if (window.location.pathname.startsWith('/medical') || window.location.pathname.startsWith('/admin')) {
+        window.location.href = '/login'
+      }
       return Promise.reject(refreshError)
     } finally {
       isRefreshing = false

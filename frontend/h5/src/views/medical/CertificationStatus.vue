@@ -65,9 +65,15 @@ const loading = ref(true)
 const certification = ref(null)
 
 onMounted(async () => {
-  await store.fetchCertificationStatus()
-  certification.value = store.certification
-  loading.value = false
+  try {
+    await store.fetchCertificationStatus()
+    certification.value = store.certification
+  } catch (e) {
+    console.error('获取认证状态异常:', e)
+    certification.value = null
+  } finally {
+    loading.value = false
+  }
 })
 
 function formatTime(time) {
