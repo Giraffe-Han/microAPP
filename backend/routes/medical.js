@@ -308,6 +308,82 @@ router.get('/certifications', authRequired, roleRequired(['admin', 'dsl_admin'])
   res.json({ success: true, data: safeData, total, page: parseInt(page), limit: parseInt(limit) });
 }));
 
+// 管理端：批量导入寄件人认证人员（导入即视为已通过）
+router.post('/certifications/import', authRequired, roleRequired(['admin', 'dsl_admin']), asyncHandler(async (req, res) => {
+  const { items } = req.body;
+
+  if (!Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ success: false, message: '导入数据为空' });
+  }
+  if (items.length > 500) {
+    return res.status(400).json({ success: false, message: '单次最多导入500条' });
+  }
+
+  const certs = await readMedicalCertificationsDB();
+  const now = new Date().toISOString();
+  const phoneRegex = /^1[3-9]\d{9}$/;
+
+  let created = 0;
+  let skipped = 0;
+  const failed = [];
+
+  items.forEach((raw, idx) => {
+    const rowNo = idx + 1;
+    const real_name = (raw.real_name || '').toString().trim();
+    const phone = (raw.phone || '').toString().trim();
+    const org_type = (raw.org_type || '').toString().trim();
+    const org_name = (raw.org_name || '').toString().trim();
+    const org_address = (raw.org_address || '').toString().trim();
+    const position = (raw.position || '').toString().trim();
+
+    if (!real_name || !phone) {
+      failed.push({ row: rowNo, phone, reason: '姓名和手机号必填' });
+      return;
+    }
+    if (!phoneRegex.test(phone)) {
+      failed.push({ row: rowNo, phone, reason: '手机号格式错误' });
+      return;
+    }
+
+    const existing = certs.find(c => c.phone === phone);
+    // 已通过认证的同手机号跳过，避免覆盖
+    if (existing && existing.status === 'approved') {
+      skipped++;
+      return;
+    }
+
+    const newCert = {
+      id: randomUUID(),
+      user_id: existing?.user_id || null,
+      real_name,
+      phone,
+      org_type: org_type || '医疗机构',
+      org_name,
+      org_address,
+      position,
+      status: 'approved',
+      auth_agreement: true,
+      auth_signed_at: now,
+      review: { reviewed_by: req.user.id, reviewed_at: now, reject_reason: null, source: 'batch_import' },
+      created_at: now,
+      updated_at: now
+    };
+
+    if (existing) {
+      const i = certs.findIndex(c => c.phone === phone);
+      certs[i] = newCert;
+    } else {
+      certs.push(newCert);
+    }
+    created++;
+  });
+
+  await writeMedicalCertificationsDB(certs);
+  logger.info('批量导入寄件人认证', { created, skipped, failedCount: failed.length, operator: req.user.id });
+
+  res.json({ success: true, data: { total: items.length, created, skipped, failed } });
+}));
+
 // 管理端：通过认证
 router.post('/certifications/:id/approve', authRequired, roleRequired(['admin', 'dsl_admin']), asyncHandler(async (req, res) => {
   const { id } = req.params;
@@ -501,7 +577,7 @@ router.post('/orders', authRequired, asyncHandler(async (req, res) => {
     sender_name, sender_phone, sender_org,
     receiver_name, receiver_phone, receiver_org,
     departure_pad_id, arrival_pad_id,
-    item_type, item_weight, temp_requirements, item_images, item_description,
+    item_type, item_quantity, item_unit, temp_requirements, item_images, item_description,
     urgency
   } = req.body;
 
@@ -509,7 +585,7 @@ router.post('/orders', authRequired, asyncHandler(async (req, res) => {
   if (!sender_name || !sender_phone || !sender_org ||
     !receiver_name || !receiver_phone || !receiver_org ||
     !departure_pad_id || !arrival_pad_id ||
-    !item_type || !item_weight || !urgency) {
+    !item_type || !item_quantity || !item_unit || !urgency) {
     return res.status(400).json({ success: false, message: '请填写完整的订单信息' });
   }
 
@@ -535,10 +611,10 @@ router.post('/orders', authRequired, asyncHandler(async (req, res) => {
     return res.status(400).json({ success: false, message: '出发与到达不能为同一起降场' });
   }
 
-  // 校验重量
-  const weight = parseFloat(item_weight);
-  if (weight < 0.1 || weight > 10) {
-    return res.status(400).json({ success: false, message: '物品重量需在0.1-10kg之间' });
+  // 校验数量
+  const quantity = parseInt(item_quantity);
+  if (!Number.isFinite(quantity) || quantity < 1 || quantity > 999) {
+    return res.status(400).json({ success: false, message: '物品数量需在1-999之间' });
   }
 
   // 计算距离和预估
@@ -590,7 +666,8 @@ router.post('/orders', authRequired, asyncHandler(async (req, res) => {
     item: {
       type: item_type,
       type_label: typeLabels[item_type] || item_type,
-      weight,
+      quantity,
+      unit: item_unit,
       temp_requirement: tempReqs,
       temp_labels: tempReqs.map(t => tempLabels[t] || t),
       images: item_images,
@@ -840,6 +917,8 @@ router.post('/orders/:id/reorder', authRequired, asyncHandler(async (req, res) =
       departure_pad_id: order.route.departure_pad_id,
       arrival_pad_id: order.route.arrival_pad_id,
       item_type: order.item.type,
+      item_quantity: order.item.quantity,
+      item_unit: order.item.unit,
       temp_requirements: order.item.temp_requirement
     }
   });

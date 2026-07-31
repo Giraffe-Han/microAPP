@@ -1,6 +1,7 @@
 <template>
   <div class="order-rate-page">
-    <van-nav-bar title="订单评价" left-arrow @click-left="$router.back()" fixed placeholder />
+      <HomeFloatButton />
+    <van-nav-bar title="订单评价" left-arrow @click-left="onBack" fixed placeholder />
 
     <div class="rate-content">
       <div class="rate-header">
@@ -47,13 +48,16 @@
 </template>
 
 <script setup>
+import HomeFloatButton from '@/components/HomeFloatButton.vue'
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { showSuccessToast, showFailToast } from 'vant'
 import { useMedicalStore } from '@/stores/medical'
+import { smartBack } from '@/utils/miniprogram'
 
 const router = useRouter()
 const route = useRoute()
+const onBack = () => smartBack(router)
 const store = useMedicalStore()
 
 const rating = ref(5)

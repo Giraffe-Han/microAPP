@@ -1,6 +1,6 @@
 <template>
   <div class="reviews-page">
-    <van-nav-bar title="服务评价" left-arrow @click-left="$router.back()" fixed placeholder />
+    <van-nav-bar title="服务评价" left-arrow @click-left="onBack" fixed placeholder />
     <HomeFloatButton />
 
     <van-tabs v-model:active="activeTab" sticky offset-top="46" @change="onTabChange">
@@ -190,8 +190,10 @@ import { showToast, showDialog, showImagePreview } from 'vant'
 import axios from '@/utils/http'
 import { authStorage } from '@/utils/http'
 import HomeFloatButton from '@/components/HomeFloatButton.vue'
+import { smartBack } from '@/utils/miniprogram'
 
 const router = useRouter()
+const onBack = () => smartBack(router)
 
 const sections = [
   { key: 'yanxue', label: '研学' },

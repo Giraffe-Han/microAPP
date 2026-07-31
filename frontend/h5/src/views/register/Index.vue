@@ -3,7 +3,7 @@
     <van-nav-bar
       title="注册账号"
       left-arrow
-      @click-left="$router.back()"
+      @click-left="onBack"
     />
 
     <div class="register-container">
@@ -80,8 +80,10 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { showSuccessToast, showFailToast } from 'vant'
 import axios, { authStorage } from '@/utils/http'
+import { smartBack } from '@/utils/miniprogram'
 
 const router = useRouter()
+const onBack = () => smartBack(router)
 const loading = ref(false)
 
 const form = ref({

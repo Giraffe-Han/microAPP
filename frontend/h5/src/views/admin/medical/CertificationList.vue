@@ -12,6 +12,7 @@
         </van-search>
       </template>
       <template #actions>
+        <van-button type="primary" size="small" icon="add-o" @click="openImport">批量导入</van-button>
         <van-button type="default" size="small" icon="replay" @click="fetchList">刷新</van-button>
       </template>
     </DataToolbar>
@@ -98,6 +99,51 @@
     <van-dialog v-model:show="rejectVisible" title="驳回认证" show-cancel-button @confirm="confirmReject">
       <van-field v-model="rejectReason" type="textarea" rows="3" placeholder="请输入驳回原因（将展示给用户）" style="margin: 16px;" :rules="[{ required: true, message: '请填写驳回原因' }]" />
     </van-dialog>
+
+    <!-- 批量导入弹窗 -->
+    <van-popup v-model:show="importVisible" position="bottom" :style="{ height: '80%' }" round>
+      <div class="import-popup">
+        <div class="import-header">
+          <h3>批量导入认证人员</h3>
+        </div>
+
+        <div class="import-tips">
+          <p>1. 点击下方按钮下载 CSV 模板；</p>
+          <p>2. 按模板列填写（姓名、手机号必填），保存为 CSV(逗号分隔)；</p>
+          <p>3. 选择填好的文件并确认导入。导入的人员默认状态为「已通过」。</p>
+        </div>
+
+        <div class="import-btns">
+          <van-button type="default" icon="down" size="small" @click="downloadTemplate">下载模板</van-button>
+          <van-button type="primary" icon="plus" size="small" @click="triggerFile">选择文件</van-button>
+          <input ref="fileInput" type="file" accept=".csv,text/csv" style="display:none" @change="onFileChange" />
+        </div>
+
+        <div v-if="parsedRows.length" class="import-preview">
+          <div class="preview-title">已解析 {{ parsedRows.length }} 条记录（预览前 5 条）</div>
+          <van-cell-group inset>
+            <van-cell v-for="(row, i) in parsedRows.slice(0, 5)" :key="i" :title="row.real_name || '(缺姓名)'" :label="`${row.phone || '(缺手机号)'} ${row.org_name || ''}`" />
+          </van-cell-group>
+        </div>
+
+        <div v-if="importResult" class="import-result">
+          <van-cell-group inset>
+            <van-cell title="成功导入" :value="importResult.created + ' 条'" />
+            <van-cell title="已存在跳过" :value="importResult.skipped + ' 条'" />
+            <van-cell title="失败" :value="importResult.failed.length + ' 条'" />
+          </van-cell-group>
+          <div v-if="importResult.failed.length" class="fail-list">
+            <div v-for="(f, i) in importResult.failed" :key="i" class="fail-item">第{{ f.row }}行 {{ f.phone || '' }}：{{ f.reason }}</div>
+          </div>
+        </div>
+
+        <div class="import-actions">
+          <van-button type="primary" block :loading="importing" :disabled="!parsedRows.length" @click="confirmImport">
+            确认导入{{ parsedRows.length ? `（${parsedRows.length}条）` : '' }}
+          </van-button>
+        </div>
+      </div>
+    </van-popup>
   </div>
 </template>
 
@@ -127,6 +173,129 @@ const currentItem = ref(null)
 const rejectVisible = ref(false)
 const rejectReason = ref('')
 const rejectItemId = ref(null)
+
+// 批量导入
+const importVisible = ref(false)
+const importing = ref(false)
+const fileInput = ref(null)
+const parsedRows = ref([])
+const importResult = ref(null)
+
+// 模板列定义：表头 -> 字段
+const TEMPLATE_HEADERS = ['姓名', '手机号', '机构类型', '所属机构', '机构地址', '职务']
+const HEADER_FIELD_MAP = {
+  '姓名': 'real_name',
+  '手机号': 'phone',
+  '机构类型': 'org_type',
+  '所属机构': 'org_name',
+  '机构地址': 'org_address',
+  '职务': 'position'
+}
+
+const openImport = () => {
+  parsedRows.value = []
+  importResult.value = null
+  importVisible.value = true
+}
+
+const downloadTemplate = () => {
+  const sample = '张三,13800138000,医院,示例市第一人民医院,示例市示例路1号,主治医师'
+  // 加 BOM 保证 Excel 打开中文不乱码
+  const content = '\uFEFF' + TEMPLATE_HEADERS.join(',') + '\n' + sample + '\n'
+  const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = '认证人员导入模板.csv'
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
+
+const triggerFile = () => {
+  fileInput.value && fileInput.value.click()
+}
+
+// 简单 CSV 解析（支持双引号包裹的字段）
+const parseCsvLine = (line) => {
+  const result = []
+  let cur = ''
+  let inQuotes = false
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i]
+    if (inQuotes) {
+      if (ch === '"') {
+        if (line[i + 1] === '"') { cur += '"'; i++ } else { inQuotes = false }
+      } else { cur += ch }
+    } else {
+      if (ch === '"') inQuotes = true
+      else if (ch === ',') { result.push(cur); cur = '' }
+      else cur += ch
+    }
+  }
+  result.push(cur)
+  return result.map(s => s.trim())
+}
+
+const onFileChange = (e) => {
+  const file = e.target.files && e.target.files[0]
+  if (!file) return
+  importResult.value = null
+  const reader = new FileReader()
+  reader.onload = (ev) => {
+    try {
+      let text = ev.target.result || ''
+      text = text.replace(/^\uFEFF/, '')
+      const lines = text.split(/\r\n|\n|\r/).filter(l => l.trim() !== '')
+      if (lines.length < 2) {
+        showFailToast('文件内容为空或缺少数据行')
+        return
+      }
+      const headers = parseCsvLine(lines[0])
+      const fields = headers.map(h => HEADER_FIELD_MAP[h] || null)
+      const rows = []
+      for (let i = 1; i < lines.length; i++) {
+        const cols = parseCsvLine(lines[i])
+        const row = {}
+        fields.forEach((f, ci) => { if (f) row[f] = cols[ci] || '' })
+        if (row.real_name || row.phone) rows.push(row)
+      }
+      if (!rows.length) {
+        showFailToast('未解析到有效数据，请检查模板格式')
+        return
+      }
+      parsedRows.value = rows
+      showSuccessToast(`已解析 ${rows.length} 条`)
+    } catch (err) {
+      showFailToast('文件解析失败，请使用标准模板')
+    } finally {
+      e.target.value = ''
+    }
+  }
+  reader.onerror = () => showFailToast('文件读取失败')
+  reader.readAsText(file, 'UTF-8')
+}
+
+const confirmImport = async () => {
+  if (!parsedRows.value.length) return
+  importing.value = true
+  try {
+    const res = await axios.post('/api/medical/certifications/import', { items: parsedRows.value })
+    if (res.data?.success) {
+      importResult.value = res.data.data
+      showSuccessToast(`导入完成，成功 ${res.data.data.created} 条`)
+      parsedRows.value = []
+      fetchList()
+    } else {
+      showFailToast(res.data?.message || '导入失败')
+    }
+  } catch (err) {
+    showFailToast(err.response?.data?.message || '导入失败')
+  } finally {
+    importing.value = false
+  }
+}
 
 const getStatusLabel = (status) => statusMap[status] || status
 const getStatusType = (status) => statusTypeMap[status] || 'default'
@@ -314,6 +483,67 @@ onMounted(fetchList)
 
 .detail-actions {
   margin-top: 20px;
+  padding-bottom: 30px;
+}
+
+.import-popup {
+  padding: 20px;
+  overflow-y: auto;
+  height: 100%;
+}
+
+.import-header h3 {
+  margin: 0 0 12px;
+  font-size: 18px;
+}
+
+.import-tips {
+  background: #f7f8fa;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 13px;
+  color: var(--text-secondary, #86868b);
+  line-height: 1.7;
+}
+
+.import-tips p {
+  margin: 0;
+}
+
+.import-btns {
+  display: flex;
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.import-preview {
+  margin-bottom: 16px;
+}
+
+.preview-title {
+  font-size: 13px;
+  color: var(--text-secondary, #86868b);
+  margin-bottom: 8px;
+}
+
+.import-result {
+  margin-bottom: 16px;
+}
+
+.fail-list {
+  margin-top: 10px;
+  background: #fff2f0;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.fail-item {
+  font-size: 12px;
+  color: #ff3b30;
+  line-height: 1.6;
+}
+
+.import-actions {
   padding-bottom: 30px;
 }
 </style>

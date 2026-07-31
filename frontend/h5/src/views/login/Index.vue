@@ -3,7 +3,7 @@
     <van-nav-bar
       title="登录"
       left-arrow
-      @click-left="$router.back()"
+      @click-left="onBack"
     >
       <template #right>
         <van-icon name="wap-home-o" size="18" class="nav-home" @click="goHome" />
@@ -92,9 +92,11 @@ import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showSuccessToast, showFailToast } from 'vant'
 import axios, { authStorage } from '@/utils/http'
+import { smartBack } from '@/utils/miniprogram'
 
 const router = useRouter()
 const route = useRoute()
+const onBack = () => smartBack(router)
 
 const loading = ref(false)
 const autoLoginStatus = ref(false)

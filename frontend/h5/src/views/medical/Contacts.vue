@@ -1,6 +1,6 @@
 <template>
   <div class="contacts-page">
-    <van-nav-bar title="常用联系人" left-arrow @click-left="$router.back()" fixed placeholder>
+    <van-nav-bar title="常用联系人" left-arrow @click-left="onBack" fixed placeholder>
       <template #right>
         <van-icon name="plus" size="20" @click="showAddDialog = true" />
       </template>
@@ -36,9 +36,13 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { showSuccessToast, showFailToast, showConfirmDialog } from 'vant'
 import { useMedicalStore } from '@/stores/medical'
+import { smartBack } from '@/utils/miniprogram'
 
+const router = useRouter()
+const onBack = () => smartBack(router)
 const store = useMedicalStore()
 const contacts = computed(() => store.contacts)
 const refreshing = ref(false)

@@ -1,0 +1,80 @@
+<!--
+此文件为开发者工具生成，生成时间: 2026/7/22下午2:16:41
+使用方法：
+在 D:\low-altitude\develop\dkzhfw-platform\frontend\miniprogram-webview-test\pages\index\index.wxml 引入模板
+
+```
+<import src="index.skeleton.wxml"/>
+<template is="skeleton" wx:if="{{loading}}" />
+```
+
+在 D:\low-altitude\develop\dkzhfw-platform\frontend\miniprogram-webview-test\pages\index\index.wxss 中引入样式
+```
+@import "./index.skeleton.wxss";
+```
+
+更多详细信息可以参考文档：https://developers.weixin.qq.com/miniprogram/dev/devtools/skeleton.html
+-->
+<template name="skeleton">
+  <view class="sk-container">
+    <view class="container">
+      <view class="card">
+        <view class="card-title sk-transparent sk-text-14-2857-659 sk-text">H5 访问地址（baseURL）</view>
+        <view class="input sk-image" placeholder="如 http://localhost:5173 或 https://microapp.zndkfx.com" value="http://localhost:5173"></view>
+        <view class="preset-row">
+          <view class="preset-tag sk-transparent sk-text-14-2857-410 sk-text">本地(5173)</view>
+          <view class="preset-tag sk-transparent sk-text-14-2857-865 sk-text">生产域名</view>
+        </view>
+      </view>
+      <view class="card">
+        <view class="card-title sk-transparent sk-text-14-2857-838 sk-text">SSO 授权码（authcode，选填）</view>
+        <view class="input sk-image" placeholder="填写后访问页面会自动携带 ?authcode=" value="true"></view>
+        <view class="hint sk-transparent sk-text-14-2857-167 sk-text">留空则走 H5 内部普通登录；填写则模拟畅行温州免登。</view>
+      </view>
+      <view class="card">
+        <view class="card-title sk-transparent sk-text-14-2857-52 sk-text">页面入口</view>
+        <view class="link-list">
+          <view class="link-item" data-path="/">
+            <view class="link-name sk-transparent sk-text-14-2857-427 sk-text">服务大厅首页</view>
+            <view class="link-path sk-transparent sk-text-14-2857-757 sk-text">/</view>
+          </view>
+          <view class="link-item" data-path="/login">
+            <view class="link-name sk-transparent sk-text-14-2857-15 sk-text">登录页</view>
+            <view class="link-path sk-transparent sk-text-14-2857-599 sk-text">/login</view>
+          </view>
+          <view class="link-item" data-path="/medical/certification">
+            <view class="link-name sk-transparent sk-text-14-2857-34 sk-text">寄件人认证</view>
+            <view class="link-path sk-transparent sk-text-14-2857-504 sk-text">/medical/certification</view>
+          </view>
+          <view class="link-item" data-path="/medical/certification/status">
+            <view class="link-name sk-transparent sk-text-14-2857-194 sk-text">认证状态</view>
+            <view class="link-path sk-transparent sk-text-14-2857-549 sk-text">/medical/certification/status</view>
+          </view>
+          <view class="link-item" data-path="/medical/order/create">
+            <view class="link-name sk-transparent sk-text-14-2857-971 sk-text">医疗配送下单</view>
+            <view class="link-path sk-transparent sk-text-14-2857-667 sk-text">/medical/order/create</view>
+          </view>
+          <view class="link-item" data-path="/medical/order/map-select">
+            <view class="link-name sk-transparent sk-text-14-2857-505 sk-text">选择起降场</view>
+            <view class="link-path sk-transparent sk-text-14-2857-642 sk-text">/medical/order/map-select</view>
+          </view>
+          <view class="link-item" data-path="/medical/orders">
+            <view class="link-name sk-transparent sk-text-14-2857-785 sk-text">我的配送订单</view>
+            <view class="link-path sk-transparent sk-text-14-2857-345 sk-text">/medical/orders</view>
+          </view>
+          <view class="link-item" data-path="/medical/received">
+            <view class="link-name sk-transparent sk-text-14-2857-819 sk-text">寄给我的</view>
+            <view class="link-path sk-transparent sk-text-14-2857-694 sk-text">/medical/received</view>
+          </view>
+          <view class="link-item" data-path="/medical/contacts">
+            <view class="link-name sk-transparent sk-text-14-2857-760 sk-text">常用联系人</view>
+            <view class="link-path sk-transparent sk-text-14-2857-154 sk-text">/medical/contacts</view>
+          </view>
+        </view>
+      </view>
+      <view class="tip sk-transparent sk-text-18-7500-787 sk-text">
+        提示：微信开发者工具 → 详情 → 本地设置，勾选“不校验合法域名、web-view、TLS 版本以及 HTTPS 证书”，localhost 才能在 web-view 中加载。
+      </view>
+    </view>
+  </view>
+</template>

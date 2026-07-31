@@ -3,7 +3,7 @@
     <van-nav-bar
       title="服务详情"
       left-arrow
-      @click-left="$router.back()"
+      @click-left="onBack"
       fixed
       placeholder
       :border="!['9', '6'].includes(serviceId)"
@@ -300,9 +300,11 @@ import { useRoute, useRouter } from 'vue-router'
 import { showToast, showImagePreview } from 'vant'
 import HomeFloatButton from '@/components/HomeFloatButton.vue'
 import axios from 'axios'
+import { smartBack } from '@/utils/miniprogram'
 
 const route = useRoute()
 const router = useRouter()
+const onBack = () => smartBack(router)
 const serviceId = String(route.params.id)
 
 const loading = ref(true)
@@ -425,14 +427,16 @@ const onProjectClick = (item) => {
       router.push({ path: `/service-apply/${serviceId}`, query: { role } })
     }
   } else if (serviceId === '1' && item.name === '医疗运输') {
+    // 与「医疗配送」入口保持一致：进入认证/订单入口页
     router.push('/medical/certification/status')
   }
 }
 
 onMounted(() => {
-  // 医疗配送服务直接跳转到专属下单页
+  // 医疗配送无需服务介绍页，直接进入认证/订单入口页（认证状态页）
+  // 已认证：展示去下单/我的订单入口；未认证：引导先完成身份认证
   if (serviceId === '14') {
-    router.replace('/medical/order/create')
+    router.replace('/medical/certification/status')
     return
   }
   fetchServiceData()

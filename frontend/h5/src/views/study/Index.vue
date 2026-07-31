@@ -3,7 +3,7 @@
     <van-nav-bar
       title="低空研学"
       left-arrow
-      @click-left="$router.back()"
+      @click-left="onBack"
       fixed
       placeholder
     />
@@ -69,8 +69,10 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import HomeFloatButton from '@/components/HomeFloatButton.vue'
+import { smartBack } from '@/utils/miniprogram'
 
 const router = useRouter()
+const onBack = () => smartBack(router)
 const packages = ref([])
 
 onMounted(async () => {

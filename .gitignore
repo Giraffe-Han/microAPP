@@ -13,7 +13,15 @@ backend/cases.json
 backend/case_categories.json
 backend/services_config.json
 backend/study_showcase.json
+backend/reviews.json
+backend/medical_orders.json
+backend/medical_certifications.json
+backend/medical_contacts.json
+backend/medical_pads.json
+backend/medical_ratings.json
+backend/medical_sms_logs.json
 backend/public/uploads/
+backend/.image-cache/
 
 # ============================================
 # Node.js Dependencies

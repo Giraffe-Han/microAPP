@@ -1,6 +1,7 @@
 <template>
   <div class="certification-page">
-    <van-nav-bar title="寄件人认证" left-arrow @click-left="$router.back()" fixed placeholder />
+      <HomeFloatButton />
+    <van-nav-bar title="寄件人认证" left-arrow @click-left="onBack" fixed placeholder />
 
     <div class="form-container">
       <van-notice-bar
@@ -101,12 +102,15 @@
 </template>
 
 <script setup>
+import HomeFloatButton from '@/components/HomeFloatButton.vue'
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { showSuccessToast, showFailToast } from 'vant'
 import { useMedicalStore } from '@/stores/medical'
+import { smartBack } from '@/utils/miniprogram'
 
 const router = useRouter()
+const onBack = () => smartBack(router)
 const store = useMedicalStore()
 
 const form = reactive({

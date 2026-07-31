@@ -3,7 +3,7 @@
     <van-nav-bar
       :title="pageDisplayTitle"
       left-arrow
-      @click-left="$router.back()"
+      @click-left="onBack"
       fixed
       placeholder
     />
@@ -741,9 +741,11 @@ import { useRoute, useRouter } from 'vue-router'
 import { showToast, showDialog, showLoadingToast, closeToast, showFailToast } from 'vant'
 import axios from 'axios'
 import HomeFloatButton from '@/components/HomeFloatButton.vue'
+import { smartBack } from '@/utils/miniprogram'
 
 const route = useRoute()
 const router = useRouter()
+const onBack = () => smartBack(router)
 // 使用 computed 获取路由参数，保持响应式
 const serviceId = computed(() => String(route.params.id))
 

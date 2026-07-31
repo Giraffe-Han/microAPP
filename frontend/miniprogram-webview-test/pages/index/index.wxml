@@ -1,0 +1,46 @@
+<view class="container">
+  <view class="card">
+    <view class="card-title">H5 访问地址（baseURL）</view>
+    <input
+      class="input"
+      value="{{baseUrl}}"
+      placeholder="如 http://localhost:5173 或 https://microapp.zndkfx.com"
+      bindinput="onBaseUrlInput"
+    />
+    <view class="preset-row">
+      <view class="preset-tag" bindtap="useLocal">本地(5173)</view>
+      <view class="preset-tag" bindtap="useProd">生产域名</view>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="card-title">SSO 授权码（authcode，选填）</view>
+    <input
+      class="input"
+      value="{{authcode}}"
+      placeholder="填写后访问页面会自动携带 ?authcode="
+      bindinput="onAuthcodeInput"
+    />
+    <view class="hint">留空则走 H5 内部普通登录；填写则模拟畅行温州免登。</view>
+  </view>
+
+  <view class="card">
+    <view class="card-title">页面入口</view>
+    <view class="link-list">
+      <view
+        class="link-item"
+        wx:for="{{links}}"
+        wx:key="path"
+        data-path="{{item.path}}"
+        bindtap="openPage"
+      >
+        <view class="link-name">{{item.name}}</view>
+        <view class="link-path">{{item.path}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="tip">
+    提示：微信开发者工具 → 详情 → 本地设置，勾选“不校验合法域名、web-view、TLS 版本以及 HTTPS 证书”，localhost 才能在 web-view 中加载。
+  </view>
+</view>

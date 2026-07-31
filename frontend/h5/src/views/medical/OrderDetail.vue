@@ -1,6 +1,7 @@
 <template>
   <div class="order-detail-page">
-    <van-nav-bar title="订单详情" left-arrow @click-left="$router.back()" fixed placeholder />
+      <HomeFloatButton />
+    <van-nav-bar title="订单详情" left-arrow @click-left="onBack" fixed placeholder />
 
     <div v-if="order" class="detail-content">
       <!-- 状态卡片 -->
@@ -36,7 +37,7 @@
       <!-- 物品信息 -->
       <van-cell-group inset title="物品信息">
         <van-cell title="物品类型" :value="order.item.type_label" />
-        <van-cell title="重量" :value="`${order.item.weight} kg`" />
+        <van-cell title="数量" :value="order.item.quantity ? `${order.item.quantity}${order.item.unit}` : `${order.item.weight} kg`" />
         <van-cell title="温控要求" :value="order.item.temp_labels?.join(', ') || '无'" />
         <van-cell title="紧急程度" :value="order.urgency_label" />
         <van-cell v-if="order.item.description" title="备注" :label="order.item.description" />
@@ -81,13 +82,16 @@
 </template>
 
 <script setup>
+import HomeFloatButton from '@/components/HomeFloatButton.vue'
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { showSuccessToast, showFailToast, showConfirmDialog, showImagePreview } from 'vant'
 import { useMedicalStore } from '@/stores/medical'
+import { smartBack } from '@/utils/miniprogram'
 
 const router = useRouter()
 const route = useRoute()
+const onBack = () => smartBack(router)
 const store = useMedicalStore()
 const order = computed(() => store.currentOrder)
 

@@ -3,7 +3,7 @@
     <van-nav-bar
       :title="pkg.name"
       left-arrow
-      @click-left="$router.back()"
+      @click-left="onBack"
       fixed
       placeholder
       :border="false"
@@ -216,9 +216,11 @@ import { useRoute, useRouter } from 'vue-router'
 import { showImagePreview } from 'vant'
 import HomeFloatButton from '@/components/HomeFloatButton.vue'
 import axios from 'axios'
+import { smartBack } from '@/utils/miniprogram'
 
 const route = useRoute()
 const router = useRouter()
+const onBack = () => smartBack(router)
 const contentReady = ref(false)
 const pkg = ref(null)
 const activeSession = ref('am')

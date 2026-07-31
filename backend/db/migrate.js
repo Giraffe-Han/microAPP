@@ -2,12 +2,24 @@ const fs = require('fs');
 const path = require('path');
 const { USE_POSTGRES, ensureJsonStoreTable, query } = require('./pg');
 
+// 与 storage.js 中的 JSON_KEYS / 文件映射保持一致
 const DATA_KEYS = {
-    applications: path.join(__dirname, '..', 'data.json'),
-    cases: path.join(__dirname, '..', 'cases.json'),
     users: path.join(__dirname, '..', 'users.json'),
-    services_config: path.join(__dirname, '..', 'services_config.json')
+    cases: path.join(__dirname, '..', 'cases.json'),
+    case_categories: path.join(__dirname, '..', 'case_categories.json'),
+    applications: path.join(__dirname, '..', 'data.json'),
+    services_config: path.join(__dirname, '..', 'services_config.json'),
+    reviews: path.join(__dirname, '..', 'reviews.json'),
+    medical_orders: path.join(__dirname, '..', 'medical_orders.json'),
+    medical_certifications: path.join(__dirname, '..', 'medical_certifications.json'),
+    medical_pads: path.join(__dirname, '..', 'medical_pads.json'),
+    medical_contacts: path.join(__dirname, '..', 'medical_contacts.json'),
+    medical_ratings: path.join(__dirname, '..', 'medical_ratings.json'),
+    medical_sms_logs: path.join(__dirname, '..', 'medical_sms_logs.json')
 };
+
+// services_config 是对象，其余都是数组
+const OBJECT_KEYS = new Set(['services_config']);
 
 function readJsonFile(filePath, fallback) {
     try {
@@ -21,6 +33,7 @@ function readJsonFile(filePath, fallback) {
 }
 
 async function upsertJsonStore(key, data) {
+    // 直接传对象/数组，交给 pg 库序列化到 JSONB，避免双重序列化
     await query(
         `
         INSERT INTO json_store (key, data, updated_at)
@@ -28,7 +41,7 @@ async function upsertJsonStore(key, data) {
         ON CONFLICT (key)
         DO UPDATE SET data = EXCLUDED.data, updated_at = NOW();
         `,
-        [key, JSON.stringify(data)]
+        [key, data]
     );
 }
 
@@ -40,17 +53,15 @@ async function migrate() {
 
     await ensureJsonStoreTable();
 
-    const users = readJsonFile(DATA_KEYS.users, []);
-    const cases = readJsonFile(DATA_KEYS.cases, []);
-    const applications = readJsonFile(DATA_KEYS.applications, []);
-    const servicesConfig = readJsonFile(DATA_KEYS.services_config, {});
+    for (const [key, filePath] of Object.entries(DATA_KEYS)) {
+        const fallback = OBJECT_KEYS.has(key) ? {} : [];
+        const data = readJsonFile(filePath, fallback);
+        await upsertJsonStore(key, data);
+        const count = Array.isArray(data) ? `${data.length} 条` : '对象';
+        console.log(`[migrate] ${key} -> 已写入 (${count})`);
+    }
 
-    await upsertJsonStore('users', users);
-    await upsertJsonStore('cases', cases);
-    await upsertJsonStore('applications', applications);
-    await upsertJsonStore('services_config', servicesConfig);
-
-    console.log('[migrate] PostgreSQL json_store updated successfully.');
+    console.log('[migrate] PostgreSQL json_store 迁移完成。');
     process.exit(0);
 }
 

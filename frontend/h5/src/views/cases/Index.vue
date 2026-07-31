@@ -3,7 +3,7 @@
     <van-nav-bar
       title="案例展示"
       left-arrow
-      @click-left="$router.back()"
+      @click-left="onBack"
       fixed
       placeholder
     />
@@ -193,8 +193,13 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { showFailToast } from 'vant'
+import { smartBack } from '@/utils/miniprogram'
+
+const router = useRouter()
+const onBack = () => smartBack(router)
 
 // 将接口返回的媒体地址归一化为“同域可访问”的地址
 // - 兼容后端返回：http://127.0.0.1:8090/uploads/xxx、http://172.17.0.1:8090/uploads/xxx

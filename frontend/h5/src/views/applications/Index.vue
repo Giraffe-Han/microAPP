@@ -54,11 +54,53 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { showDialog, showFailToast } from 'vant'
 import axios, { authStorage } from '@/utils/http'
 
+const router = useRouter()
+
 // 申请数据
 const applications = ref([])
+
+// 通用服务申请
+const fetchServiceApplications = async (user) => {
+  const params = { userId: user.id };
+  const res = await axios.get('/api/list', { params })
+  return (res.data || []).map(item => ({
+    id: item.id,
+    applyNo: item.orderNo || item.id,
+    serviceName: item.serviceName || '未知服务',
+    status: item.status || '待处理',
+    contactName: item.contactName,
+    contactPhone: item.contactPhone,
+    applyTime: item.applyTime || new Date(item.createTime).toLocaleString(),
+    _type: 'service',
+    _ts: new Date(item.createTime || item.applyTime || 0).getTime() || 0
+  }))
+}
+
+// 医疗配送订单
+const fetchMedicalOrders = async () => {
+  try {
+    const res = await axios.get('/api/medical/orders/my', { params: { limit: 100 } })
+    return (res.data?.data || []).map(o => ({
+      id: o.id,
+      applyNo: o.order_no,
+      serviceName: '医疗配送',
+      status: o.status_label || o.status || '待处理',
+      contactName: o.sender?.name,
+      contactPhone: o.sender?.phone,
+      applyTime: o.created_at ? new Date(o.created_at).toLocaleString() : '',
+      _type: 'medical',
+      _ts: new Date(o.created_at || 0).getTime() || 0
+    }))
+  } catch (error) {
+    // 医疗订单获取失败（如未认证）不影响普通申请展示
+    console.error('获取医疗配送订单失败', error)
+    return []
+  }
+}
 
 const fetchData = async () => {
   try {
@@ -71,17 +113,12 @@ const fetchData = async () => {
         return;
     }
 
-    const params = { userId: user.id };
-    const res = await axios.get('/api/list', { params })
-    applications.value = res.data.map(item => ({
-      id: item.id,
-      applyNo: item.orderNo || item.id,
-      serviceName: item.serviceName || '未知服务',
-      status: item.status || '待处理',
-      contactName: item.contactName,
-      contactPhone: item.contactPhone,
-      applyTime: item.applyTime || new Date(item.createTime).toLocaleString()
-    }))
+    const [services, medical] = await Promise.all([
+      fetchServiceApplications(user),
+      fetchMedicalOrders()
+    ])
+    // 合并后按时间倒序
+    applications.value = [...services, ...medical].sort((a, b) => b._ts - a._ts)
   } catch (error) {
     showFailToast('获取申请记录失败')
     console.error(error)
@@ -93,10 +130,13 @@ onMounted(() => {
 })
 
 const getStatusType = (status) => {
-  // 简单的状态映射
-  if (status.includes('完成') || status.includes('成功')) return 'success'
-  if (status.includes('处理')) return 'primary'
-  if (status.includes('联系')) return 'warning'
+  if (!status) return 'default'
+  // 状态映射（兼容通用服务申请与医疗配送订单标签）
+  if (status.includes('完成') || status.includes('成功') || status.includes('签收') || status.includes('送达')) return 'success'
+  if (status.includes('取消')) return 'default'
+  if (status.includes('异常') || status.includes('失败')) return 'danger'
+  if (status.includes('联系') || status.includes('待')) return 'warning'
+  if (status.includes('处理') || status.includes('配送') || status.includes('接单')) return 'primary'
   return 'default'
 }
 
@@ -105,6 +145,11 @@ const getStatusText = (status) => {
 }
 
 const viewDetail = (app) => {
+  // 医疗配送订单跳转到订单详情页
+  if (app._type === 'medical') {
+    router.push(`/medical/orders/${app.id}`)
+    return
+  }
   showDialog({
     title: '申请详情',
     message: `

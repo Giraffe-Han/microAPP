@@ -35,7 +35,7 @@ public class TestComm {
 
 
 
-        sendObject.sethDataMap(hDataMap);
+        sendObject.sethDataMap(hDataMap);2
         sendObject.setDgKey(dgKey);
         sendObject.setSignPrivateKey(signPrivateKey);
         return sendObject;

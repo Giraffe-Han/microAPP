@@ -266,6 +266,12 @@ export const useMedicalStore = defineStore('medical', {
       return res.data
     },
 
+    // 批量导入寄件人认证人员
+    async importCertifications(items) {
+      const res = await axios.post('/api/medical/certifications/import', { items })
+      return res.data
+    },
+
     // 起降场管理
     async fetchAdminPads() {
       try {

@@ -1,6 +1,7 @@
 <template>
   <div class="certification-status-page">
-    <van-nav-bar title="认证状态" left-arrow @click-left="$router.back()" fixed placeholder />
+      <HomeFloatButton />
+    <van-nav-bar title="认证状态" left-arrow @click-left="onBack" fixed placeholder />
 
     <div class="status-container" v-if="!loading">
       <!-- 未认证 -->
@@ -57,9 +58,14 @@
 </template>
 
 <script setup>
+import HomeFloatButton from '@/components/HomeFloatButton.vue'
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useMedicalStore } from '@/stores/medical'
+import { smartBack } from '@/utils/miniprogram'
 
+const router = useRouter()
+const onBack = () => smartBack(router)
 const store = useMedicalStore()
 const loading = ref(true)
 const certification = ref(null)

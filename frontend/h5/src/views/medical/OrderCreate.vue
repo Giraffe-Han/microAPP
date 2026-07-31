@@ -1,8 +1,9 @@
 <template>
   <div class="order-create-page">
-    <van-nav-bar title="医疗配送下单" left-arrow @click-left="$router.back()" fixed placeholder />
+      <HomeFloatButton />
+    <van-nav-bar title="医疗配送下单" left-arrow @click-left="onBack" fixed placeholder />
 
-    <van-form @submit="onSubmit" ref="formRef">
+    <van-form @submit="onSubmit" @failed="onFailed" ref="formRef">
       <!-- 寄件人信息 -->
       <van-cell-group inset title="寄件人信息">
         <van-field v-model="form.sender_name" label="姓名" placeholder="寄件人姓名" :rules="[{ required: true }]">
@@ -34,18 +35,27 @@
 
       <!-- 物品信息 -->
       <van-cell-group inset title="配送物品信息">
-        <van-field name="item_type" label="物品类型" :rules="[{ required: true, message: '请选择物品类型' }]">
-          <template #input>
-            <van-radio-group v-model="form.item_type" direction="horizontal">
-              <van-radio name="blood">血液制品</van-radio>
-              <van-radio name="sample">检验样本</van-radio>
-              <van-radio name="medicine">药品制剂</van-radio>
-              <van-radio name="equipment">医疗器械</van-radio>
-              <van-radio name="other">其他</van-radio>
-            </van-radio-group>
-          </template>
-        </van-field>
-        <van-field v-model="form.item_weight" label="预估重量(kg)" type="number" placeholder="0.1-10kg" :rules="[{ required: true }, { validator: v => v >= 0.1 && v <= 10, message: '重量需在0.1-10kg之间' }]" />
+        <van-field
+          v-model="itemTypeLabel"
+          name="item_type"
+          label="物品类型"
+          placeholder="点击选择物品类型"
+          is-link
+          readonly
+          @click="showTypePicker = true"
+          :rules="[{ required: true, message: '请选择物品类型' }]"
+        />
+        <van-field v-model="form.item_quantity" label="数量" type="digit" placeholder="请输入数量" :rules="[{ required: true, message: '请输入数量' }, { validator: v => v >= 1 && v <= 999, message: '数量需在1-999之间' }]" />
+        <van-field
+          v-model="form.item_unit"
+          name="item_unit"
+          label="单位"
+          placeholder="点击选择单位"
+          is-link
+          readonly
+          @click="showUnitPicker = true"
+          :rules="[{ required: true, message: '请选择单位' }]"
+        />
         <van-field name="temp" label="温控要求">
           <template #input>
             <van-checkbox-group v-model="form.temp_requirements" direction="horizontal">
@@ -95,7 +105,7 @@
       </van-cell-group>
 
       <div class="submit-section">
-        <van-button type="danger" block round native-type="submit" :loading="submitting" size="large">
+        <van-button type="danger" block round native-type="button" @click="manualSubmit" :loading="submitting" size="large">
           确认下单
         </van-button>
       </div>
@@ -117,25 +127,40 @@
         <van-empty v-if="!pads.length" description="暂无可用起降场" />
       </div>
     </van-action-sheet>
+
+    <!-- 物品类型选择 -->
+    <van-popup v-model:show="showTypePicker" position="bottom" round>
+      <van-picker :columns="typeColumns" @confirm="onTypeConfirm" @cancel="showTypePicker = false" title="选择物品类型" />
+    </van-popup>
+
+    <!-- 单位选择 -->
+    <van-popup v-model:show="showUnitPicker" position="bottom" round>
+      <van-picker :columns="unitColumns" @confirm="onUnitConfirm" @cancel="showUnitPicker = false" title="选择单位" />
+    </van-popup>
   </div>
 </template>
 
 <script setup>
+import HomeFloatButton from '@/components/HomeFloatButton.vue'
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { showSuccessToast, showFailToast } from 'vant'
 import { useMedicalStore } from '@/stores/medical'
 import axios from '@/utils/http'
+import { smartBack } from '@/utils/miniprogram'
 
 const router = useRouter()
 const route = useRoute()
+const onBack = () => smartBack(router)
 const store = useMedicalStore()
+
+const formRef = ref(null)
 
 const form = reactive({
   sender_name: '', sender_phone: '', sender_org: '',
   receiver_name: '', receiver_phone: '', receiver_org: '',
   departure_pad_id: '', arrival_pad_id: '',
-  item_type: '', item_weight: '', temp_requirements: [],
+  item_type: '', item_quantity: '', item_unit: '', temp_requirements: [],
   item_images: [], item_description: '', urgency: ''
 })
 
@@ -153,6 +178,42 @@ const showPadPicker = ref(false)
 const contactTarget = ref('sender')
 const padTarget = ref('departure')
 const padPickerTitle = computed(() => padTarget.value === 'departure' ? '选择出发起降场' : '选择到达起降场')
+
+// 物品类型 / 单位 滚轮选择
+const itemTypeLabel = ref('')
+const showTypePicker = ref(false)
+const showUnitPicker = ref(false)
+const typeColumns = [
+  { text: '血液制品', value: 'blood' },
+  { text: '检验样本', value: 'sample' },
+  { text: '药品制剂', value: 'medicine' },
+  { text: '医疗器械', value: 'equipment' },
+  { text: '其他', value: 'other' }
+]
+const unitColumns = [
+  { text: '件', value: '件' },
+  { text: '箱', value: '箱' },
+  { text: '袋', value: '袋' },
+  { text: '盒', value: '盒' },
+  { text: '支', value: '支' },
+  { text: '瓶', value: '瓶' },
+  { text: '份', value: '份' }
+]
+
+function onTypeConfirm({ selectedOptions }) {
+  if (selectedOptions && selectedOptions[0]) {
+    form.item_type = selectedOptions[0].value
+    itemTypeLabel.value = selectedOptions[0].text
+  }
+  showTypePicker.value = false
+}
+
+function onUnitConfirm({ selectedOptions }) {
+  if (selectedOptions && selectedOptions[0]) {
+    form.item_unit = selectedOptions[0].value
+  }
+  showUnitPicker.value = false
+}
 
 onMounted(async () => {
   // 检查认证状态
@@ -182,6 +243,9 @@ onMounted(async () => {
         const arr = pads.value.find(p => p.id === data.arrival_pad_id)
         if (dep) departureName.value = dep.name
         if (arr) arrivalName.value = arr.name
+        // 回填物品类型标签
+        const t = typeColumns.find(c => c.value === form.item_type)
+        if (t) itemTypeLabel.value = t.text
         sessionStorage.removeItem('reorderData')
       }
     } catch (e) { /* ignore */ }
@@ -256,12 +320,19 @@ async function onItemImageUpload(file) {
   }
 }
 
+function manualSubmit() {
+  formRef.value?.submit()
+}
+
+function onFailed() {
+  showFailToast('请检查并填写完整必填项')
+}
+
 async function onSubmit() {
   if (form.item_images.length < 1) {
     showFailToast('请至少上传1张物品照片')
     return
   }
-
   submitting.value = true
   receiverNotCertified.value = false
   try {

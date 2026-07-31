@@ -1,6 +1,7 @@
 <template>
   <div class="orders-page">
-    <van-nav-bar title="寄给我的" left-arrow @click-left="$router.back()" fixed placeholder />
+      <HomeFloatButton />
+    <van-nav-bar title="寄给我的" left-arrow @click-left="onBack" fixed placeholder />
 
     <van-tabs v-model:active="activeTab" sticky @change="onTabChange">
       <van-tab title="全部" name="" />
@@ -22,7 +23,7 @@
             <span>{{ order.route.arrival_name }}</span>
           </div>
           <div class="order-info">
-            <span>{{ order.item.type_label }} | {{ order.item.weight }}kg</span>
+            <span>{{ order.item.type_label }} | {{ order.item.quantity ? order.item.quantity + order.item.unit : order.item.weight + 'kg' }}</span>
             <span class="sender-info">寄件人: {{ order.sender.name }}</span>
           </div>
           <div class="order-footer">
@@ -39,12 +40,15 @@
 </template>
 
 <script setup>
+import HomeFloatButton from '@/components/HomeFloatButton.vue'
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { showSuccessToast, showFailToast, showConfirmDialog } from 'vant'
 import { useMedicalStore } from '@/stores/medical'
+import { smartBack } from '@/utils/miniprogram'
 
 const router = useRouter()
+const onBack = () => smartBack(router)
 const store = useMedicalStore()
 
 const orders = ref([])

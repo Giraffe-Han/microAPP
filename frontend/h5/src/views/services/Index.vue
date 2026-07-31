@@ -115,7 +115,7 @@ const goToDetail = (id) => {
   } else if (id === 9) {
     router.push('/study')
   } else if (id === 14) {
-    router.push('/medical/order/create')
+    router.push('/medical/certification/status')
   } else if (id === 'reviews') {
     router.push('/reviews')
   } else {

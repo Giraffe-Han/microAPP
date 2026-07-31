@@ -1,0 +1,8 @@
+.empty {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #969799;
+  font-size: 28rpx;
+}

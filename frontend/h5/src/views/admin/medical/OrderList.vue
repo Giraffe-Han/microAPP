@@ -1,4 +1,4 @@
-<template>
+ <template>
   <div class="medical-order-list">
     <DataToolbar>
       <template #filters>
@@ -109,7 +109,7 @@
         <van-cell-group title="物品信息" inset>
           <van-cell title="物品类型" :value="currentOrder.item_type_label || currentOrder.item_type" />
           <van-cell title="物品名称" :value="currentOrder.item_name || '-'" />
-          <van-cell title="重量" :value="currentOrder.weight ? currentOrder.weight + 'kg' : '-'" />
+          <van-cell title="数量" :value="currentOrder.item?.quantity ? `${currentOrder.item.quantity}${currentOrder.item.unit || ''}` : (currentOrder.item?.weight ? currentOrder.item.weight + 'kg' : (currentOrder.weight ? currentOrder.weight + 'kg' : '-'))" />
           <van-cell title="温控要求" :value="currentOrder.temperature_control ? '是' : '否'" />
           <van-cell v-if="currentOrder.remark" title="备注" :value="currentOrder.remark" />
         </van-cell-group>
