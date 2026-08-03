@@ -23,7 +23,11 @@
             class="service-grid-item"
             @click="goToDetail(service.id)"
           >
-            <div class="service-icon-large" :style="{ background: service.color }">
+            <div
+              class="service-icon-large"
+              :class="{ 'icon-outlined': service.color === '#ffffff' }"
+              :style="{ background: service.color }"
+            >
               <van-icon :name="service.icon" size="28" color="#ffffff" />
             </div>
             <h3 class="service-title">{{ service.name }}</h3>
@@ -57,7 +61,7 @@ const rawServices = [
   { id: 11, name: '金融服务', description: '设备保险、飞行护航', icon: '/icons/finance.svg', color: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)' },
   { id: 12, name: '维修服务', description: '故障维修、定期保养', icon: 'setting-o', color: 'linear-gradient(135deg, #38bdf8 0%, #3b82f6 100%)' },
   { id: 13, name: '无人机赛事', description: '竞技比赛、赛事组织', icon: '/icons/competition.svg', color: 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)' },
-  { id: 14, name: '医疗配送', description: '无人机医疗物资配送', icon: 'shield-o', color: 'linear-gradient(135deg, #34d399 0%, #059669 100%)' },
+  { id: 14, name: '医疗配送', description: '无人机医疗物资配送', icon: '/icons/medical-cross.svg', color: '#E60012' },
   { id: 'reviews', name: '服务评价', description: '用户评价、服务反馈', icon: 'comment-o', color: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' }
 ]
 
@@ -212,6 +216,16 @@ const goToDetail = (id) => {
 /* 强制 SVG 图片图标变白 */
 .service-icon-large :deep(.van-icon__image) {
   filter: brightness(0) invert(1);
+}
+
+/* 白底图标增加浅边框，避免与白色卡片融为一体 */
+.service-icon-large.icon-outlined {
+  border: 1px solid #f0f0f0;
+}
+
+/* 白底红十字图标保留原色 */
+.service-icon-large :deep(.van-icon__image[src*="medical-cross"]) {
+  filter: none;
 }
 
 .service-title {

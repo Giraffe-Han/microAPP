@@ -207,11 +207,11 @@ const quickServices = ref([
   { id: 8, name: '无人机外卖', icon: '/icons/delivery.svg', color: 'linear-gradient(135deg, #38bdf8 0%, #3b82f6 100%)' }, // 淡蓝色
   { id: 1, name: '无人机物流', icon: '/icons/logistics-drone.svg', color: 'linear-gradient(135deg, #06b6d4 0%, #2563eb 100%)' }, // 海蓝色
   { id: 10, name: '无人机销售', icon: '/icons/shop.svg', color: 'linear-gradient(135deg, #fbbf24 0%, #ea580c 100%)' }, // 橙色
-  { id: 'reviews', name: '服务评价', icon: 'comment-o', color: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' }, // 粉红色
+  { id: 14, name: '医疗配送', icon: '/icons/medical-cross.svg', color: '#E60012' }, // 红底白十字
   { id: 6, name: '飞手培训', icon: '/icons/training-v2.svg', color: 'linear-gradient(135deg, #fbbf24 0%, #ea580c 100%)' }, // 橙色
   { id: 9, name: '低空研学', icon: '/icons/study.svg', color: 'linear-gradient(135deg, #06b6d4 0%, #2563eb 100%)' }, // 海蓝色
   { id: 13, name: '无人机赛事', icon: '/icons/competition.svg', color: 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)' }, // 红色渐变
-  { id: 14, name: '医疗配送', icon: 'shield-o', color: 'linear-gradient(135deg, #34d399 0%, #059669 100%)' }, // 绿色渐变
+  { id: 'reviews', name: '服务评价', icon: 'comment-o', color: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' }, // 粉红色
   { id: 2, name: '政务服务', icon: 'eye-o', color: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)' }, // 蓝紫色
   { id: 3, name: '无人机托管', icon: '/icons/maintenance.svg', color: 'linear-gradient(135deg, #06b6d4 0%, #2563eb 100%)' }, // 归类为海蓝色
   { id: 5, name: '无人机表演', icon: '/icons/drone-show-v2.svg', color: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)' }, // 归类为蓝紫色
@@ -477,6 +477,11 @@ const goToDelivery = () => {
 /* 强制 SVG 图片图标变白 */
 .function-icon-wrapper :deep(.van-icon__image) {
   filter: brightness(0) invert(1);
+}
+
+/* 白底红十字图标保留原色 */
+.function-icon-wrapper :deep(.van-icon__image[src*="medical-cross"]) {
+  filter: none;
 }
 
 .function-name {
