@@ -62,7 +62,7 @@
           <span @click="goRegister">还没有账号？立即注册</span>
         </div>
 
-        <div class="wechat-login">
+        <div v-if="loginSettings.enableWechatLogin" class="wechat-login">
           <van-divider>其他登录方式</van-divider>
           <div class="wechat-btn-wrapper">
             <van-button
@@ -79,7 +79,7 @@
           </div>
         </div>
 
-        <div class="sso-tip">
+        <div v-if="loginSettings.enableSsoLogin" class="sso-tip">
           <p>从畅行温州平台进入将自动登录</p>
         </div>
       </template>
@@ -101,6 +101,12 @@ const onBack = () => smartBack(router)
 const loading = ref(false)
 const autoLoginStatus = ref(false)
 const wechatLoading = ref(false)
+
+// 登录方式可见性配置
+const loginSettings = ref({
+  enableWechatLogin: false,
+  enableSsoLogin: false
+})
 
 const loginForm = ref({
   username: '',
@@ -228,6 +234,13 @@ const ssoLogin = async (code) => {
 }
 
 onMounted(() => {
+  // 获取登录方式可见性配置
+  axios.get('/api/system-settings/login').then(res => {
+    if (res.data?.success) {
+      loginSettings.value = res.data.data
+    }
+  }).catch(() => {})
+
   // 检查是否是微信授权回调
   handleWechatCallback()
   

@@ -38,6 +38,7 @@ const titleMap = {
   '/admin/users': '用户管理',
   '/admin/competition': '赛事管理',
   '/admin/config': '服务配置',
+  '/admin/settings': '系统设置',
   '/admin/reviews': '评价管理',
   '/admin/medical/orders': '配送订单管理',
   '/admin/medical/certifications': '认证审核',

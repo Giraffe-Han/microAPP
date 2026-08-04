@@ -52,6 +52,7 @@ const allMenus = [
   { path: '/admin/users', label: '用户管理', icon: '◉', roles: ['admin'] },
   { path: '/admin/competition', label: '赛事管理', icon: '◆', roles: ['admin', 'dsl_admin'] },
   { path: '/admin/config', label: '服务配置', icon: '◇', roles: ['admin', 'study_admin'] },
+  { path: '/admin/settings', label: '系统设置', icon: '⚙', roles: ['admin'] },
   { path: '/admin/reviews', label: '评价管理', icon: '★', roles: ['admin', 'study_admin'] },
   // 医疗配送管理
   { path: '/admin/medical/orders', label: '配送订单管理', icon: '✚', roles: ['admin'], group: '医疗配送' },

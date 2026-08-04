@@ -1129,6 +1129,57 @@ app.post('/api/services/config', authRequired, roleRequired(['admin', 'dsl_admin
     }
 });
 
+// ─── System Settings API ─────────────────────────────────────────────
+
+// 公开接口：登录页获取登录方式可见性设置（无需认证）
+app.get('/api/system-settings/login', async (req, res) => {
+    const config = await readServicesConfig();
+    const system = config._system || {};
+    res.json({
+        success: true,
+        data: {
+            enableWechatLogin: system.enableWechatLogin !== false, // 默认开启
+            enableSsoLogin: system.enableSsoLogin !== false        // 默认开启
+        }
+    });
+});
+
+// 管理端：获取系统设置
+app.get('/api/admin/system-settings', authRequired, roleRequired(['admin']), async (req, res) => {
+    const config = await readServicesConfig();
+    const system = config._system || {};
+    res.json({
+        success: true,
+        data: {
+            enableWechatLogin: system.enableWechatLogin !== false,
+            enableSsoLogin: system.enableSsoLogin !== false
+        }
+    });
+});
+
+// 管理端：更新系统设置
+app.post('/api/admin/system-settings', authRequired, roleRequired(['admin']), async (req, res) => {
+    const { enableWechatLogin, enableSsoLogin } = req.body;
+    const config = await readServicesConfig();
+
+    if (!config._system) {
+        config._system = {};
+    }
+
+    if (typeof enableWechatLogin === 'boolean') {
+        config._system.enableWechatLogin = enableWechatLogin;
+    }
+    if (typeof enableSsoLogin === 'boolean') {
+        config._system.enableSsoLogin = enableSsoLogin;
+    }
+
+    if (await writeServicesConfig(config)) {
+        res.json({ success: true, message: '系统设置更新成功' });
+    } else {
+        res.status(500).json({ success: false, message: '保存系统设置失败' });
+    }
+});
+
 // ─── Dashboard Stats API ─────────────────────────────────────────────
 app.get('/api/admin/stats', authRequired, roleRequired(['admin', 'dsl_admin', 'study_admin']), async (req, res) => {
     try {

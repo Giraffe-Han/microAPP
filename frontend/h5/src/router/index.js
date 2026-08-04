@@ -181,6 +181,12 @@ const routes = [
         meta: { title: '服务配置' }
       },
       {
+        path: 'settings',
+        name: 'AdminSettings',
+        component: () => import('@/views/admin/config/SystemSettings.vue'),
+        meta: { title: '系统设置' }
+      },
+      {
         path: 'reviews',
         name: 'AdminReviews',
         component: () => import('@/views/admin/reviews/ReviewList.vue'),
