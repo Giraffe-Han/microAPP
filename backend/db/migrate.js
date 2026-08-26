@@ -1,3 +1,5 @@
+require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
+
 const fs = require('fs');
 const path = require('path');
 const { USE_POSTGRES, ensureJsonStoreTable, query } = require('./pg');
@@ -33,15 +35,16 @@ function readJsonFile(filePath, fallback) {
 }
 
 async function upsertJsonStore(key, data) {
-    // 直接传对象/数组，交给 pg 库序列化到 JSONB，避免双重序列化
+    // pg 库会把 JS 数组序列化成 Postgres 数组字面量，导致 JSONB 解析失败，
+    // 因此统一 JSON.stringify 后显式转换为 jsonb（单次序列化，不会存成字符串）
     await query(
         `
         INSERT INTO json_store (key, data, updated_at)
-        VALUES ($1, $2, NOW())
+        VALUES ($1, $2::jsonb, NOW())
         ON CONFLICT (key)
         DO UPDATE SET data = EXCLUDED.data, updated_at = NOW();
         `,
-        [key, data]
+        [key, JSON.stringify(data)]
     );
 }
 

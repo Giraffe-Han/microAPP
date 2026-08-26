@@ -585,7 +585,9 @@ app.post('/api/sso/login', async (req, res) => {
             };
             users.push(user);
         } else {
+            // 已有账号首次通过平台登录：补齐平台会员号与来源，便于后续按平台会员号定位
             user.platformMemberNo = user.platformMemberNo || platformMemberNo;
+            user.platformSource = user.platformSource || '畅行温州';
             if (!user.phone && member.mobilephone) user.phone = member.mobilephone;
             if (!user.name && (member.nickname || member.name)) {
                 user.name = member.nickname || member.name;

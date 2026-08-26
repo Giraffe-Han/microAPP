@@ -37,10 +37,14 @@ SHA1摘要: 12db3ed8a6cc0ea1a0786771680d071aedaaed2b
 
 ### 3. SM2签名
 
-使用私钥对SHA1摘要进行SM2签名：
-- `hash: false` - 已经做过SHA1，不需要再hash
-- `userId: joininstid` - 即 "00000015"
-- 输出为Base64格式
+对SHA1摘要的**原始20字节**做SM2签名：
+- `hash: true` - SM2 标准要求签的是 `SM3(Z_A || M)`，Z_A 杂凑必须做，由 sm-crypto 内部完成
+- `userId: joininstid` - 即 "00000015"，**传明文**，sm-crypto 内部会自行 utf8ToHex
+- `der: false` - 输出裸 r||s 共64字节，再转 Base64
+
+> ⚠️ 2026-08-04 更正：此前记录的 `hash: false` + `userId` 预先转 hex 的做法是错误的，
+> 正是平台返回 `SB997 签名错误` 的根因。已用文档 6.1.4 示例的期望签名验证，
+> 仅上述参数组合能验签通过，回归测试见 `backend/test-sm2-compat.js`。
 
 ## 实际请求示例
 
@@ -87,13 +91,21 @@ SHA1摘要: 12db3ed8a6cc0ea1a0786771680d071aedaaed2b
 
 2. **SM2签名参数是否一致？**
    - userId: 我们使用 `joininstid` 的值 ("00000015") 作为SM2签名的userId
-   - 签名输入: SHA1摘要的hex字符串
+   - 签名输入: SHA1摘要的原始20字节，并做 SM3(Z_A || M) 杂凑
    - 签名格式: raw r||s (64字节/128字符hex)，转Base64
 
-3. **能否提供验签失败的具体原因？**
-   - 是公钥不匹配？
-   - 是签名格式不对？
-   - 还是签名内容构建方式不对？
+## SB997 根因（2026-08-04 已定位并修复）
+
+`SB997 签名错误` 与公钥注册、SM4 加密均无关，是 Node 端 sm-crypto 调用方式错误。
+以同事 PHP 版实现（`docs/接入文档/CxwzPay.php`，已在 dev 环境实测通过）为基准比对后确认：
+
+| 错误写法 | 后果 |
+|---------|------|
+| `doSignature(sha1Hex, ...)` 传 hex 字符串 | 库对字符串会做 utf8ToHex，实际签的是40字节ASCII文本而非20字节摘要 |
+| `hash: false` | 跳过 SM2 标准的 SM3(Z_A \|\| M)，与 Java/PHP 端不一致 |
+| `userId` 预先转 hex | 库内部 `getHash()` 还会再 utf8ToHex 一次，Z_A 计算错误 |
+
+用文档 6.1.4 示例的期望签名 `TchciWUHCtM/...` 交叉验签，四种参数组合中只有下面这一种能通过。
 
 ## 签名代码参考 (Node.js)
 
@@ -101,18 +113,19 @@ SHA1摘要: 12db3ed8a6cc0ea1a0786771680d071aedaaed2b
 const crypto = require('crypto');
 const { sm2 } = require('sm-crypto');
 
-// 构建签名内容
+// 构建签名内容（不含 sign）
 const signContent = Object.keys(body)
   .sort()
   .map(key => `${key}${body[key]}`)
   .join('');
 
-// SHA1摘要
-const sha1Hex = crypto.createHash('sha1').update(signContent).digest('hex');
+// SHA1 摘要 —— 取原始20字节，不能用 hex 字符串
+const digest = crypto.createHash('sha1').update(signContent, 'utf8').digest();
 
-// SM2签名
-const signature = sm2.doSignature(sha1Hex, privateKey, {
-  hash: false,
+// SM2 签名：字节数组入参；hash:true 由库内部做 SM3(Z_A || M)；userId 传明文
+const signature = sm2.doSignature(Array.from(digest), privateKey, {
+  hash: true,
+  der: false,
   userId: joininstid
 });
 
@@ -120,6 +133,8 @@ const signature = sm2.doSignature(sha1Hex, privateKey, {
 const signBase64 = Buffer.from(signature, 'hex').toString('base64');
 ```
 
+回归测试：`node backend/test-sm2-compat.js`
+
 ## 日期
 
-2026-01-21
+2026-01-21（2026-08-04 更正签名参数并定位 SB997 根因）

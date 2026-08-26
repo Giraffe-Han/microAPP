@@ -186,16 +186,16 @@ async function writeJsonStore(key, data) {
         }
     }
 
-    // Pass data directly to pg library - it handles JSONB serialization automatically
-    // Note: pg library converts JS objects/arrays to JSON for JSONB columns
+    // pg 库会把 JS 数组序列化成 Postgres 数组字面量，导致 JSONB 解析失败，
+    // 因此统一 JSON.stringify 后显式转换为 jsonb（单次序列化，不会存成字符串）
     await query(
         `
         INSERT INTO json_store (key, data, updated_at)
-        VALUES ($1, $2, NOW())
+        VALUES ($1, $2::jsonb, NOW())
         ON CONFLICT (key)
         DO UPDATE SET data = EXCLUDED.data, updated_at = NOW();
         `,
-        [key, data]
+        [key, JSON.stringify(data)]
     );
     return true;
 }

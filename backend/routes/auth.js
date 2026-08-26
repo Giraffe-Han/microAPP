@@ -332,7 +332,12 @@ router.post('/sso/verify', asyncHandler(async (req, res) => {
   try {
     const memberInfo = await queryMemberByAuthCode(authcode);
 
-    if (!memberInfo || !memberInfo.phone) {
+    // 平台返回字段为 pltmemberno / mobilephone / nickname，不是 phone / name
+    const platformMemberNo = memberInfo?.pltmemberno
+      || memberInfo?.authmemberno
+      || memberInfo?.mobilephone;
+
+    if (!platformMemberNo) {
       return res.status(401).json({
         success: false,
         message: 'SSO 验证失败'
@@ -340,26 +345,35 @@ router.post('/sso/verify', asyncHandler(async (req, res) => {
     }
 
     const users = await readUsersDB();
-    let user = users.find(u => u.phone === memberInfo.phone);
+    // 优先按平台会员号匹配，手机号可能变更
+    let user = users.find(u => u.platformMemberNo === platformMemberNo);
+    if (!user && memberInfo.mobilephone) {
+      user = users.find(u => u.phone === memberInfo.mobilephone);
+    }
 
     if (!user) {
-      // 自动创建用户
+      // 自动创建用户（免密账号，无密码）
       user = {
         id: randomUUID(),
-        phone: memberInfo.phone,
-        username: memberInfo.phone,
+        phone: memberInfo.mobilephone || '',
+        username: memberInfo.mobilephone || String(platformMemberNo),
         password: '',
         passwordHash: '',
-        name: memberInfo.name || memberInfo.phone,
+        name: memberInfo.nickname || memberInfo.name || `User${String(platformMemberNo).slice(-4)}`,
         role: 'user',
-        avatar: memberInfo.avatar || '',
+        avatar: '',
+        platformMemberNo,
+        platformSource: '畅行温州',
         createTime: new Date().toISOString()
       };
 
       users.push(user);
       await writeUsersDB(users);
 
-      logger.info('SSO auto registered user', { userId: user.id, phone: user.phone });
+      logger.info('SSO auto registered user', { userId: user.id, platformMemberNo });
+    } else {
+      user.platformMemberNo = user.platformMemberNo || platformMemberNo;
+      if (!user.phone && memberInfo.mobilephone) user.phone = memberInfo.mobilephone;
     }
 
     const tokens = generateTokens(user);
