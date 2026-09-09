@@ -9,6 +9,7 @@
           <text class="arrow">›</text>
         </view>
       </view>
+      <text class="avatar-tip" style="display:block;font-size:12px;color:#969799;padding:8px 16px;line-height:1.5;">拍照/上传仅用于设置您的个人头像，不会用于其他用途</text>
       <view class="list-item">
         <text class="label">昵称</text>
         <input class="input" v-model="form.name" placeholder="请输入昵称" />

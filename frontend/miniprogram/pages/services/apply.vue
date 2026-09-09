@@ -106,6 +106,7 @@
                     <text class="plus">+</text>
                   </view>
                 </view>
+                <text class="upload-tip" style="font-size:12px;color:#969799;margin-top:8px;line-height:1.5;">拍照/上传仅用于本次无人机物流配送申请的货物核验，不会用于其他用途</text>
               </view>
             </template>
 
@@ -281,6 +282,7 @@
                     <text class="plus">+</text>
                   </view>
                 </view>
+                <text class="upload-tip" style="font-size:12px;color:#969799;margin-top:8px;line-height:1.5;">拍照/上传仅用于本次维修/保养需求的设备核验，不会用于其他用途</text>
               </view>
             </template>
 

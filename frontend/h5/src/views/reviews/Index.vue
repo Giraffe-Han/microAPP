@@ -148,6 +148,7 @@
               accept="image/*"
               multiple
             />
+            <div style="font-size:12px;color:#969799;margin-top:6px;line-height:1.5;">拍照/上传仅用于展示您的服务评价，请勿上传含他人隐私的内容</div>
           </div>
 
           <div class="anonymous-switch">

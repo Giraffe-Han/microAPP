@@ -195,6 +195,7 @@
                     <van-uploader v-model="formData.logoFileList" :max-count="1" accept="image/*" />
                   </template>
                 </van-field>
+                <div style="padding:0 16px 10px;font-size:12px;color:#969799;line-height:1.5;">图片仅用于本次俱乐部预注册的标识展示，不会用于其他用途</div>
                 <van-field v-model="formData.manager" label="负责人" placeholder="请输入负责人姓名" :rules="[{ required: true, message: '请输入负责人' }]" />
                 <van-field v-model="formData.managerPhone" type="tel" label="联系电话" placeholder="请输入负责人电话" :rules="[{ required: true, message: '请输入负责人电话' }, { pattern: /^1\d{10}$/, message: '电话号码必须为11位' }]" />
                 <van-field v-model="formData.contactPerson" label="主要对接人" placeholder="请输入对接人姓名" :rules="[{ required: true, message: '请输入对接人' }]" />
@@ -355,6 +356,7 @@
                 </van-uploader>
               </template>
             </van-field>
+            <div style="padding:0 16px 10px;font-size:12px;color:#969799;line-height:1.5;">拍照/上传仅用于本次无人机物流配送申请的货物核验，不会用于其他用途</div>
 
             <van-field
               v-model="formData.remark"
@@ -663,6 +665,7 @@
                 </van-uploader>
               </template>
             </van-field>
+            <div style="padding:0 16px 10px;font-size:12px;color:#969799;line-height:1.5;">拍照/上传仅用于本次维修/保养需求的设备核验，不会用于其他用途</div>
           </template>
 
           <!-- 通用备注（物流、政务服务、维修已有备注，其他服务显示） -->

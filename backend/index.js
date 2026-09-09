@@ -16,7 +16,10 @@ const { queryMemberByAuthCode } = require('./platformAuth');
 const { config, validateConfig, printConfig } = require('./config');
 const { logger } = require('./logger');
 const { sanitizeBody } = require('./middleware/validation');
+const { rateLimit } = require('./middleware/auth');
 const { errorHandler, notFoundHandler, asyncHandler } = require('./middleware/error');
+const { createCaptcha, verifyCaptcha, svgToPng } = require('./captcha');
+const { SmsScene, sendSmsCode, verifySmsCode } = require('./smsCode');
 const adminRouter = require('./routes/admin');
 const { router: medicalRouter, startTimeoutChecker } = require('./routes/medical');
 
@@ -42,7 +45,9 @@ const {
     readServicesConfig,
     writeServicesConfig,
     readReviewsDB,
-    writeReviewsDB
+    writeReviewsDB,
+    readAccountRequestsDB,
+    writeAccountRequestsDB
 } = require('./storage');
 
 // 使用配置模块中的值
@@ -668,20 +673,115 @@ app.post('/api/register', async (req, res) => {
     }
 });
 
-// Auth Register Endpoint
-app.post('/api/auth/register', async (req, res) => {
-    const { phone, password, name } = req.body || {};
+// 获取图形验证码
+// 微信小程序 image 组件不支持 SVG，需带 format=png 请求
+app.get('/api/auth/captcha', rateLimit({ windowMs: 60 * 1000, maxRequests: 30 }), asyncHandler(async (req, res) => {
+    const { captchaId, svg, expiresIn } = createCaptcha();
+
+    if (String(req.query.format || '').toLowerCase() === 'png') {
+        const png = await svgToPng(svg);
+        if (png) {
+            return res.json({
+                success: true,
+                captchaId,
+                expiresIn,
+                image: `data:image/png;base64,${png.toString('base64')}`
+            });
+        }
+    }
+
+    res.json({
+        success: true,
+        captchaId,
+        expiresIn,
+        image: `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`
+    });
+}));
+
+// 发送手机短信验证码（一期为日志模拟通道，详见 smsCode.js）
+// 需先通过图形验证码，避免短信接口被刷
+app.post('/api/auth/sms-code', sanitizeBody, rateLimit({ windowMs: 60 * 1000, maxRequests: 10 }), asyncHandler(async (req, res) => {
+    const { phone, scene, captchaId, captchaCode } = req.body || {};
+    const targetScene = scene || SmsScene.REGISTER;
+
+    if (!Object.values(SmsScene).includes(targetScene)) {
+        return res.status(400).json({ success: false, message: '不支持的验证码场景' });
+    }
+
+    if (!/^1[3-9]\d{9}$/.test(String(phone || ''))) {
+        return res.status(400).json({ success: false, message: '手机号格式不正确' });
+    }
+
+    const captchaResult = verifyCaptcha(captchaId, captchaCode);
+    if (!captchaResult.ok) {
+        return res.status(400).json({ success: false, message: captchaResult.message });
+    }
+
     const users = await readUsersDB();
+    const existing = users.find(u => u.phone === phone);
+
+    if (targetScene === SmsScene.REGISTER && existing) {
+        return res.status(400).json({ success: false, message: '该手机号已注册' });
+    }
+    if (targetScene === SmsScene.RESET_PASSWORD && !existing) {
+        return res.status(404).json({ success: false, message: '该手机号未注册' });
+    }
+
+    const result = await sendSmsCode(phone, targetScene);
+    if (!result.ok) {
+        return res.status(429).json({ success: false, message: result.message });
+    }
+
+    res.json({
+        success: true,
+        message: '验证码已发送',
+        expiresIn: result.expiresIn,
+        devCode: result.devCode
+    });
+}));
+
+// Auth Register Endpoint
+app.post('/api/auth/register', sanitizeBody, rateLimit({ windowMs: 15 * 60 * 1000, maxRequests: 20 }), async (req, res) => {
+    const { phone, password, name, username, captchaId, captchaCode, smsCode } = req.body || {};
     if (!phone || !password) {
         return res.status(400).json({ success: false, message: '手机号或密码不能为空' });
     }
+
+    // 图形验证码前置校验，拦住脚本批量注册
+    const captchaResult = verifyCaptcha(captchaId, captchaCode);
+    if (!captchaResult.ok) {
+        return res.status(400).json({ success: false, message: captchaResult.message });
+    }
+
+    if (!/^1[3-9]\d{9}$/.test(phone)) {
+        return res.status(400).json({ success: false, message: '手机号格式不正确' });
+    }
+    if (String(password).length < 6) {
+        return res.status(400).json({ success: false, message: '密码长度不能少于6位' });
+    }
+
+    // 短信验证码校验（SMS_REQUIRE_ON_REGISTER=1 时启用）
+    if (config.sms.requireOnRegister) {
+        const smsResult = verifySmsCode(phone, SmsScene.REGISTER, smsCode);
+        if (!smsResult.ok) {
+            return res.status(400).json({ success: false, message: smsResult.message });
+        }
+    }
+
+    const users = await readUsersDB();
     if (users.find(u => u.phone === phone)) {
         return res.status(400).json({ success: false, message: '用户已存在' });
+    }
+
+    const desiredUsername = String(username || phone).trim();
+    if (users.find(u => u.username === desiredUsername)) {
+        return res.status(400).json({ success: false, message: '该用户名已被占用' });
     }
 
     const newUser = {
         id: randomUUID(),
         phone,
+        username: desiredUsername,
         password: '',
         passwordHash: await bcrypt.hash(password, 10),
         name: name || `User${phone.slice(-4)}`,
@@ -710,6 +810,80 @@ app.post('/api/auth/register', async (req, res) => {
 app.get('/api/auth/me', authRequired, (req, res) => {
     res.json({ success: true, user: req.user });
 });
+
+// 修改密码（用户自助修改 / 管理员重置后强制设置新密码）
+app.post('/api/auth/change-password', authRequired, sanitizeBody, asyncHandler(async (req, res) => {
+    const { oldPassword, newPassword } = req.body || {};
+    if (!newPassword || String(newPassword).length < 6) {
+        return res.status(400).json({ success: false, message: '新密码长度不能少于6位' });
+    }
+    const users = await readUsersDB();
+    const idx = users.findIndex(u => u.id === req.user.id);
+    if (idx === -1) {
+        return res.status(404).json({ success: false, message: '用户不存在' });
+    }
+    const user = users[idx];
+    const mustChange = user.mustChangePassword === true;
+
+    // 常规改密需校验原密码；管理员重置后的强制改密（mustChangePassword）凭登录态即可
+    if (!mustChange) {
+        if (!oldPassword) {
+            return res.status(400).json({ success: false, message: '请输入原密码' });
+        }
+        if (!(await verifyUserPassword(user, oldPassword))) {
+            return res.status(400).json({ success: false, message: '原密码不正确' });
+        }
+    }
+    if (await verifyUserPassword(user, newPassword)) {
+        return res.status(400).json({ success: false, message: '新密码不能与原密码相同' });
+    }
+
+    users[idx] = {
+        ...user,
+        password: '',
+        passwordHash: await bcrypt.hash(String(newPassword), 10),
+        mustChangePassword: false,
+        passwordChangedAt: new Date().toISOString()
+    };
+    await writeUsersDB(users);
+
+    logger.info('User changed password', { userId: user.id, forced: mustChange });
+    res.json({ success: true, message: '密码修改成功' });
+}));
+
+// 账号找回 / 注销 申请提交（前端仅收集信息，具体核实与办理由后台人工处理）
+const ACCOUNT_REQUEST_TYPES = { recovery: '账号找回', cancellation: '账号注销' };
+app.post('/api/account-requests', authOptional, sanitizeBody, rateLimit({ windowMs: 15 * 60 * 1000, maxRequests: 10 }), asyncHandler(async (req, res) => {
+    const { type, phone, name, contact, reason } = req.body || {};
+    if (!ACCOUNT_REQUEST_TYPES[type]) {
+        return res.status(400).json({ success: false, message: '申请类型不正确' });
+    }
+    const phoneStr = String(phone || '').trim();
+    if (!/^1[3-9]\d{9}$/.test(phoneStr)) {
+        return res.status(400).json({ success: false, message: '请填写正确的注册手机号' });
+    }
+
+    const requests = await readAccountRequestsDB();
+    const record = {
+        id: `ar-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        type,
+        phone: phoneStr,
+        name: String(name || '').trim(),
+        contact: String(contact || '').trim(),
+        reason: String(reason || '').trim(),
+        userId: req.user ? req.user.id : null,
+        status: 'pending',
+        remark: '',
+        createdAt: new Date().toISOString(),
+        handledAt: null,
+        handledBy: null
+    };
+    requests.push(record);
+    await writeAccountRequestsDB(requests);
+
+    logger.info('Account request submitted', { id: record.id, type, phone: phoneStr });
+    res.json({ success: true, message: '提交成功，我们会尽快为您处理', id: record.id });
+}));
 
 // Auth Refresh
 app.post('/api/auth/refresh', async (req, res) => {
@@ -1179,6 +1353,77 @@ app.post('/api/admin/system-settings', authRequired, roleRequired(['admin']), as
         res.json({ success: true, message: '系统设置更新成功' });
     } else {
         res.status(500).json({ success: false, message: '保存系统设置失败' });
+    }
+});
+
+// ─── Agreements (用户协议 / 隐私政策) API ────────────────────────────
+// 说明：协议正文暂未拟定，此处仅预留“提交/读取”接口并预埋占位内容，
+// 正式文本由管理端「系统设置 → 协议管理」提交后覆盖占位内容。
+
+const AGREEMENT_TYPES = {
+    user: { title: '用户协议' },
+    privacy: { title: '隐私政策' }
+};
+
+// 预埋占位正文：正式文本拟定后由管理端提交覆盖
+const AGREEMENT_PLACEHOLDER = '本协议正文正在拟定中，正式版本发布前将在此完整公示。\n\n发布后将涵盖：个人信息收集与使用范围、存储与保护措施、第三方共享、您的权利（查阅、更正、删除、撤回同意、注销账号）以及联系我们等方式。';
+
+async function readAgreements() {
+    const config = await readServicesConfig();
+    const stored = (config._system && config._system.agreements) || {};
+    const result = {};
+    for (const type of Object.keys(AGREEMENT_TYPES)) {
+        const item = stored[type] || {};
+        result[type] = {
+            title: item.title || AGREEMENT_TYPES[type].title,
+            content: item.content || AGREEMENT_PLACEHOLDER,
+            version: item.version || '',
+            updatedAt: item.updatedAt || ''
+        };
+    }
+    return result;
+}
+
+// 公开接口：登录/注册页读取协议正文（无需认证）
+app.get('/api/agreements/:type', async (req, res) => {
+    const type = String(req.params.type || '');
+    if (!AGREEMENT_TYPES[type]) {
+        return res.status(404).json({ success: false, message: '协议类型不存在' });
+    }
+    const agreements = await readAgreements();
+    res.json({ success: true, data: { type, ...agreements[type] } });
+});
+
+// 管理端：获取全部协议（含占位内容）
+app.get('/api/admin/agreements', authRequired, roleRequired(['admin']), async (req, res) => {
+    const agreements = await readAgreements();
+    res.json({ success: true, data: agreements });
+});
+
+// 管理端：提交/更新协议正文（预留的“提交预埋”接口）
+app.post('/api/admin/agreements', authRequired, roleRequired(['admin']), sanitizeBody, async (req, res) => {
+    const { type, title, content, version } = req.body || {};
+    if (!AGREEMENT_TYPES[type]) {
+        return res.status(400).json({ success: false, message: '协议类型不正确' });
+    }
+
+    const config = await readServicesConfig();
+    if (!config._system) config._system = {};
+    if (!config._system.agreements) config._system.agreements = {};
+
+    const prev = config._system.agreements[type] || {};
+    config._system.agreements[type] = {
+        title: (typeof title === 'string' && title.trim()) ? title.trim() : (prev.title || AGREEMENT_TYPES[type].title),
+        content: typeof content === 'string' ? content : (prev.content || ''),
+        version: typeof version === 'string' ? version.trim() : (prev.version || ''),
+        updatedAt: new Date().toISOString()
+    };
+
+    if (await writeServicesConfig(config)) {
+        logger.info('Agreement updated', { type, adminId: req.user.id });
+        res.json({ success: true, message: '协议内容已保存' });
+    } else {
+        res.status(500).json({ success: false, message: '保存协议内容失败' });
     }
 });
 

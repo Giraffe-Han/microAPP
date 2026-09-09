@@ -48,6 +48,24 @@ const routes = [
     meta: { title: '注册账号' }
   },
   {
+    path: '/agreement/:type',
+    name: 'Agreement',
+    component: () => import('@/views/agreement/Index.vue'),
+    meta: { title: '协议详情' }
+  },
+  {
+    path: '/change-password',
+    name: 'ChangePassword',
+    component: () => import('@/views/password/Index.vue'),
+    meta: { title: '修改密码' }
+  },
+  {
+    path: '/account/:type',
+    name: 'AccountRequest',
+    component: () => import('@/views/account/Request.vue'),
+    meta: { title: '账号申请' }
+  },
+  {
     path: '/study',
     name: 'StudyIndex',
     component: () => import('@/views/study/Index.vue'),
@@ -167,6 +185,12 @@ const routes = [
         name: 'AdminUsers',
         component: () => import('@/views/admin/users/UserList.vue'),
         meta: { title: '用户管理' }
+      },
+      {
+        path: 'account-requests',
+        name: 'AdminAccountRequests',
+        component: () => import('@/views/admin/account/AccountRequestList.vue'),
+        meta: { title: '账号申请' }
       },
       {
         path: 'competition',

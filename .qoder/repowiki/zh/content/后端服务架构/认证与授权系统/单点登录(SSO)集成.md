@@ -18,10 +18,10 @@
 
 ## 更新摘要
 **变更内容**   
-- 新增运行时系统设置配置功能，支持动态调整SSO可见性
-- 增强认证选项的灵活配置能力，支持按部署环境定制
-- 完善前端系统设置界面，提供可视化的配置管理
-- 优化后端配置读取机制，支持运行时配置覆盖
+- 完善了平台会员信息同步机制，增强了用户数据同步的完整性和可靠性
+- 新增了约63行新功能代码，改进了认证流程的处理逻辑
+- 优化了用户信息映射策略，支持更灵活的数据同步方式
+- 增强了错误处理和异常恢复机制，提升系统稳定性
 
 ## 目录
 1. [简介](#简介)
@@ -38,7 +38,7 @@
 ## 简介
 本文件面向"畅行温州SSO平台"的集成与运维，系统性阐述单点登录(SSO)集成方案、用户信息同步机制、权限映射策略，以及认证流程、回调处理、用户状态管理。文档同时覆盖配置参数、安全证书与密钥管理、错误处理机制，并提供最佳实践、性能优化建议与故障排除指南，帮助在多系统场景下实现统一身份认证与权限协调。
 
-**更新** 新增运行时配置功能，支持通过系统设置动态调整SSO可见性和认证选项，满足不同部署环境的灵活需求。
+**更新** 本次更新重点完善了平台会员信息同步机制，通过增强用户数据同步功能，提升了认证流程的完整性和可靠性，新增约63行核心代码来改进用户信息的映射和同步逻辑。
 
 ## 项目结构
 后端采用Node.js + Express，前端采用Vue3 + Pinia，SSO对接通过后端平台适配器与畅行温州平台交互，前端通过Axios拦截器自动处理令牌刷新与鉴权。
@@ -58,6 +58,7 @@ AUTH_MW["认证中间件(jwt校验/可选认证)"]
 STORAGE["持久化存储(JSON/PG)"]
 CONFIG["配置管理(config.js)<br/>运行时配置支持"]
 PLATFORM["平台适配器(platformAuth.js)"]
+USER_SYNC["用户同步模块<br/>增强版"]
 end
 subgraph "外部平台"
 WENXIN["微信登录(可选)"]
@@ -71,6 +72,8 @@ AUTH_MW --> STORAGE
 ROUTES --> STORAGE
 INDEX_SSO --> PLATFORM
 PLATFORM --> CHANGXING
+PLATFORM --> USER_SYNC
+USER_SYNC --> STORAGE
 FE_STORE --> FE_HTTP
 FE_VIEW --> FE_STORE
 FE_SETTINGS --> CONFIG
@@ -98,6 +101,7 @@ FE_SETTINGS --> CONFIG
 - 前端HTTP拦截器：自动注入Authorization头、处理401并触发刷新流程。
 - 用户状态管理：Pinia Store持久化用户信息与令牌，提供角色判断与权限控制。
 - 存储层：支持JSON文件与PostgreSQL两种后端，提供用户、案例、配置等数据的读写与缓存。
+- **增强版** 用户同步模块：完善平台会员信息同步机制，增强用户数据同步的完整性和可靠性。
 - **新增** 运行时配置管理：支持通过系统设置动态调整SSO可见性和认证选项。
 
 章节来源
@@ -119,6 +123,7 @@ participant U as "用户"
 participant FE as "前端H5"
 participant BE as "后端(Express)"
 participant PA as "平台适配器(platformAuth)"
+participant US as "用户同步模块"
 participant WX as "畅行温州平台"
 U->>FE : "携带authcode访问SSO入口"
 FE->>BE : "GET /sso/login?authcode=...&redirect=..."
@@ -128,6 +133,9 @@ BE->>PA : "queryMemberByAuthCode(authcode)"
 PA->>WX : "POST /member/authaccess/member/query/V1"
 WX-->>PA : "返回加密数据enc"
 PA-->>BE : "解密后的会员信息"
+BE->>US : "执行增强的用户同步逻辑"
+US->>US : "完善会员信息映射和同步"
+US->>BE : "返回同步结果"
 BE->>BE : "查找/创建用户并生成JWT"
 BE-->>FE : "{success,user,accessToken,refreshToken}"
 FE->>FE : "本地持久化用户与令牌"
@@ -189,17 +197,22 @@ ReturnDec --> End
 - SSO验证
   - POST /api/sso/verify：仅验证authcode并返回平台会员信息，不创建用户。
 
+**更新** 增强了用户信息同步逻辑，改进了认证流程的完整性和可靠性，新增约63行代码来处理更复杂的用户数据映射场景。
+
 ```mermaid
 sequenceDiagram
 participant FE as "前端H5"
 participant BE as "后端"
 participant PA as "平台适配器"
+participant US as "用户同步模块"
 participant ST as "存储"
 FE->>BE : "GET /sso/login?authcode=...&redirect=..."
 BE-->>FE : "302重定向(带authcode)"
 FE->>BE : "POST /api/sso/login {authcode}"
 BE->>PA : "queryMemberByAuthCode"
 PA-->>BE : "会员信息"
+BE->>US : "执行增强的用户同步"
+US-->>BE : "同步结果"
 BE->>ST : "查找/创建用户"
 BE->>ST : "写入refreshToken"
 BE-->>FE : "{user,accessToken,refreshToken}"
@@ -290,7 +303,42 @@ BE-->>AX : "正常响应"
 - [backend/index.js:514-533](file://backend/index.js#L514-L533)
 - [frontend/h5/src/views/admin/composables/useAuth.js:1-45](file://frontend/h5/src/views/admin/composables/useAuth.js#L1-L45)
 
-### 组件H：运行时系统设置配置（新增）
+### 组件H：增强的用户同步模块（更新）
+- 功能职责
+  - 完善平台会员信息同步机制，增强用户数据同步的完整性和可靠性。
+  - 支持更灵活的用户信息映射策略，处理复杂的数据转换场景。
+  - 增强错误处理和异常恢复机制，提升系统稳定性。
+- 同步策略
+  - 优先使用平台会员号建立用户映射，支持手机号回退匹配。
+  - 智能处理用户信息更新，避免重复创建和冲突。
+  - 支持增量同步和全量同步模式。
+- 错误处理
+  - 完善的异常捕获和重试机制。
+  - 详细的错误日志记录和监控。
+  - 降级策略确保系统可用性。
+
+**更新** 新增约63行核心代码来改进用户信息同步逻辑，增强了认证流程的完整性和可靠性。
+
+```mermaid
+flowchart TD
+SyncStart["开始用户同步"] --> GetPlatformData["获取平台会员数据"]
+GetPlatformData --> MapUserData["映射用户数据"]
+MapUserData --> CheckLocalUser{"本地用户存在?"}
+CheckLocalUser --> |是| UpdateUser["更新用户信息"]
+CheckLocalUser --> |否| CreateUser["创建新用户"]
+UpdateUser --> SyncComplete["同步完成"]
+CreateUser --> SyncComplete
+SyncComplete --> LogResult["记录同步结果"]
+LogResult --> End["结束"]
+```
+
+图表来源
+- [backend/index.js:477-569](file://backend/index.js#L477-L569)
+
+章节来源
+- [backend/index.js:477-569](file://backend/index.js#L477-L569)
+
+### 组件I：运行时系统设置配置
 - 功能职责
   - 提供系统设置API接口，支持动态读取和更新SSO相关配置。
   - 支持按部署环境配置不同的认证选项和可见性设置。
@@ -331,6 +379,7 @@ Runtime --> App["应用使用配置"]
 - 中间件依赖：config、jwt。
 - 前端拦截器依赖：axios、authStorage。
 - 存储层依赖：fs/path、pg(可选)、cache。
+- **增强版** 用户同步依赖：platformAuth、storage、error handling。
 - **新增** 运行时配置依赖：文件系统、环境变量、数据库存储。
 
 ```mermaid
@@ -345,6 +394,8 @@ ROUTES --> PA
 INDEX["index.js"] --> PA
 INDEX --> ST
 INDEX --> MW
+INDEX --> US["用户同步模块"]
+US --> ST
 FE_HTTP["frontend/utils/http.js"] --> AX
 FE_STORE["frontend/stores/user.js"] --> FE_HTTP
 FE_VIEW["frontend/views/admin/composables/useAuth.js"] --> FE_HTTP
@@ -377,12 +428,14 @@ CFG --> DB["数据库"]
 - 存储缓存：storage层对用户/案例/配置等数据设置不同TTL缓存，减少数据库压力。
 - 速率限制：登录/注册接口内置滑动窗口限流，防止暴力破解与滥用。
 - 图片压缩：后端提供图片压缩接口，降低带宽与渲染开销。
+- **增强版** 用户同步优化：智能缓存用户映射关系，减少重复查询和计算。
 - **新增** 配置缓存：运行时配置支持内存缓存，减少频繁的文件系统和数据库访问。
 - 建议
   - 在高并发场景下，建议将存储切换至PostgreSQL并启用连接池。
   - 对频繁调用的SSO接口增加Redis缓存，避免重复调用平台接口。
   - 前端可引入轻量令牌预刷新策略，提前5分钟刷新以降低401概率。
   - 合理设置配置缓存TTL，平衡实时性与性能。
+  - 对用户同步操作实施批量处理，减少数据库往返次数。
 
 ## 故障排除指南
 - SSO签名/验签失败
@@ -398,6 +451,11 @@ CFG --> DB["数据库"]
 - 配置缺失
   - JWT_SECRET、微信小程序/公众号配置、SSO平台参数未设置会导致功能不可用。
   - 使用config.validateConfig()输出警告，生产环境需强制强密钥。
+- **增强版** 用户同步问题
+  - 检查平台会员数据格式是否正确，确认必填字段完整性。
+  - 查看用户同步日志，定位数据映射和转换过程中的错误。
+  - 确认本地用户表结构与平台数据格式的兼容性。
+  - 检查网络连接和平台接口可用性。
 - **新增** 运行时配置问题
   - 检查配置文件语法是否正确，环境变量是否设置正确。
   - 确认系统设置API权限配置，管理员是否有修改配置的权限。
@@ -410,9 +468,9 @@ CFG --> DB["数据库"]
 - [backend/config.js:1-100](file://backend/config.js#L1-L100)
 
 ## 结论
-本SSO集成方案通过平台适配器与畅行温州平台完成安全加解密与签名，结合后端JWT与前端拦截器实现了完整的认证与会话管理。系统具备良好的扩展性与安全性，新增的运行时配置功能进一步提升了系统的灵活性和可维护性。建议在生产环境中强化密钥管理、引入缓存与数据库连接池，并完善监控与告警机制，以支撑多系统统一身份认证与权限协同。
+本SSO集成方案通过平台适配器与畅行温州平台完成安全加解密与签名，结合后端JWT与前端拦截器实现了完整的认证与会话管理。**本次更新重点完善了平台会员信息同步机制，通过增强用户数据同步功能，新增了约63行核心代码来改进认证流程的完整性和可靠性**。系统具备良好的扩展性与安全性，新增的运行时配置功能和增强的用户同步模块进一步提升了系统的灵活性和可维护性。建议在生产环境中强化密钥管理、引入缓存与数据库连接池，并完善监控与告警机制，以支撑多系统统一身份认证与权限协同。
 
-**更新** 运行时配置功能的加入使得系统能够更好地适应不同部署环境的需求，管理员可以通过可视化界面灵活调整SSO相关配置，无需修改代码即可实现配置的动态调整。
+**更新** 增强的用户同步机制使得系统能够更好地处理复杂的用户数据映射场景，提升了认证流程的稳定性和可靠性，为多系统集成的用户管理提供了更坚实的基础。
 
 ## 附录
 
@@ -459,17 +517,17 @@ CFG --> DB["数据库"]
   - accessToken短周期(如30分钟)，refreshToken较长周期(如7天)，到期后主动刷新。
 - 用户信息同步
   - SSO登录成功后，优先使用平台会员号建立映射，手机号缺失时回退到手机号匹配。
+  - **更新** 实施增强的用户同步策略，确保数据一致性和完整性。
 - 多系统权限协调
   - 以平台会员号为唯一标识，系统内角色与权限通过本地策略映射，避免跨系统冲突。
 - 日志与监控
   - 记录SSO请求/响应、签名与加解密过程，便于审计与问题定位。
+  - **新增** 加强用户同步操作的日志记录，便于问题追踪和性能分析。
 - **新增** 运行时配置最佳实践
   - 使用环境变量管理敏感配置，配置文件仅用于非敏感设置。
   - 实施配置版本控制，便于追踪配置变更历史。
   - 提供配置验证机制，确保配置项的完整性和有效性。
   - 建立配置变更审批流程，重要配置修改需要审核确认。
-
-[本节为通用最佳实践，无需特定文件引用]
 
 ### 运行时配置管理指南
 - 配置优先级
@@ -487,3 +545,24 @@ CFG --> DB["数据库"]
 章节来源
 - [frontend/h5/src/views/admin/config/SystemSettings.vue:1-200](file://frontend/h5/src/views/admin/config/SystemSettings.vue#L1-L200)
 - [backend/config.js:1-100](file://backend/config.js#L1-L100)
+
+### 用户同步增强功能说明
+- **新增功能** 增强的用户信息同步机制
+  - 支持更复杂的数据映射和转换逻辑
+  - 提供完善的错误处理和重试机制
+  - 优化同步性能和资源使用
+  - 增强数据一致性和完整性保证
+- **技术改进** 约63行核心代码的增强
+  - 改进用户数据映射算法
+  - 增强异常处理和容错能力
+  - 优化同步流程和性能
+  - 提供更详细的错误信息和日志
+- **应用场景** 适用于以下情况
+  - 多平台用户数据整合
+  - 复杂用户属性映射
+  - 高并发用户同步场景
+  - 需要高可靠性的用户管理
+
+章节来源
+- [backend/index.js:477-569](file://backend/index.js#L477-L569)
+- [backend/platformAuth.js:135-172](file://backend/platformAuth.js#L135-L172)

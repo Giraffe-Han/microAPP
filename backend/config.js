@@ -39,6 +39,40 @@ const config = {
     apiKey: process.env.SSO_API_KEY || ''
   },
 
+  // 图形验证码配置
+  captcha: {
+    // 设为 0 可关闭注册图形验证（仅建议本地调试使用）
+    enabled: process.env.CAPTCHA_ENABLED !== '0',
+    length: parseInt(process.env.CAPTCHA_LENGTH) || 4,
+    ttl: parseInt(process.env.CAPTCHA_TTL_MS) || 3 * 60 * 1000
+  },
+
+  // 短信验证码配置
+  sms: {
+    // log: 仅写日志的模拟通道；aliyun / tencent 待接入
+    provider: process.env.SMS_PROVIDER || 'log',
+    // 设为 1 后注册除图形码外还强制校验短信验证码
+    requireOnRegister: process.env.SMS_REQUIRE_ON_REGISTER === '1',
+    codeLength: parseInt(process.env.SMS_CODE_LENGTH) || 6,
+    codeTTL: parseInt(process.env.SMS_CODE_TTL_MS) || 5 * 60 * 1000,
+    resendInterval: parseInt(process.env.SMS_RESEND_INTERVAL_MS) || 60 * 1000,
+    // 非生产环境接口回传验证码，便于未接入服务商时联调
+    exposeDevCode: process.env.NODE_ENV !== 'production',
+    aliyun: {
+      accessKeyId: process.env.SMS_ALIYUN_ACCESS_KEY_ID || '',
+      accessKeySecret: process.env.SMS_ALIYUN_ACCESS_KEY_SECRET || '',
+      signName: process.env.SMS_ALIYUN_SIGN_NAME || '',
+      templateCode: process.env.SMS_ALIYUN_TEMPLATE_CODE || ''
+    },
+    tencent: {
+      secretId: process.env.SMS_TENCENT_SECRET_ID || '',
+      secretKey: process.env.SMS_TENCENT_SECRET_KEY || '',
+      sdkAppId: process.env.SMS_TENCENT_SDK_APP_ID || '',
+      signName: process.env.SMS_TENCENT_SIGN_NAME || '',
+      templateId: process.env.SMS_TENCENT_TEMPLATE_ID || ''
+    }
+  },
+
   // 数据库配置
   database: {
     usePostgres: process.env.USE_POSTGRES === '1',
@@ -112,6 +146,8 @@ function printConfig() {
   console.log(`JWT Secret: ${config.jwt.secret.substring(0, 8)}...`);
   console.log(`WeChat AppID: ${config.wechat.appId ? 'configured' : 'not set'}`);
   console.log(`WeChat MP AppID: ${config.wechat.mpAppId ? 'configured' : 'not set'}`);
+  console.log(`Register Captcha: ${config.captcha.enabled ? 'enabled' : 'disabled'}`);
+  console.log(`SMS Provider: ${config.sms.provider}`);
   console.log('=====================');
 }
 

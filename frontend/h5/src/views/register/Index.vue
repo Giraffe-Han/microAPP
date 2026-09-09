@@ -54,7 +54,39 @@
               { validator: validateConfirmPassword, message: '两次密码不一致' }
             ]"
           />
+          <van-field
+            v-model="form.captchaCode"
+            name="captchaCode"
+            label="验证码"
+            placeholder="请输入图形验证码"
+            maxlength="6"
+            :rules="[{ required: true, message: '请填写图形验证码' }]"
+          >
+            <template #button>
+              <img
+                v-if="captcha.image"
+                :src="captcha.image"
+                class="captcha-img"
+                alt="图形验证码"
+                @click="loadCaptcha"
+              />
+              <van-loading v-else type="spinner" size="18" />
+            </template>
+          </van-field>
         </van-cell-group>
+
+        <div class="captcha-tip">看不清？点击图片刷新</div>
+
+        <div class="agreement-check">
+          <van-checkbox v-model="agreed" shape="square" icon-size="16px">
+            <span class="agreement-text">
+              我已阅读并同意
+              <span class="link" @click.stop="goAgreement('user')">《用户协议》</span>
+              和
+              <span class="link" @click.stop="goAgreement('privacy')">《隐私政策》</span>
+            </span>
+          </van-checkbox>
+        </div>
 
         <div style="margin: 24px 16px;">
           <van-button round block type="primary" native-type="submit" :loading="loading">
@@ -76,7 +108,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { showSuccessToast, showFailToast } from 'vant'
 import axios, { authStorage } from '@/utils/http'
@@ -90,11 +122,43 @@ const form = ref({
   phone: '',
   name: '',
   password: '',
-  confirmPassword: ''
+  confirmPassword: '',
+  captchaCode: ''
 })
+
+const captcha = ref({
+  captchaId: '',
+  image: ''
+})
+
+// 验证码在服务端一次性消费，任何提交结果都需重新拉取
+const loadCaptcha = async () => {
+  captcha.value.image = ''
+  form.value.captchaCode = ''
+  try {
+    const res = await axios.get('/api/auth/captcha')
+    if (!res.data?.success) {
+      throw new Error(res.data?.message || '获取验证码失败')
+    }
+    captcha.value = {
+      captchaId: res.data.captchaId,
+      image: res.data.image
+    }
+  } catch (error) {
+    console.error(error)
+    showFailToast('图形验证码加载失败，请点击图片重试')
+  }
+}
 
 const validateConfirmPassword = (value) => {
   return value === form.value.password
+}
+
+// 隐私政策/用户协议明示同意：默认不勾选，未勾选不得注册
+const agreed = ref(false)
+
+const goAgreement = (type) => {
+  router.push(`/agreement/${type}`)
 }
 
 const goLogin = () => {
@@ -102,31 +166,40 @@ const goLogin = () => {
 }
 
 const onSubmit = async (values) => {
+  if (!agreed.value) {
+    showFailToast('请先阅读并勾选同意《用户协议》和《隐私政策》')
+    return
+  }
   loading.value = true
   try {
     const res = await axios.post('/api/auth/register', {
       phone: values.phone,
       name: values.name || `User${values.phone.slice(-4)}`,
-      password: values.password
+      password: values.password,
+      captchaId: captcha.value.captchaId,
+      captchaCode: values.captchaCode
     })
-    
+
     if (!res.data?.success) {
       throw new Error(res.data?.message || '注册失败')
     }
-    
+
     // 注册成功后自动登录
     localStorage.setItem('user', JSON.stringify(res.data.user))
     authStorage.setTokens(res.data.accessToken, res.data.refreshToken)
-    
+
     showSuccessToast('注册成功')
     router.push('/home')
   } catch (error) {
     console.error(error)
     showFailToast(error?.response?.data?.message || error?.message || '注册失败')
+    await loadCaptcha()
   } finally {
     loading.value = false
   }
 }
+
+onMounted(loadCaptcha)
 </script>
 
 <style scoped>
@@ -163,6 +236,35 @@ const onSubmit = async (values) => {
   font-size: 20px;
   color: #333;
   font-weight: 600;
+}
+
+.captcha-img {
+  display: block;
+  width: 96px;
+  height: 36px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.captcha-tip {
+  margin: 8px 32px 0;
+  font-size: 12px;
+  color: #969799;
+  text-align: right;
+}
+
+.agreement-check {
+  margin: 16px 16px 0;
+}
+
+.agreement-text {
+  font-size: 13px;
+  color: #646566;
+  line-height: 1.5;
+}
+
+.agreement-check .link {
+  color: #667eea;
 }
 
 .action-links {

@@ -106,6 +106,42 @@
       </van-cell-group>
     </div>
 
+    <div class="menu-section">
+      <van-cell-group inset>
+        <van-cell
+          v-if="user"
+          title="修改密码"
+          icon="lock"
+          is-link
+          @click="$router.push('/change-password')"
+        />
+        <van-cell
+          title="找回账号"
+          icon="replay"
+          is-link
+          @click="$router.push('/account/recovery')"
+        />
+        <van-cell
+          title="注销账号"
+          icon="warning-o"
+          is-link
+          @click="$router.push('/account/cancellation')"
+        />
+        <van-cell
+          title="用户协议"
+          icon="description"
+          is-link
+          @click="$router.push('/agreement/user')"
+        />
+        <van-cell
+          title="隐私政策"
+          icon="shield-o"
+          is-link
+          @click="$router.push('/agreement/privacy')"
+        />
+      </van-cell-group>
+    </div>
+
     <div class="menu-section" v-if="user">
       <van-cell-group inset>
         <van-cell
@@ -247,6 +283,8 @@ const showAbout = () => {
     message: '低空综合服务平台\n开发主体：温州低空经济发展有限公司\n版本：v1.1.0\n\n专注于提供专业、高效、安全的低空服务'
   })
 }
+
+// 账号找回 / 注销：改为跳转独立提交页（/account/recovery、/account/cancellation），具体处理流程在后台完成
 </script>
 
 <style scoped>

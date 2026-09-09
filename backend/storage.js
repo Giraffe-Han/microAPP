@@ -16,6 +16,7 @@ const MEDICAL_PADS_FILE = path.join(__dirname, 'medical_pads.json');
 const MEDICAL_CONTACTS_FILE = path.join(__dirname, 'medical_contacts.json');
 const MEDICAL_RATINGS_FILE = path.join(__dirname, 'medical_ratings.json');
 const MEDICAL_SMS_LOGS_FILE = path.join(__dirname, 'medical_sms_logs.json');
+const ACCOUNT_REQUESTS_FILE = path.join(__dirname, 'account_requests.json');
 
 const JSON_KEYS = {
     applications: 'applications',
@@ -29,7 +30,8 @@ const JSON_KEYS = {
     medical_pads: 'medical_pads',
     medical_contacts: 'medical_contacts',
     medical_ratings: 'medical_ratings',
-    medical_sms_logs: 'medical_sms_logs'
+    medical_sms_logs: 'medical_sms_logs',
+    account_requests: 'account_requests'
 };
 
 function readJsonFile(filePath, fallback) {
@@ -101,6 +103,9 @@ async function initStorage() {
     if (!fs.existsSync(MEDICAL_SMS_LOGS_FILE)) {
         fs.writeFileSync(MEDICAL_SMS_LOGS_FILE, JSON.stringify([]));
     }
+    if (!fs.existsSync(ACCOUNT_REQUESTS_FILE)) {
+        fs.writeFileSync(ACCOUNT_REQUESTS_FILE, JSON.stringify([]));
+    }
 }
 
 async function readJsonStore(key, fallback) {
@@ -130,6 +135,8 @@ async function readJsonStore(key, fallback) {
                 return readJsonFile(MEDICAL_RATINGS_FILE, fallback);
             case JSON_KEYS.medical_sms_logs:
                 return readJsonFile(MEDICAL_SMS_LOGS_FILE, fallback);
+            case JSON_KEYS.account_requests:
+                return readJsonFile(ACCOUNT_REQUESTS_FILE, fallback);
             default:
                 return fallback;
         }
@@ -181,6 +188,8 @@ async function writeJsonStore(key, data) {
                 return writeJsonFile(MEDICAL_RATINGS_FILE, data);
             case JSON_KEYS.medical_sms_logs:
                 return writeJsonFile(MEDICAL_SMS_LOGS_FILE, data);
+            case JSON_KEYS.account_requests:
+                return writeJsonFile(ACCOUNT_REQUESTS_FILE, data);
             default:
                 return false;
         }
@@ -330,6 +339,17 @@ async function writeMedicalSmsLogsDB(data) {
     return writeJsonStore(JSON_KEYS.medical_sms_logs, data);
 }
 
+// ==================== 账号找回/注销申请存储 ====================
+
+async function readAccountRequestsDB() {
+    return cache.getOrSet(CacheKeys.ACCOUNT_REQUESTS, () => readJsonStore(JSON_KEYS.account_requests, []), 30 * 1000);
+}
+
+async function writeAccountRequestsDB(data) {
+    cache.delete(CacheKeys.ACCOUNT_REQUESTS);
+    return writeJsonStore(JSON_KEYS.account_requests, data);
+}
+
 module.exports = {
     initStorage,
     readUsersDB,
@@ -355,6 +375,8 @@ module.exports = {
     readMedicalRatingsDB,
     writeMedicalRatingsDB,
     readMedicalSmsLogsDB,
-    writeMedicalSmsLogsDB
+    writeMedicalSmsLogsDB,
+    readAccountRequestsDB,
+    writeAccountRequestsDB
 };
 

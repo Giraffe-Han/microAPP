@@ -118,6 +118,7 @@ const CacheKeys = {
   MEDICAL_CONTACTS: 'db:medical_contacts',
   MEDICAL_RATINGS: 'db:medical_ratings',
   MEDICAL_SMS_LOGS: 'db:medical_sms_logs',
+  ACCOUNT_REQUESTS: 'db:account_requests',
   ADMIN_STATS: 'stats:admin',
   USER_INFO: (userId) => `user:${userId}`
 };

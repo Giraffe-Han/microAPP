@@ -36,6 +36,7 @@ const titleMap = {
   '/admin/orders': '订单管理',
   '/admin/cases': '案例管理',
   '/admin/users': '用户管理',
+  '/admin/account-requests': '账号申请',
   '/admin/competition': '赛事管理',
   '/admin/config': '服务配置',
   '/admin/settings': '系统设置',

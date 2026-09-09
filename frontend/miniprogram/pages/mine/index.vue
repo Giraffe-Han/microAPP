@@ -105,6 +105,37 @@
         </view>
       </view>
 
+      <!-- 账号与安全 / 协议 -->
+      <view class="menu-section">
+        <view class="menu-list">
+          <view class="menu-item" v-if="user" @tap="goChangePassword">
+            <text class="menu-icon">🔑</text>
+            <text class="menu-title">修改密码</text>
+            <text class="menu-arrow">›</text>
+          </view>
+          <view class="menu-item" @tap="showRecovery">
+            <text class="menu-icon">🔄</text>
+            <text class="menu-title">找回账号</text>
+            <text class="menu-arrow">›</text>
+          </view>
+          <view class="menu-item" @tap="showCancelAccount">
+            <text class="menu-icon">⚠️</text>
+            <text class="menu-title">注销账号</text>
+            <text class="menu-arrow">›</text>
+          </view>
+          <view class="menu-item" @tap="goAgreement('user')">
+            <text class="menu-icon">📄</text>
+            <text class="menu-title">用户协议</text>
+            <text class="menu-arrow">›</text>
+          </view>
+          <view class="menu-item" @tap="goAgreement('privacy')">
+            <text class="menu-icon">🔒</text>
+            <text class="menu-title">隐私政策</text>
+            <text class="menu-arrow">›</text>
+          </view>
+        </view>
+      </view>
+
       <!-- 退出登录 -->
       <view class="menu-section logout-section" v-if="user">
         <view class="menu-list">
@@ -226,6 +257,26 @@ const showAbout = () => {
     content: '低空综合服务平台\n开发主体：温州低空经济发展有限公司\n版本：v1.1.0\n\n专注于提供专业、高效、安全的低空服务',
     showCancel: false
   })
+}
+
+// 协议查看：user=用户协议，privacy=隐私政策
+const goAgreement = (type) => {
+  uni.navigateTo({ url: `/pages/agreement/index?type=${type}` })
+}
+
+// 修改密码（用户自助修改）
+const goChangePassword = () => {
+  uni.navigateTo({ url: '/pages/change-password/index' })
+}
+
+// 账号找回：跳转提交页，具体核实与处理由后台完成
+const showRecovery = () => {
+  uni.navigateTo({ url: '/pages/account-request/index?type=recovery' })
+}
+
+// 账号注销：跳转提交页，具体核实与办理由后台完成
+const showCancelAccount = () => {
+  uni.navigateTo({ url: '/pages/account-request/index?type=cancellation' })
 }
 
 const handleBindPhone = async (e) => {

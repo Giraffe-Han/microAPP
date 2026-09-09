@@ -34,10 +34,24 @@
         <input class="input" v-model="password" password placeholder="请输入密码" />
       </view>
 
+      <view class="agreement-check" @tap="agreed = !agreed">
+        <view class="checkbox" :class="{ checked: agreed }">
+          <text v-if="agreed" class="check-mark">✓</text>
+        </view>
+        <view class="agreement-text">
+          我已阅读并同意
+          <text class="link" @tap.stop="goAgreement('user')">《用户协议》</text>
+          和
+          <text class="link" @tap.stop="goAgreement('privacy')">《隐私政策》</text>
+        </view>
+      </view>
+
       <button class="login-btn" type="primary" @tap="handleLogin" :loading="loading">登录</button>
       
       <view class="action-links">
         <text class="link-text" @tap="goRegister">还没有账号？立即注册</text>
+        <text class="link-divider">|</text>
+        <text class="link-text" @tap="showRecovery">忘记密码 / 找回账号</text>
       </view>
 
       <view class="divider">
@@ -70,7 +84,24 @@ const loading = ref(false)
 const wxLoading = ref(false)
 const showPhoneAuth = ref(false)
 
+// 隐私政策/用户协议明示同意：默认不勾选，未勾选不得登录
+const agreed = ref(false)
+
+const goAgreement = (type) => {
+  uni.navigateTo({ url: `/pages/agreement/index?type=${type}` })
+}
+
+// 账号找回：跳转提交页，具体核实与处理由后台完成
+const showRecovery = () => {
+  uni.navigateTo({ url: '/pages/account-request/index?type=recovery' })
+}
+
 function navigateAfterLogin(user) {
+  // 管理员重置密码后，强制用户先设置自己的新密码
+  if (user && user.mustChangePassword) {
+    setTimeout(() => uni.reLaunch({ url: '/pages/change-password/index?forced=1' }), 800)
+    return
+  }
   if (user.role === 'admin' || user.role === 'dsl_admin') {
     setTimeout(() => uni.navigateTo({ url: '/pages/admin/index' }), 800)
   } else {
@@ -81,6 +112,10 @@ function navigateAfterLogin(user) {
 const handleLogin = async () => {
   if (!phone.value || !password.value) {
     uni.showToast({ title: '请填写账号和密码', icon: 'none' })
+    return
+  }
+  if (!agreed.value) {
+    uni.showToast({ title: '请先阅读并勾选同意《用户协议》和《隐私政策》', icon: 'none' })
     return
   }
 
@@ -118,6 +153,10 @@ const goRegister = () => {
 }
 
 const handleWechatLogin = () => {
+  if (!agreed.value) {
+    uni.showToast({ title: '请先阅读并勾选同意《用户协议》和《隐私政策》', icon: 'none' })
+    return
+  }
   wxLoading.value = true
 
   uni.login({
@@ -273,6 +312,53 @@ const skipPhoneAuth = () => {
 
 .link-text {
   font-size: 14px;
+  color: #667eea;
+}
+
+.link-divider {
+  margin: 0 8px;
+  color: #dcdee0;
+  font-size: 14px;
+}
+
+.agreement-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.checkbox {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1px solid #c8c9cc;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+}
+
+.checkbox.checked {
+  background: #667eea;
+  border-color: #667eea;
+}
+
+.check-mark {
+  color: #fff;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.agreement-text {
+  flex: 1;
+  font-size: 13px;
+  color: #646566;
+  line-height: 1.5;
+}
+
+.agreement-text .link {
   color: #667eea;
 }
 

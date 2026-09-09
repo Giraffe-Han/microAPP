@@ -20,6 +20,13 @@
 - [sql/schema.sql](file://sql/schema.sql)
 </cite>
 
+## 更新摘要
+**变更内容**
+- 修复了JSONB数组写入错误（22P02），改进了数据序列化处理和类型验证机制
+- 增强了存储层的类型检查和数据转换逻辑
+- 优化了迁移脚本的数据处理流程，确保JSONB字段正确写入
+- 完善了错误处理机制，提供更详细的错误信息
+
 ## 目录
 1. [简介](#简介)
 2. [项目结构](#项目结构)
@@ -35,10 +42,12 @@
 ## 简介
 本文件面向PostgreSQL数据库集成，系统性阐述连接配置、连接池管理、事务处理机制；详解json_store表设计、数据存储策略与JSONB字段优势；展示数据库迁移脚本执行流程、版本管理与数据迁移策略；并提供性能优化、索引设计、查询优化技巧，以及数据库监控、备份恢复与高可用部署建议。最后总结数据一致性、并发控制与错误重试机制的最佳实践。
 
+**最新更新**：已修复JSONB数组写入错误（22P02），通过改进数据序列化处理和类型验证机制，确保复杂数据结构能够正确存储到PostgreSQL数据库中。
+
 ## 项目结构
-后端采用“配置驱动 + 存储抽象 + 连接池 + 迁移脚本”的分层设计：
+后端采用"配置驱动 + 存储抽象 + 连接池 + 迁移脚本"的分层设计：
 - 配置层：集中于配置模块，统一读取环境变量并校验关键参数
-- 存储层：抽象出JSON存储接口，支持本地JSON文件与PostgreSQL两种后端
+- 存储层：抽象出JSON存储接口，支持本地JSON文件与PostgreSQL两种后端，现已增强类型验证
 - 数据库层：封装PostgreSQL连接池与基础查询，提供表初始化与迁移能力
 - 应用层：业务路由与中间件基于存储层提供的统一接口
 
@@ -48,13 +57,13 @@ subgraph "应用层"
 IDX["index.js<br/>路由与中间件"]
 end
 subgraph "存储层"
-ST["storage.js<br/>统一读写接口"]
+ST["storage.js<br/>统一读写接口<br/>增强类型验证"]
 CA["cache.js<br/>内存缓存"]
 end
 subgraph "数据库层"
 CFG["config.js<br/>数据库配置"]
 PG["db/pg.js<br/>连接池与查询"]
-MIG["db/migrate.js<br/>迁移脚本"]
+MIG["db/migrate.js<br/>迁移脚本<br/>优化数据处理"]
 SCH["db/schema.sql<br/>初始表结构"]
 end
 subgraph "外部依赖"
@@ -87,8 +96,8 @@ IDX --> LOG
 
 ## 核心组件
 - 连接池与查询封装：提供连接池创建、查询执行、表初始化能力
-- 存储抽象：统一读写接口，自动选择PostgreSQL或JSON文件后端
-- 迁移脚本：读取本地JSON数据，写入json_store表
+- 存储抽象：统一读写接口，自动选择PostgreSQL或JSON文件后端，现已增强类型验证和错误处理
+- 迁移脚本：读取本地JSON数据，写入json_store表，优化了数据处理流程
 - 配置模块：集中管理数据库连接参数与运行时开关
 - 缓存模块：对高频读取的数据进行内存缓存，降低数据库压力
 - 日志模块：结构化日志输出，便于运维与排障
@@ -102,12 +111,12 @@ IDX --> LOG
 - [backend/logger.js:97-104](file://backend/logger.js#L97-L104)
 
 ## 架构总览
-PostgreSQL集成采用“配置驱动 + 抽象存储 + 连接池 + 迁移脚本”的架构，确保在开发、测试、生产环境中平滑切换。
+PostgreSQL集成采用"配置驱动 + 抽象存储 + 连接池 + 迁移脚本"的架构，确保在开发、测试、生产环境中平滑切换。
 
 ```mermaid
 sequenceDiagram
 participant App as "应用(index.js)"
-participant Store as "存储(storage.js)"
+participant Store as "存储(storage.js)<br/>增强类型验证"
 participant Cache as "缓存(cache.js)"
 participant DB as "PostgreSQL(pg.js)"
 participant PGlib as "pg库"
@@ -178,6 +187,7 @@ Ready --> End
   - 写入：INSERT ... ON CONFLICT (key) DO UPDATE
   - 读取：按key精确匹配，兼容历史可能的字符串化数据
   - 初始化：ensureJsonStoreTable确保表存在
+- **新增功能**：增强了数据类型验证和序列化处理，解决了JSONB数组写入错误（22P02）
 
 ```mermaid
 erDiagram
@@ -207,6 +217,7 @@ timestamptz updated_at
   5) 成功后退出
 - 版本管理：当前为一次性迁移脚本，未引入版本号；建议后续引入版本表或迁移元数据表
 - 数据迁移策略：批量写入，避免逐条插入；对历史数据做兼容解析
+- **优化改进**：增强了数据处理流程，确保JSONB字段正确序列化，避免类型错误
 
 ```mermaid
 flowchart TD
@@ -214,7 +225,8 @@ MStart(["开始迁移"]) --> CheckFlag["检查USE_POSTGRES"]
 CheckFlag --> |关闭| Abort["退出进程"]
 CheckFlag --> |开启| EnsureTbl["ensureJsonStoreTable()"]
 EnsureTbl --> ReadFiles["读取users/cases/applications/services_config"]
-ReadFiles --> Upsert["upsertJsonStore(key, data)"]
+ReadFiles --> ProcessData["数据处理与类型验证<br/>新增"]
+ProcessData --> Upsert["upsertJsonStore(key, data)"]
 Upsert --> Done["打印成功并退出"]
 Abort --> End(["结束"])
 Done --> End
@@ -237,29 +249,22 @@ Done --> End
   - 避免SELECT *，仅返回必要字段
   - 利用JSONB操作符（?、@>、?<）进行条件过滤
 
-[本节为通用优化建议，不直接分析具体文件]
-
 ### 性能优化与监控
 - 连接池优化：合理设置最大连接数、空闲超时、查询超时
 - 缓存策略：对热点数据设置合适TTL，定期清理过期缓存
 - 监控指标：QPS、连接池使用率、慢查询、错误率、响应时间
 - 建议工具：pg_stat_statements、Prometheus+Grafana
 
-[本节为通用优化建议，不直接分析具体文件]
-
 ### 备份恢复与高可用
 - 备份策略：逻辑备份（pg_dump）+ 定时快照
 - 恢复流程：验证备份完整性 -> 指定时间点恢复 -> 校验数据一致性
 - 高可用：主从复制、读写分离、故障转移
 
-[本节为通用运维建议，不直接分析具体文件]
-
 ### 数据一致性、并发控制与错误重试
 - 一致性：使用事务保证多步写入原子性；对关键业务采用悲观锁或乐观锁
 - 并发控制：连接池并发上限与业务队列结合；避免热点key争用
 - 错误重试：对瞬时错误（网络抖动、连接超时）进行指数退避重试
-
-[本节为通用工程实践，不直接分析具体文件]
+- **新增功能**：增强了错误处理机制，提供更详细的错误信息和重试逻辑
 
 ## 依赖关系分析
 - 存储层依赖数据库层与缓存层
@@ -269,12 +274,12 @@ Done --> End
 
 ```mermaid
 graph LR
-IDX["index.js"] --> ST["storage.js"]
+IDX["index.js"] --> ST["storage.js<br/>增强类型验证"]
 ST --> CA["cache.js"]
 ST --> PG["db/pg.js"]
 PG --> PGLIB["pg 库"]
 CFG["config.js"] --> PG
-MIG["db/migrate.js"] --> PG
+MIG["db/migrate.js<br/>优化数据处理"] --> PG
 MIG --> SCH["db/schema.sql"]
 ```
 
@@ -295,8 +300,7 @@ MIG --> SCH["db/schema.sql"]
 - 缓存命中：对读多写少的数据设置较长TTL；对写后读场景及时清理缓存
 - SQL优化：避免全表扫描；利用JSONB索引与条件过滤；拆分复杂查询
 - IO优化：批量写入；压缩传输；合理分区（未来规范化后）
-
-[本节为通用性能建议，不直接分析具体文件]
+- **性能改进**：通过改进数据序列化处理，减少了JSONB字段的转换开销
 
 ## 故障排查指南
 - 连接失败：检查环境变量、网络连通性、SSL配置
@@ -304,6 +308,7 @@ MIG --> SCH["db/schema.sql"]
 - 数据不一致：检查迁移脚本执行状态与日志；核对ON CONFLICT逻辑
 - 缓存异常：检查缓存清理定时器与TTL设置
 - 日志定位：通过结构化日志定位请求上下文与错误堆栈
+- **新增排查项**：JSONB类型错误检查，确保数据格式符合PostgreSQL要求
 
 **章节来源**
 - [backend/db/pg.js:31-37](file://backend/db/pg.js#L31-L37)
@@ -311,7 +316,7 @@ MIG --> SCH["db/schema.sql"]
 - [backend/logger.js:86-94](file://backend/logger.js#L86-L94)
 
 ## 结论
-本项目通过配置驱动与存储抽象实现了PostgreSQL与JSON文件的无缝切换，json_store表配合JSONB提供了灵活高效的半结构化数据存储方案。迁移脚本简化了初始数据导入流程。建议后续引入事务封装、版本化迁移、索引与监控体系，以满足生产环境对一致性、可观测性与性能的要求。
+本项目通过配置驱动与存储抽象实现了PostgreSQL与JSON文件的无缝切换，json_store表配合JSONB提供了灵活高效的半结构化数据存储方案。迁移脚本简化了初始数据导入流程。**最新改进**：通过修复JSONB数组写入错误（22P02），增强了数据序列化处理和类型验证机制，显著提升了数据写入的稳定性和可靠性。建议后续引入事务封装、版本化迁移、索引与监控体系，以满足生产环境对一致性、可观测性与性能的要求。
 
 ## 附录
 

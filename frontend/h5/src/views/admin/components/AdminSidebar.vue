@@ -50,6 +50,7 @@ const allMenus = [
   { path: '/admin/orders', label: '订单管理', icon: '◎', roles: ['admin', 'study_admin'] },
   { path: '/admin/cases', label: '案例管理', icon: '◈', roles: ['admin'] },
   { path: '/admin/users', label: '用户管理', icon: '◉', roles: ['admin'] },
+  { path: '/admin/account-requests', label: '账号申请', icon: '▤', roles: ['admin'] },
   { path: '/admin/competition', label: '赛事管理', icon: '◆', roles: ['admin', 'dsl_admin'] },
   { path: '/admin/config', label: '服务配置', icon: '◇', roles: ['admin', 'study_admin'] },
   { path: '/admin/settings', label: '系统设置', icon: '⚙', roles: ['admin'] },

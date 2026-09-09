@@ -58,8 +58,21 @@
           </div>
         </van-form>
 
+        <div class="agreement-check">
+          <van-checkbox v-model="agreed" shape="square" icon-size="16px">
+            <span class="agreement-text">
+              我已阅读并同意
+              <span class="link" @click.stop="goAgreement('user')">《用户协议》</span>
+              和
+              <span class="link" @click.stop="goAgreement('privacy')">《隐私政策》</span>
+            </span>
+          </van-checkbox>
+        </div>
+
         <div class="action-links">
           <span @click="goRegister">还没有账号？立即注册</span>
+          <span class="link-divider">|</span>
+          <span @click="showRecovery">忘记密码 / 找回账号</span>
         </div>
 
         <div v-if="loginSettings.enableWechatLogin" class="wechat-login">
@@ -102,6 +115,18 @@ const loading = ref(false)
 const autoLoginStatus = ref(false)
 const wechatLoading = ref(false)
 
+// 隐私政策/用户协议明示同意：默认不勾选，未勾选不得登录
+const agreed = ref(false)
+
+const goAgreement = (type) => {
+  router.push(`/agreement/${type}`)
+}
+
+// 账号找回：跳转到找回申请提交页，核实与办理均在后台完成
+const showRecovery = () => {
+  router.push('/account/recovery')
+}
+
 // 登录方式可见性配置
 const loginSettings = ref({
   enableWechatLogin: false,
@@ -123,6 +148,10 @@ const goRegister = () => {
 
 // 账号密码登录
 const onPasswordLogin = async (values) => {
+  if (!agreed.value) {
+    showFailToast('请先阅读并勾选同意《用户协议》和《隐私政策》')
+    return
+  }
   loading.value = true
   try {
     const res = await axios.post('/api/auth/login', {
@@ -137,6 +166,12 @@ const onPasswordLogin = async (values) => {
     authStorage.setTokens(res.data.accessToken, res.data.refreshToken)
     showSuccessToast('登录成功')
     
+    // 管理员重置密码后，强制用户先设置自己的新密码
+    if (res.data.user?.mustChangePassword) {
+      router.replace('/change-password?forced=1')
+      return
+    }
+
     // 根据用户角色跳转
     const user = res.data.user
     if (user.role === 'admin' || user.role === 'dsl_admin' || user.role === 'study_admin') {
@@ -154,6 +189,10 @@ const onPasswordLogin = async (values) => {
 
 // 微信授权登录
 const onWechatLogin = async () => {
+  if (!agreed.value) {
+    showFailToast('请先阅读并勾选同意《用户协议》和《隐私政策》')
+    return
+  }
   wechatLoading.value = true
   try {
     const res = await axios.get('/api/auth/wechat-oauth-url', {
@@ -306,6 +345,25 @@ onMounted(() => {
   color: #667eea;
   font-size: 14px;
   cursor: pointer;
+}
+
+.action-links .link-divider {
+  margin: 0 8px;
+  color: #dcdee0;
+}
+
+.agreement-check {
+  margin: 16px 16px 0;
+}
+
+.agreement-text {
+  font-size: 13px;
+  color: #646566;
+  line-height: 1.5;
+}
+
+.agreement-check .link {
+  color: #667eea;
 }
 
 .wechat-login {

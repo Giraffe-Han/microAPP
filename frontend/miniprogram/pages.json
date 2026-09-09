@@ -89,6 +89,30 @@
       }
     },
     {
+      "path": "pages/agreement/index",
+      "style": {
+        "navigationBarTitleText": "协议详情",
+        "navigationBarTextStyle": "black",
+        "navigationBarBackgroundColor": "#ffffff"
+      }
+    },
+    {
+      "path": "pages/change-password/index",
+      "style": {
+        "navigationBarTitleText": "修改密码",
+        "navigationBarTextStyle": "black",
+        "navigationBarBackgroundColor": "#ffffff"
+      }
+    },
+    {
+      "path": "pages/account-request/index",
+      "style": {
+        "navigationBarTitleText": "账号申请",
+        "navigationBarTextStyle": "black",
+        "navigationBarBackgroundColor": "#ffffff"
+      }
+    },
+    {
       "path": "pages/mine/auth",
       "style": {
         "navigationBarTitleText": "实名认证",

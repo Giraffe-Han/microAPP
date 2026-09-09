@@ -24,6 +24,32 @@
         <text class="label">确认</text>
         <input class="input" v-model="form.confirmPassword" password placeholder="请再次输入密码" />
       </view>
+      <view class="input-item">
+        <text class="label">验证码</text>
+        <input class="input" v-model="form.captchaCode" maxlength="6" placeholder="请输入图形验证码" />
+        <image
+          v-if="captcha.image"
+          class="captcha-img"
+          :src="captcha.image"
+          mode="aspectFit"
+          @tap="loadCaptcha"
+        />
+        <text v-else class="captcha-loading" @tap="loadCaptcha">加载中</text>
+      </view>
+
+      <view class="captcha-tip">看不清？点击图片刷新</view>
+
+      <view class="agreement-check" @tap="agreed = !agreed">
+        <view class="checkbox" :class="{ checked: agreed }">
+          <text v-if="agreed" class="check-mark">✓</text>
+        </view>
+        <view class="agreement-text">
+          我已阅读并同意
+          <text class="link" @tap.stop="goAgreement('user')">《用户协议》</text>
+          和
+          <text class="link" @tap.stop="goAgreement('privacy')">《隐私政策》</text>
+        </view>
+      </view>
 
       <button class="reg-btn" type="primary" @tap="handleRegister" :loading="loading">注册</button>
       
@@ -39,7 +65,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { request, authStorage } from '../../utils/request'
 
 const loading = ref(false)
@@ -48,8 +74,35 @@ const form = ref({
   phone: '',
   name: '',
   password: '',
-  confirmPassword: ''
+  confirmPassword: '',
+  captchaCode: ''
 })
+
+const captcha = ref({ captchaId: '', image: '' })
+
+// 隐私政策/用户协议明示同意：默认不勾选，未勾选不得注册
+const agreed = ref(false)
+
+const goAgreement = (type) => {
+  uni.navigateTo({ url: `/pages/agreement/index?type=${type}` })
+}
+
+// 小程序 image 组件不支持 SVG，需请求 PNG 格式
+// 验证码在服务端一次性消费，任何提交结果都需重新拉取
+const loadCaptcha = async () => {
+  captcha.value = { captchaId: '', image: '' }
+  form.value.captchaCode = ''
+  try {
+    const res = await request({ url: '/api/auth/captcha?format=png' })
+    if (!res?.success) throw new Error(res?.message || '获取验证码失败')
+    captcha.value = { captchaId: res.captchaId, image: res.image }
+  } catch (error) {
+    console.error(error)
+    uni.showToast({ title: '验证码加载失败，请点击重试', icon: 'none' })
+  }
+}
+
+onMounted(loadCaptcha)
 
 const handleRegister = async () => {
   if (!form.value.phone) {
@@ -64,6 +117,12 @@ const handleRegister = async () => {
   if (form.value.password !== form.value.confirmPassword) {
     return uni.showToast({ title: '两次密码不一致', icon: 'none' })
   }
+  if (!form.value.captchaCode) {
+    return uni.showToast({ title: '请输入图形验证码', icon: 'none' })
+  }
+  if (!agreed.value) {
+    return uni.showToast({ title: '请先阅读并勾选同意《用户协议》和《隐私政策》', icon: 'none' })
+  }
 
   loading.value = true
   try {
@@ -73,7 +132,9 @@ const handleRegister = async () => {
       data: {
         phone: form.value.phone,
         name: form.value.name || `User${form.value.phone.slice(-4)}`,
-        password: form.value.password
+        password: form.value.password,
+        captchaId: captcha.value.captchaId,
+        captchaCode: form.value.captchaCode
       }
     })
 
@@ -92,6 +153,7 @@ const handleRegister = async () => {
     console.error(error)
     const msg = error?.data?.message || error?.message || '注册失败'
     uni.showToast({ title: msg, icon: 'none' })
+    await loadCaptcha()
   } finally {
     loading.value = false
   }
@@ -160,6 +222,70 @@ const goLogin = () => {
 .input {
   flex: 1;
   font-size: 15px;
+}
+
+.captcha-img {
+  width: 96px;
+  height: 36px;
+  flex-shrink: 0;
+  background: #fff;
+  border-radius: 6px;
+}
+
+.captcha-loading {
+  width: 96px;
+  font-size: 12px;
+  color: #969799;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.captcha-tip {
+  font-size: 12px;
+  color: #969799;
+  text-align: right;
+  margin-top: -8px;
+}
+
+.agreement-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.checkbox {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1px solid #c8c9cc;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+}
+
+.checkbox.checked {
+  background: #667eea;
+  border-color: #667eea;
+}
+
+.check-mark {
+  color: #fff;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.agreement-text {
+  flex: 1;
+  font-size: 13px;
+  color: #646566;
+  line-height: 1.5;
+}
+
+.agreement-text .link {
+  color: #667eea;
 }
 
 .reg-btn {

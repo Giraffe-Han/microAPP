@@ -21,14 +21,14 @@ const router = express.Router();
 // ==================== 工具函数 ====================
 
 /**
- * 生成订单号: MD + 年月日 + 4位自增序号
+ * 生成订单号: DK + 年月日 + 4位自增序号
  */
 async function generateOrderNo() {
   const now = new Date();
   const dateStr = now.getFullYear().toString() +
     String(now.getMonth() + 1).padStart(2, '0') +
     String(now.getDate()).padStart(2, '0');
-  const prefix = 'MD' + dateStr;
+  const prefix = 'DK' + dateStr;
 
   const orders = await readMedicalOrdersDB();
   const todayOrders = orders.filter(o => o.order_no && o.order_no.startsWith(prefix));
