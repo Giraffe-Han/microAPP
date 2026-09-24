@@ -65,11 +65,15 @@
             <van-cell title="联系电话" :value="v(currentItem.traineePhone)" />
           </template>
           <template v-else-if="currentItem.serviceId === '9'">
+            <van-cell title="研学点位" :value="studyLocationLabel(currentItem)" />
+            <van-cell title="报名类型" :value="v(currentItem.studyType || '课程报名')" />
+            <van-cell title="联系人" :value="v(currentItem.contactName)" />
+            <van-cell title="联系电话" :value="v(currentItem.contactPhone)" />
             <van-cell title="学校/机构" :value="v(currentItem.studyOrg)" />
             <van-cell v-if="currentItem.studyGrade" title="年级/年龄段" :value="v(currentItem.studyGrade)" />
-            <van-cell title="参与人数" :value="v(currentItem.studyParticipants)" />
+            <van-cell :title="currentItem.studyType === '需求收集' ? '意向人数' : '参与人数'" :value="v(currentItem.studyParticipants)" />
             <van-cell title="期望日期" :value="v(currentItem.studyDate)" />
-            <van-cell title="场次" :value="v(currentItem.studySessionText || currentItem.studySession)" />
+            <van-cell v-if="currentItem.studySessionText || currentItem.studySession" title="场次" :value="v(currentItem.studySessionText || currentItem.studySession)" />
           </template>
           <template v-else-if="currentItem.serviceId === '13'">
             <van-cell v-if="currentItem.name || currentItem.manager" :title="currentItem.competitionRole === 'club' ? '负责人' : '姓名'" :value="v(currentItem.name || currentItem.manager)" />
@@ -150,6 +154,14 @@ const showStatusPicker = ref(false)
 const currentItem = ref(null)
 
 const v = val => val || '-'
+
+// 研学点位显示：优先用已存名称，其次根据 key 映射，历史数据默认归属牛山
+const studyLocationLabel = (item) => {
+  if (!item) return '-'
+  if (item.studyLocation) return item.studyLocation
+  const map = { niushan: '牛山低空科创园', zhennan: '浙南低空飞行服务中心' }
+  return map[item.studyLocationKey] || '牛山低空科创园'
+}
 
 const statusOptions = [
   { text: '待处理', value: '待处理' },

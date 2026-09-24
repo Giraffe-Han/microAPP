@@ -304,7 +304,7 @@ onMounted(async () => {
 })
 
 const onApply = () => {
-  router.push(`/service-apply/9?package=${pkg.value.id}`)
+  router.push(`/service-apply/9?package=${pkg.value.id}&location=niushan`)
 }
 </script>
 

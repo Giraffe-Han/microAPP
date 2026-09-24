@@ -130,6 +130,78 @@
 
           <!-- ===== 研学课程包管理（仅研学） ===== -->
           <template v-if="editingServiceId === '9'">
+            <!-- 研学点位配置（分流入口） -->
+            <van-cell-group inset title="研学点位（分流入口）" style="margin-top: 12px;">
+              <div v-for="(loc, idx) in editingService.locations" :key="loc.key || idx" class="list-item-block">
+                <div class="list-item-head">
+                  <span class="item-num">{{ loc.name || loc.key }}</span>
+                  <van-switch v-model="loc.enabled" size="20" />
+                </div>
+                <van-field v-model="loc.name" label="点位名称" placeholder="如：牛山低空科创园" dense />
+                <van-field v-model="loc.subtitle" label="副标题" placeholder="点位简介" dense />
+                <van-field v-model="loc.tag" label="角标" placeholder="如：课程报名 / 需求收集" dense />
+                <van-field v-model="loc.enterText" label="按钮文案" placeholder="如：查看课程 / 登记需求" dense />
+                <van-field label="点位方式">
+                  <template #input>
+                    <van-radio-group v-model="loc.action" direction="horizontal">
+                      <van-radio name="packages">课程报名</van-radio>
+                      <van-radio name="demand">需求收集</van-radio>
+                    </van-radio-group>
+                  </template>
+                </van-field>
+                <van-field label="封面图">
+                  <template #input>
+                    <div class="bg-input-wrap">
+                      <van-field v-model="loc.cover" placeholder="封面图URL（选填）" style="flex:1;" />
+                      <van-uploader :after-read="f => onReadLocationCover(f, idx)" max-count="1" accept="image/*">
+                        <van-button icon="photo-o" size="small" type="primary" plain>上传</van-button>
+                      </van-uploader>
+                    </div>
+                  </template>
+                </van-field>
+                <div v-if="loc.cover" class="img-preview">
+                  <img :src="normalizeMediaUrl(loc.cover)" @click="previewCrop(normalizeMediaUrl(loc.cover), 'locationCover', idx)" />
+                  <div class="img-actions">
+                    <van-button size="mini" type="primary" plain @click="previewCrop(normalizeMediaUrl(loc.cover), 'locationCover', idx)">裁剪</van-button>
+                  </div>
+                </div>
+                <template v-if="loc.action === 'demand'">
+                  <van-field
+                    v-model="loc.intro"
+                    type="textarea"
+                    rows="3"
+                    autosize
+                    label="介绍文案"
+                    placeholder="进入需求登记前展示的点位介绍（可分段，每行一段）"
+                  />
+                  <van-field v-model="loc.address" label="点位地址" placeholder="请输入详细地址" />
+                  <div class="location-gallery-config">
+                    <div class="location-gallery-title">场馆图片（{{ loc.gallery?.length || 0 }}/6）</div>
+                    <div v-for="(image, imageIdx) in loc.gallery" :key="imageIdx" class="location-gallery-item">
+                      <img :src="normalizeMediaUrl(image.image)" alt="场馆图片" />
+                      <div class="location-gallery-fields">
+                        <van-field v-model="image.title" label="图片标题" placeholder="如：场馆外景" dense />
+                        <van-field v-model="image.desc" label="图片说明" placeholder="选填" dense />
+                      </div>
+                      <van-button size="mini" type="danger" plain icon="cross" @click="loc.gallery.splice(imageIdx, 1)" />
+                    </div>
+                    <van-uploader
+                      v-if="(loc.gallery?.length || 0) < 6"
+                      :after-read="files => onReadLocationGallery(files, idx)"
+                      multiple
+                      accept="image/*"
+                    >
+                      <van-button icon="photo-o" size="small" type="primary" plain>上传场馆图片</van-button>
+                    </van-uploader>
+                    <div class="location-gallery-tip">建议上传2—3张场地外景、场馆内部或科普设施图片。</div>
+                  </div>
+                </template>
+              </div>
+              <div style="padding: 8px 16px; font-size: 12px; color: #969799;">
+                提示：「课程报名」点位展示下方课程包列表；「需求收集」点位进入需求登记表单（不对外收费）。停用后该点位在前台隐藏。
+              </div>
+            </van-cell-group>
+
             <van-cell-group inset title="课程包管理" style="margin-top: 12px;">
               <div class="pkg-tabs">
                 <div
@@ -685,6 +757,29 @@ const editServiceConfig = (id) => {
 
   // 初始化研学课程包
   if (id === '9') {
+    // 初始化研学点位（分流入口），兼容旧数据
+    if (!Array.isArray(raw.locations) || raw.locations.length === 0) {
+      raw.locations = [
+        { key: 'niushan', name: '牛山低空科创园', subtitle: '专业无人机研学课程，支持在线报名', tag: '课程报名', enterText: '查看课程', cover: '', action: 'packages', intro: '', gallery: [], enabled: true },
+        { key: 'zhennan', name: '浙南低空飞行服务中心', subtitle: '集展示、宣传、体验于一体的低空经济科普平台', address: '浙江省温州市鹿城区七都街道温州金融科技文化中心A4号楼', tag: '需求收集', enterText: '登记需求', cover: '', action: 'demand', intro: '浙南低空飞行服务中心由温州低空经济发展有限公司下属浙南低空飞行服务管理（温州）有限公司建设，是温州市打造“全国一流、全省领先”的低空飞行服务平台，集展示、宣传、体验功能于一体，是呈现温州低空经济发展历程与成果的重要场所。\n中心设有低空经济科普体验区（低空经济启航介绍、国家战略历程、科普体验、VR体验等）与低空经济展示区（起降点布局、应用场景、产品展示、展望未来等），配备VR操作体验仓、VR体验设备及多台低空经济展示产品，带来沉浸式低空科普体验。\n面向政企、学校及普通访客，常态化开展低空知识宣讲、行业案例科普与研学沙龙，通过实景参观、图文展板、实物展品与VR互动，全方位普及无人机与通航飞行应用知识。\n开放时间：周一至周日 8:30-17:00（预约开放）；预约电话：0577-55558069。', gallery: [], enabled: true }
+      ]
+    } else {
+      raw.locations = raw.locations.map(l => ({
+        enabled: true,
+        action: 'packages',
+        cover: '',
+        subtitle: '',
+        address: '',
+        tag: '',
+        enterText: '',
+        intro: '',
+        ...l,
+        gallery: Array.isArray(l.gallery)
+          ? l.gallery.map(item => typeof item === 'string' ? { image: item, title: '', desc: '' } : { image: '', title: '', desc: '', ...item })
+          : []
+      }))
+    }
+
     const pkgs = raw.packages || {}
     studyPackages.value = JSON.parse(JSON.stringify(pkgs))
     // 动态获取所有课程包ID（兼容旧数据）
@@ -771,6 +866,52 @@ const onReadServiceFile = async (file, field) => {
   }
 }
 
+// 研学点位封面上传
+const onReadLocationCover = async (file, idx) => {
+  showLoadingToast({ message: '上传中...', forbidClick: true })
+  const url = await uploadFile(file)
+  closeToast()
+  if (url && editingService.value?.locations?.[idx]) {
+    editingService.value.locations[idx].cover = normalizeMediaUrl(url)
+    showSuccessToast('上传成功')
+  }
+}
+
+// 研学点位场馆图片上传
+const onReadLocationGallery = async (files, locationIdx) => {
+  const location = editingService.value?.locations?.[locationIdx]
+  if (!location) return
+  if (!Array.isArray(location.gallery)) location.gallery = []
+
+  const selectedFiles = Array.isArray(files) ? files : [files]
+  const availableCount = Math.max(0, 6 - location.gallery.length)
+  const filesToUpload = selectedFiles.slice(0, availableCount)
+  if (filesToUpload.length === 0) {
+    showFailToast('每个点位最多上传6张场馆图片')
+    return
+  }
+
+  showLoadingToast({ message: '图片上传中...', forbidClick: true, duration: 0 })
+  let uploadedCount = 0
+  for (const file of filesToUpload) {
+    const url = await uploadFile(file)
+    if (url) {
+      location.gallery.push({
+        image: normalizeMediaUrl(url),
+        title: `场馆图片${location.gallery.length + 1}`,
+        desc: ''
+      })
+      uploadedCount += 1
+    }
+  }
+  closeToast()
+  if (selectedFiles.length > availableCount) {
+    showFailToast('最多保留6张场馆图片')
+  } else if (uploadedCount > 0) {
+    showSuccessToast(`已上传${uploadedCount}张图片`)
+  }
+}
+
 // 创建空课程包模板
 const createEmptyPackage = (pkgId) => {
   return {
@@ -819,6 +960,9 @@ const previewCrop = (imageUrl, type, index = -1) => {
   } else if (type === 'showcase' || type === 'showcaseEditing') {
     cropperAspectRatio.value = '16:9'
     cropperTitle.value = '裁剪展示图片'
+  } else if (type === 'locationCover') {
+    cropperAspectRatio.value = '16:9'
+    cropperTitle.value = '裁剪点位封面'
   } else {
     cropperAspectRatio.value = 'free'
     cropperTitle.value = '裁剪图片'
@@ -843,8 +987,9 @@ const onCropConfirm = async (croppedFile) => {
       activeStudyPkg.value.showcase[index].image = normalizedUrl
     } else if (type === 'showcaseEditing' && showcaseEditingItem.value) {
       showcaseEditingItem.value.image = normalizedUrl
+    } else if (type === 'locationCover' && editingService.value?.locations?.[index]) {
+      editingService.value.locations[index].cover = normalizedUrl
     }
-    
     showSuccessToast('裁剪上传成功')
   }
 }
@@ -1167,5 +1312,43 @@ onMounted(fetchAllServiceConfigs)
   width: 100%;
   border-radius: 8px;
   display: block;
+}
+
+.location-gallery-config {
+  padding: 12px 16px;
+  border-top: 1px solid #f5f5f7;
+}
+.location-gallery-title {
+  margin-bottom: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-color, #323233);
+}
+.location-gallery-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid #f5f5f7;
+}
+.location-gallery-item img {
+  width: 72px;
+  height: 54px;
+  flex-shrink: 0;
+  object-fit: cover;
+  border-radius: 6px;
+}
+.location-gallery-fields {
+  flex: 1;
+  min-width: 0;
+}
+.location-gallery-fields :deep(.van-field) {
+  padding: 4px 0;
+}
+.location-gallery-tip {
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #969799;
 }
 </style>

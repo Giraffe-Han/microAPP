@@ -534,34 +534,115 @@
 
           <!-- 低空研学报名（服务 9） -->
           <template v-if="serviceId === '9'">
-            <van-field
-              v-model="formData.studyOrg"
-              label="学校/机构"
-              placeholder="请输入学校/机构名称"
-              :rules="[{ required: true, message: '请输入学校/机构名称' }]"
-            />
-            <van-field
-              v-model="formData.studyGrade"
-              label="年级/年龄段"
-              placeholder="如：四-六年级 / 10-12岁（可选）"
-            />
-            <van-field
-              v-model="formData.studyParticipants"
-              type="number"
-              label="参与人数"
-              placeholder="请输入参与人数"
-              :rules="[{ required: true, message: '请输入参与人数' }]"
-            />
-            <van-field
-              v-model="formData.studyDate"
-              is-link
-              readonly
-              label="期望日期"
-              placeholder="请选择日期"
-              @click="showStudyDatePicker = true"
-              @click-input="showStudyDatePicker = true"
-              :rules="[{ required: true, message: '请选择日期' }]"
-            />
+            <!-- 浙南低空飞行服务中心：研学需求收集 -->
+            <template v-if="isStudyDemand">
+              <van-notice-bar
+                wrapable
+                :scrollable="false"
+                color="#0071e3"
+                background="#e8f3ff"
+                left-icon="info-o"
+              >
+                浙南低空飞行服务中心研学项目正在筹备中，欢迎登记您的研学需求，我们将尽快与您联系。
+              </van-notice-bar>
+              <van-field
+                v-model="formData.studyOrg"
+                label="学校/机构"
+                placeholder="请输入学校/机构名称（选填）"
+              />
+              <van-field
+                v-model="formData.studyGrade"
+                label="年级/年龄段"
+                placeholder="如：四-六年级 / 10-12岁（选填）"
+              />
+              <van-field
+                v-model="formData.studyParticipants"
+                type="number"
+                label="意向人数"
+                placeholder="请输入预计参与人数（选填）"
+              />
+              <van-field
+                v-model="formData.studyDate"
+                is-link
+                readonly
+                label="期望日期"
+                placeholder="请选择期望日期（选填）"
+                @click="showStudyDatePicker = true"
+                @click-input="showStudyDatePicker = true"
+              />
+              <van-field
+                v-model="formData.remark"
+                label="需求描述"
+                type="textarea"
+                rows="3"
+                maxlength="200"
+                show-word-limit
+                placeholder="请描述您的研学需求：课程方向 / 时间安排 / 其他期望（选填）"
+              />
+            </template>
+
+            <!-- 牛山低空科创园：课程报名 -->
+            <template v-else>
+              <van-field
+                v-model="formData.studyOrg"
+                label="学校/机构"
+                placeholder="请输入学校/机构名称"
+                :rules="[{ required: true, message: '请输入学校/机构名称' }]"
+              />
+              <van-field
+                v-model="formData.studyGrade"
+                label="年级/年龄段"
+                placeholder="如：四-六年级 / 10-12岁（可选）"
+              />
+              <van-field
+                v-model="formData.studyParticipants"
+                type="number"
+                label="参与人数"
+                placeholder="请输入参与人数"
+                :rules="[{ required: true, message: '请输入参与人数' }]"
+              />
+              <van-field
+                v-model="formData.studyDate"
+                is-link
+                readonly
+                label="期望日期"
+                placeholder="请选择日期"
+                @click="showStudyDatePicker = true"
+                @click-input="showStudyDatePicker = true"
+                :rules="[{ required: true, message: '请选择日期' }]"
+              />
+
+              <van-field
+                v-model="formData.studySessionText"
+                is-link
+                readonly
+                label="场次"
+                placeholder="请选择上午/下午场次"
+                @click="showStudySessionPicker = true"
+                @click-input="showStudySessionPicker = true"
+                :rules="[{ required: true, message: '请选择场次' }]"
+              />
+              <van-popup :show="showStudySessionPicker" @update:show="val => showStudySessionPicker = val" position="bottom">
+                <van-picker
+                  :columns="studySessionOptions"
+                  @confirm="onStudySessionConfirm"
+                  @cancel="showStudySessionPicker = false"
+                  title="选择场次"
+                />
+              </van-popup>
+
+              <van-field
+                v-model="formData.remark"
+                label="备注"
+                type="textarea"
+                rows="3"
+                maxlength="200"
+                show-word-limit
+                placeholder="可填写：集合方式/是否需要发票/其他需求（可选）"
+              />
+            </template>
+
+            <!-- 日期选择器（课程报名 / 需求收集共用） -->
             <van-popup :show="showStudyDatePicker" @update:show="val => showStudyDatePicker = val" position="bottom">
               <van-date-picker
                 v-model="studyDate"
@@ -571,35 +652,6 @@
                 @cancel="showStudyDatePicker = false"
               />
             </van-popup>
-
-            <van-field
-              v-model="formData.studySessionText"
-              is-link
-              readonly
-              label="场次"
-              placeholder="请选择上午/下午场次"
-              @click="showStudySessionPicker = true"
-              @click-input="showStudySessionPicker = true"
-              :rules="[{ required: true, message: '请选择场次' }]"
-            />
-            <van-popup :show="showStudySessionPicker" @update:show="val => showStudySessionPicker = val" position="bottom">
-              <van-picker
-                :columns="studySessionOptions"
-                @confirm="onStudySessionConfirm"
-                @cancel="showStudySessionPicker = false"
-                title="选择场次"
-              />
-            </van-popup>
-
-            <van-field
-              v-model="formData.remark"
-              label="备注"
-              type="textarea"
-              rows="3"
-              maxlength="200"
-              show-word-limit
-              placeholder="可填写：集合方式/是否需要发票/其他需求（可选）"
-            />
           </template>
 
           <!-- 无人机维修服务 -->
@@ -789,13 +841,31 @@ const serviceNames = {
 
 const serviceName = computed(() => serviceNames[serviceId.value] || '服务')
 
+// 低空研学点位（服务 9）：牛山课程报名 / 浙南需求收集
+const studyLocationKey = computed(() => {
+  if (serviceId.value !== '9') return ''
+  const loc = typeof route.query.location === 'string' ? route.query.location : ''
+  return loc || 'niushan'
+})
+const studyLocationName = computed(() => {
+  const map = { niushan: '牛山低空科创园', zhennan: '浙南低空飞行服务中心' }
+  return map[studyLocationKey.value] || ''
+})
+// 浙南为需求收集（不对外收费）
+const isStudyDemand = computed(() => serviceId.value === '9' && studyLocationKey.value === 'zhennan')
+
 // 页面显示的标题
 const pageDisplayTitle = computed(() => {
   if (serviceId.value === '13') return 'DSL 预注册'
+  if (isStudyDemand.value) return '研学需求登记'
   return serviceName.value + '申请'
 })
 
 const submitButtonText = computed(() => {
+  // 浙南研学需求收集 -> 提交需求
+  if (isStudyDemand.value) {
+    return '提交需求'
+  }
   // 物流、吊运 -> 下单
   if (['1', '4', '8'].includes(serviceId.value)) {
     return '立即下单'
@@ -1169,6 +1239,15 @@ const onSubmit = async () => {
       // 假设 openid 存在于 user 对象中，如果不存在则使用 id 作为 fallback
       const openid = (user && (user.openid || user.id)) || 'GUEST';
       submitData.regNo = `REG-${openid.substring(0, 8).toUpperCase()}-${now.getTime().toString().slice(-6)}`;
+    }
+
+    // 低空研学：记录研学点位与类型，便于后台分流管理
+    if (serviceId.value === '9') {
+      submitData.studyLocationKey = studyLocationKey.value;
+      submitData.studyLocation = studyLocationName.value;
+      submitData.studyType = isStudyDemand.value ? '需求收集' : '课程报名';
+      const pkg = typeof route.query.package === 'string' ? route.query.package : '';
+      if (pkg) submitData.studyPackage = pkg;
     }
 
     const res = await axios.post('/api/submit', submitData);

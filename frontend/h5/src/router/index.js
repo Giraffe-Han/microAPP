@@ -72,6 +72,18 @@ const routes = [
     meta: { title: '低空研学' }
   },
   {
+    path: '/study/packages',
+    name: 'StudyPackages',
+    component: () => import('@/views/study/Packages.vue'),
+    meta: { title: '牛山低空科创园' }
+  },
+  {
+    path: '/study/intro',
+    name: 'StudyLocationIntro',
+    component: () => import('@/views/study/LocationIntro.vue'),
+    meta: { title: '研学点位介绍' }
+  },
+  {
     path: '/study/:id',
     name: 'StudyDetail',
     component: () => import('@/views/study/Detail.vue'),

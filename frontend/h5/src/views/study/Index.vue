@@ -1,5 +1,5 @@
 <template>
-  <div class="study-page">
+  <div class="study-select-page">
     <van-nav-bar
       title="低空研学"
       left-arrow
@@ -14,45 +14,32 @@
       <div class="header-content">
         <van-icon name="/icons/study.svg" size="48" color="#ffffff" />
         <h1 class="header-title">低空研学</h1>
-        <p class="header-subtitle">选择适合的研学课程，开启飞行探索之旅</p>
+        <p class="header-subtitle">请选择研学点位，开启飞行探索之旅</p>
       </div>
     </div>
 
-    <div class="package-list">
+    <div class="location-list">
       <div
-        v-for="pkg in packages"
-        :key="pkg.id"
-        class="package-card"
-        :class="{ recommended: pkg.recommended }"
-        @click="goToDetail(pkg.id)"
+        v-for="loc in locations"
+        :key="loc.key"
+        class="location-card"
+        @click="goToLocation(loc)"
       >
-        <div v-if="pkg.recommended" class="recommend-badge">推荐</div>
-        <div class="card-top">
-          <div class="pkg-name">{{ pkg.name }}</div>
-          <div class="pkg-tag">{{ pkg.tag }}</div>
+        <div class="loc-cover" :style="coverStyle(loc)">
+          <div class="loc-mask" />
+          <span class="loc-tag">{{ loc.tag }}</span>
         </div>
-        <div class="card-price">
-          <span class="currency">¥</span>
-          <span class="amount">{{ pkg.price }}</span>
-          <span class="unit">/人</span>
-        </div>
-        <div class="card-desc">{{ pkg.desc }}</div>
-        <div class="card-highlights">
-          <div v-for="(h, i) in pkg.highlights" :key="i" class="highlight-item">
-            <van-icon name="success" size="14" color="#06b6d4" />
-            <span>{{ h }}</span>
+        <div class="loc-body">
+          <div class="loc-name">{{ loc.name }}</div>
+          <div class="loc-subtitle">{{ loc.subtitle }}</div>
+          <div class="loc-address" v-if="loc.address">
+            <van-icon name="location-o" size="13" color="#0071e3" />
+            <span>{{ loc.address }}</span>
           </div>
-        </div>
-        <div class="card-action">
-          <van-button
-            :type="pkg.recommended ? 'primary' : 'default'"
-            size="small"
-            round
-            :color="pkg.recommended ? '#0071e3' : undefined"
-            :plain="!pkg.recommended"
-          >
-            查看详情
-          </van-button>
+          <div class="loc-action">
+            <span class="loc-enter">{{ loc.enterText }}</span>
+            <van-icon name="arrow" size="14" color="#0071e3" />
+          </div>
         </div>
       </div>
     </div>
@@ -73,44 +60,85 @@ import { smartBack } from '@/utils/miniprogram'
 
 const router = useRouter()
 const onBack = () => smartBack(router)
-const packages = ref([])
+
+// 默认点位配置（后台未配置时的兜底）
+const defaultLocations = [
+  {
+    key: 'niushan',
+    name: '牛山低空科创园',
+    subtitle: '专业无人机研学课程，支持在线报名',
+    address: '',
+    tag: '课程报名',
+    enterText: '查看课程',
+    cover: '',
+    action: 'packages',
+    enabled: true
+  },
+  {
+    key: 'zhennan',
+    name: '浙南低空飞行服务中心',
+    subtitle: '集展示、宣传、体验于一体的低空经济科普平台',
+    address: '温州市鹿城区七都街道温州金融科技文化中心A4号楼',
+    tag: '需求收集',
+    enterText: '登记需求',
+    cover: '',
+    action: 'demand',
+    enabled: true
+  }
+]
+
+const locations = ref(defaultLocations)
+
+const normalizeUrl = (url) => {
+  if (!url) return ''
+  if (url.startsWith('http') || url.startsWith('data:') || url.startsWith('/')) return url
+  return `/${url}`
+}
+
+const coverStyle = (loc) => {
+  if (loc.cover) {
+    return {
+      backgroundImage: `url(${normalizeUrl(loc.cover)})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center'
+    }
+  }
+  return { background: 'linear-gradient(135deg, #06b6d4 0%, #2563eb 100%)' }
+}
 
 onMounted(async () => {
   try {
     const res = await axios.get('/api/services/config')
     const config = res?.data?.data?.['9'] || {}
-    const pkgs = config.packages || {}
-    // 动态获取所有课程包ID，优先使用语义化标识
-    const ids = Object.keys(pkgs).sort((a, b) => {
-      // 推荐课程排在最前面
-      if (pkgs[a].recommended && !pkgs[b].recommended) return -1
-      if (!pkgs[a].recommended && pkgs[b].recommended) return 1
-      // 其次按价格从高到低排序
-      return (pkgs[b].price || 0) - (pkgs[a].price || 0)
-    })
-    packages.value = ids
-      .filter(id => pkgs[id])
-      .map(id => ({
-        id,
-        name: pkgs[id].name || '',
-        tag: pkgs[id].tag || '',
-        price: pkgs[id].price || 0,
-        recommended: pkgs[id].recommended || false,
-        desc: pkgs[id].desc || pkgs[id].intro || '',
-        highlights: pkgs[id].cardHighlights || []
-      }))
+    const remoteLocations = Array.isArray(config.locations) ? config.locations : []
+    if (remoteLocations.length > 0) {
+      // 后台配置优先，仅展示启用的点位，并与默认字段做兜底合并
+      const merged = remoteLocations
+        .filter(l => l && l.enabled !== false)
+        .map(l => {
+          const fallback = defaultLocations.find(d => d.key === l.key) || {}
+          return { ...fallback, ...l }
+        })
+      if (merged.length > 0) locations.value = merged
+    }
   } catch (e) {
-    console.warn('加载研学配置失败:', e)
+    console.warn('加载研学点位配置失败:', e)
   }
 })
 
-const goToDetail = (id) => {
-  router.push(`/study/${id}`)
+const goToLocation = (loc) => {
+  if (loc.action === 'demand') {
+    // 浙南等需求收集点位，先进入点位介绍页，再登记需求
+    router.push(`/study/intro?location=${loc.key}`)
+  } else {
+    // 牛山等课程报名点位，进入课程列表
+    router.push(`/study/packages?location=${loc.key}`)
+  }
 }
 </script>
 
 <style scoped>
-.study-page {
+.study-select-page {
   min-height: 100vh;
   background: #f5f6fa;
   padding-bottom: 60px;
@@ -167,9 +195,9 @@ const goToDetail = (id) => {
   margin: 0;
 }
 
-.package-list {
+.location-list {
   padding: 0 16px;
-  margin-top: -36px;
+  margin-top: -20px;
   position: relative;
   z-index: 2;
   display: flex;
@@ -177,110 +205,81 @@ const goToDetail = (id) => {
   gap: 16px;
 }
 
-.package-card {
+.location-card {
   background: #fff;
   border-radius: 20px;
-  padding: 24px 20px;
-  position: relative;
+  overflow: hidden;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
-  border: 2px solid transparent;
-  transition: all 0.3s;
+  transition: transform 0.3s;
   cursor: pointer;
 }
 
-.package-card:active {
+.location-card:active {
   transform: scale(0.98);
 }
 
-.package-card.recommended {
-  border-color: #0071e3;
+.loc-cover {
+  position: relative;
+  height: 120px;
 }
 
-.recommend-badge {
+.loc-mask {
   position: absolute;
-  top: -1px;
-  right: 20px;
-  background: linear-gradient(135deg, #0071e3 0%, #06b6d4 100%);
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.25) 100%);
+}
+
+.loc-tag {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 1;
+  font-size: 12px;
   color: #fff;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 4px 14px;
-  border-radius: 0 0 10px 10px;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 4px 12px;
+  border-radius: 20px;
+  backdrop-filter: blur(6px);
 }
 
-.card-top {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
+.loc-body {
+  padding: 16px 20px 20px;
 }
 
-.pkg-name {
-  font-size: 17px;
+.loc-name {
+  font-size: 18px;
   font-weight: 700;
   color: #1d1d1f;
-  flex: 1;
+  margin-bottom: 6px;
 }
 
-.pkg-tag {
-  font-size: 11px;
-  color: #0071e3;
-  background: rgba(0, 113, 227, 0.08);
-  padding: 3px 10px;
-  border-radius: 20px;
-  font-weight: 500;
-}
-
-.card-price {
-  display: flex;
-  align-items: baseline;
-  margin-bottom: 12px;
-}
-
-.currency {
-  font-size: 16px;
-  font-weight: 700;
-  color: #ee0a24;
-}
-
-.amount {
-  font-size: 36px;
-  font-weight: 800;
-  color: #ee0a24;
-  line-height: 1;
-  margin: 0 2px;
-}
-
-.unit {
+.loc-subtitle {
   font-size: 13px;
   color: #86868b;
+  line-height: 1.6;
+  margin-bottom: 10px;
 }
 
-.card-desc {
-  font-size: 13px;
-  color: #86868b;
-  line-height: 1.7;
-  margin-bottom: 16px;
-}
-
-.card-highlights {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 20px;
-}
-
-.highlight-item {
+.loc-address {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: #424245;
+  gap: 4px;
+  font-size: 12px;
+  color: #0071e3;
+  margin-bottom: 14px;
 }
 
-.card-action {
+.loc-action {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
+  gap: 4px;
+}
+
+.loc-enter {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0071e3;
 }
 
 .bottom-tip {
