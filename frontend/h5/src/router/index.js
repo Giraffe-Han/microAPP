@@ -81,7 +81,7 @@ const routes = [
     path: '/study/intro',
     name: 'StudyLocationIntro',
     component: () => import('@/views/study/LocationIntro.vue'),
-    meta: { title: '研学点位介绍' }
+    meta: { title: '研学场馆介绍' }
   },
   {
     path: '/study/:id',

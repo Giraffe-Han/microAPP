@@ -172,7 +172,7 @@
                     rows="3"
                     autosize
                     label="介绍文案"
-                    placeholder="进入需求登记前展示的点位介绍（可分段，每行一段）"
+                    placeholder="进入需求登记前展示的场馆介绍（可分段，每行一段）"
                   />
                   <van-field v-model="loc.address" label="点位地址" placeholder="请输入详细地址" />
                   <div class="location-gallery-config">

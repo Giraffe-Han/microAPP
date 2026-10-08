@@ -21,7 +21,7 @@
     <div class="intro-body">
       <div class="section-title">
         <span class="bar" />
-        <span>点位介绍</span>
+        <span>场馆介绍</span>
       </div>
       <div class="intro-text">
         <p v-for="(para, i) in introParagraphs" :key="i">{{ para }}</p>

@@ -536,15 +536,6 @@
           <template v-if="serviceId === '9'">
             <!-- 浙南低空飞行服务中心：研学需求收集 -->
             <template v-if="isStudyDemand">
-              <van-notice-bar
-                wrapable
-                :scrollable="false"
-                color="#0071e3"
-                background="#e8f3ff"
-                left-icon="info-o"
-              >
-                浙南低空飞行服务中心研学项目正在筹备中，欢迎登记您的研学需求，我们将尽快与您联系。
-              </van-notice-bar>
               <van-field
                 v-model="formData.studyOrg"
                 label="学校/机构"

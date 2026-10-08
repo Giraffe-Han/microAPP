@@ -128,7 +128,7 @@ onMounted(async () => {
 
 const goToLocation = (loc) => {
   if (loc.action === 'demand') {
-    // 浙南等需求收集点位，先进入点位介绍页，再登记需求
+    // 浙南等需求收集点位，先进入场馆介绍页，再登记需求
     router.push(`/study/intro?location=${loc.key}`)
   } else {
     // 牛山等课程报名点位，进入课程列表
