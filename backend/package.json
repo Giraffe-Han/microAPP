@@ -7,6 +7,8 @@
     "start": "node index.js",
     "dev": "nodemon index.js",
     "migrate:pg": "node db/migrate.js",
+    "seed:study": "node seed-study-packages.js",
+    "test:study": "node --test seed-study-packages.test.cjs",
     "setup": "cp .env.example .env"
   },
   "dependencies": {

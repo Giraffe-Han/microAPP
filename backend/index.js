@@ -1511,6 +1511,27 @@ app.get('/api/admin/stats', authRequired, roleRequired(['admin', 'dsl_admin', 's
 // Submit Application
 app.post('/api/submit', authOptional, async (req, res) => {
     const application = req.body;
+    // 课程报名以服务端套餐配置保存场馆和价格快照，不依赖页面传来的归属。
+    if (String(application.serviceId) === '9' && application.studyPackage) {
+        let config;
+        try {
+            config = await readServicesConfig();
+        } catch (error) {
+            return res.status(503).json({ success: false, message: '研学套餐加载失败，请稍后重试' });
+        }
+        const packages = config['9']?.packages || {};
+        const pkg = Object.prototype.hasOwnProperty.call(packages, application.studyPackage) ? packages[application.studyPackage] : null;
+        if (!pkg || pkg.enabled === false) {
+            return res.status(400).json({ success: false, message: '研学套餐不存在或已下架，请重新选择' });
+        }
+        const names = { niushan: '牛山低空科创园', zhennan: '浙南低空飞行服务中心' };
+        const location = pkg.location || 'niushan';
+        application.studyLocationKey = Object.keys(names).find(key => names[key] === location) || location;
+        application.studyLocation = names[application.studyLocationKey] || application.studyLocationKey;
+        application.studyType = '课程报名';
+        application.studyPackageName = pkg.name || application.studyPackage;
+        application.studyPackagePrice = pkg.price || 0;
+    }
     if (req.user && !application.userId) {
         application.userId = req.user.id;
     }

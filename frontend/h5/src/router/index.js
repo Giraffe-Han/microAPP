@@ -75,7 +75,7 @@ const routes = [
     path: '/study/packages',
     name: 'StudyPackages',
     component: () => import('@/views/study/Packages.vue'),
-    meta: { title: '牛山低空科创园' }
+    meta: { title: '研学套餐选择' }
   },
   {
     path: '/study/intro',

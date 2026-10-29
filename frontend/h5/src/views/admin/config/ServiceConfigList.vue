@@ -130,21 +130,22 @@
 
           <!-- ===== 研学课程包管理（仅研学） ===== -->
           <template v-if="editingServiceId === '9'">
-            <!-- 研学点位配置（分流入口） -->
-            <van-cell-group inset title="研学点位（分流入口）" style="margin-top: 12px;">
+            <!-- 研学场馆配置（分流入口） -->
+            <van-cell-group inset title="研学场馆（分流入口）" style="margin-top: 12px;">
               <div v-for="(loc, idx) in editingService.locations" :key="loc.key || idx" class="list-item-block">
                 <div class="list-item-head">
                   <span class="item-num">{{ loc.name || loc.key }}</span>
                   <van-switch v-model="loc.enabled" size="20" />
                 </div>
-                <van-field v-model="loc.name" label="点位名称" placeholder="如：牛山低空科创园" dense />
-                <van-field v-model="loc.subtitle" label="副标题" placeholder="点位简介" dense />
+                <van-field v-model="loc.name" label="场馆名称" placeholder="如：牛山低空科创园" dense />
+                <van-field v-model="loc.subtitle" label="副标题" placeholder="场馆简介" dense />
                 <van-field v-model="loc.tag" label="角标" placeholder="如：课程报名 / 需求收集" dense />
                 <van-field v-model="loc.enterText" label="按钮文案" placeholder="如：查看课程 / 登记需求" dense />
-                <van-field label="点位方式">
+                <van-field label="进入方式">
                   <template #input>
                     <van-radio-group v-model="loc.action" direction="horizontal">
-                      <van-radio name="packages">课程报名</van-radio>
+                      <van-radio name="packages">直接选课</van-radio>
+                      <van-radio name="intro">场馆介绍后选课</van-radio>
                       <van-radio name="demand">需求收集</van-radio>
                     </van-radio-group>
                   </template>
@@ -165,16 +166,16 @@
                     <van-button size="mini" type="primary" plain @click="previewCrop(normalizeMediaUrl(loc.cover), 'locationCover', idx)">裁剪</van-button>
                   </div>
                 </div>
-                <template v-if="loc.action === 'demand'">
+                <template v-if="loc.action === 'demand' || loc.action === 'intro'">
                   <van-field
                     v-model="loc.intro"
                     type="textarea"
                     rows="3"
                     autosize
                     label="介绍文案"
-                    placeholder="进入需求登记前展示的场馆介绍（可分段，每行一段）"
+                    placeholder="进入选课或需求登记前展示的场馆介绍（可分段，每行一段）"
                   />
-                  <van-field v-model="loc.address" label="点位地址" placeholder="请输入详细地址" />
+                  <van-field v-model="loc.address" label="场馆地址" placeholder="请输入详细地址" />
                   <div class="location-gallery-config">
                     <div class="location-gallery-title">场馆图片（{{ loc.gallery?.length || 0 }}/6）</div>
                     <div v-for="(image, imageIdx) in loc.gallery" :key="imageIdx" class="location-gallery-item">
@@ -198,7 +199,7 @@
                 </template>
               </div>
               <div style="padding: 8px 16px; font-size: 12px; color: #969799;">
-                提示：「课程报名」点位展示下方课程包列表；「需求收集」点位进入需求登记表单（不对外收费）。停用后该点位在前台隐藏。
+                提示：「直接选课」展示该场馆课程；「场馆介绍后选课」先展示场馆介绍，再选择套餐报名；「需求收集」登记研学需求。停用后该场馆在前台隐藏。
               </div>
             </van-cell-group>
 
@@ -223,6 +224,13 @@
             <template v-if="activeStudyPkg">
               <!-- 基本信息 -->
               <van-cell-group inset :title="activeStudyPkg.tag + ' - 基本信息'">
+                <van-field label="所属场馆">
+                  <template #input>
+                    <van-radio-group v-model="activeStudyPkg.location">
+                      <van-radio v-for="loc in editingService.locations" :key="loc.key" :name="loc.key">{{ loc.name }}</van-radio>
+                    </van-radio-group>
+                  </template>
+                </van-field>
                 <van-field v-model="activeStudyPkg.name" label="课程名称" placeholder="如：无人机研学实践中心半日营" />
                 <van-field v-model="activeStudyPkg.tag" label="标签" placeholder="如：半日营" />
                 <van-field v-model.number="activeStudyPkg.price" label="票价" placeholder="198" type="number" />
@@ -580,6 +588,7 @@ import ImageCropper from './ImageCropper.vue'
 import DataToolbar from '../components/DataToolbar.vue'
 import { normalizeMediaUrl, uploadFile } from '../composables/useMedia'
 import { useAuth } from '../composables/useAuth'
+import { getStudyPackageLocation } from '@/utils/study'
 
 const { userRole, isAdmin, isStudyAdmin } = useAuth()
 
@@ -761,7 +770,7 @@ const editServiceConfig = (id) => {
     if (!Array.isArray(raw.locations) || raw.locations.length === 0) {
       raw.locations = [
         { key: 'niushan', name: '牛山低空科创园', subtitle: '专业无人机研学课程，支持在线报名', tag: '课程报名', enterText: '查看课程', cover: '', action: 'packages', intro: '', gallery: [], enabled: true },
-        { key: 'zhennan', name: '浙南低空飞行服务中心', subtitle: '集展示、宣传、体验于一体的低空经济科普平台', address: '浙江省温州市鹿城区七都街道温州金融科技文化中心A4号楼', tag: '需求收集', enterText: '登记需求', cover: '', action: 'demand', intro: '浙南低空飞行服务中心由温州低空经济发展有限公司下属浙南低空飞行服务管理（温州）有限公司建设，是温州市打造“全国一流、全省领先”的低空飞行服务平台，集展示、宣传、体验功能于一体，是呈现温州低空经济发展历程与成果的重要场所。\n中心设有低空经济科普体验区（低空经济启航介绍、国家战略历程、科普体验、VR体验等）与低空经济展示区（起降点布局、应用场景、产品展示、展望未来等），配备VR操作体验仓、VR体验设备及多台低空经济展示产品，带来沉浸式低空科普体验。\n面向政企、学校及普通访客，常态化开展低空知识宣讲、行业案例科普与研学沙龙，通过实景参观、图文展板、实物展品与VR互动，全方位普及无人机与通航飞行应用知识。\n开放时间：周一至周日 8:30-17:00（预约开放）；预约电话：0577-55558069。', gallery: [], enabled: true }
+        { key: 'zhennan', name: '浙南低空飞行服务中心', subtitle: '集展示、宣传、体验于一体的低空经济科普平台', address: '浙江省温州市鹿城区七都街道温州金融科技文化中心A4号楼', tag: '课程报名', enterText: '了解详情', cover: '', action: 'intro', intro: '浙南低空飞行服务中心由温州低空经济发展有限公司下属浙南低空飞行服务管理（温州）有限公司建设，是温州市打造“全国一流、全省领先”的低空飞行服务平台，集展示、宣传、体验功能于一体，是呈现温州低空经济发展历程与成果的重要场所。\n中心设有低空经济科普体验区（低空经济启航介绍、国家战略历程、科普体验、VR体验等）与低空经济展示区（起降点布局、应用场景、产品展示、展望未来等），配备VR操作体验仓、VR体验设备及多台低空经济展示产品，带来沉浸式低空科普体验。\n面向政企、学校及普通访客，常态化开展低空知识宣讲、行业案例科普与研学沙龙，通过实景参观、图文展板、实物展品与VR互动，全方位普及无人机与通航飞行应用知识。\n开放时间：周一至周日 8:30-17:00（预约开放）；预约电话：0577-55558069。', gallery: [], enabled: true }
       ]
     } else {
       raw.locations = raw.locations.map(l => ({
@@ -784,14 +793,15 @@ const editServiceConfig = (id) => {
     studyPackages.value = JSON.parse(JSON.stringify(pkgs))
     // 动态获取所有课程包ID（兼容旧数据）
     const existingIds = Object.keys(studyPackages.value)
-    // 合并默认ID和已有ID
-    studyPackageIds.value = [...new Set([...studyPackageIds.value, ...existingIds])]
+    // 按当前配置重建，避免删除的套餐在下一次编辑时被重新创建。
+    studyPackageIds.value = existingIds.length ? existingIds : ['study-halfday', 'study-family']
     // 确保每个包有必需的字段
     for (const pkgId of studyPackageIds.value) {
       if (!studyPackages.value[pkgId]) {
         studyPackages.value[pkgId] = createEmptyPackage(pkgId)
       }
       const p = studyPackages.value[pkgId]
+      p.location = getStudyPackageLocation(p)
       if (!p.schedule) p.schedule = []
       if (!p.studyGoals) p.studyGoals = []
       if (!p.audience) p.audience = []
@@ -916,6 +926,7 @@ const onReadLocationGallery = async (files, locationIdx) => {
 const createEmptyPackage = (pkgId) => {
   return {
     id: pkgId,
+    location: 'niushan',
     name: '新课程',
     tag: '新课程',
     price: 0,

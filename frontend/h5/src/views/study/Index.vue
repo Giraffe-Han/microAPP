@@ -79,10 +79,10 @@ const defaultLocations = [
     name: '浙南低空飞行服务中心',
     subtitle: '集展示、宣传、体验于一体的低空经济科普平台',
     address: '温州市鹿城区七都街道温州金融科技文化中心A4号楼',
-    tag: '需求收集',
-    enterText: '登记需求',
+    tag: '课程报名',
+    enterText: '了解详情',
     cover: '',
-    action: 'demand',
+    action: 'intro',
     enabled: true
   }
 ]
@@ -127,8 +127,8 @@ onMounted(async () => {
 })
 
 const goToLocation = (loc) => {
-  if (loc.action === 'demand') {
-    // 浙南等需求收集点位，先进入场馆介绍页，再登记需求
+  if (loc.action === 'demand' || loc.action === 'intro') {
+    // 先进入场馆介绍页，再按场馆配置选课或登记需求
     router.push(`/study/intro?location=${loc.key}`)
   } else {
     // 牛山等课程报名点位，进入课程列表

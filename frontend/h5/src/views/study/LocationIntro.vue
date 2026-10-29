@@ -1,7 +1,7 @@
 <template>
   <div class="intro-page">
     <van-nav-bar
-      :title="loc.name || '研学点位'"
+      :title="loc.name || '研学场馆'"
       left-arrow
       @click-left="onBack"
       fixed
@@ -54,13 +54,13 @@
 
       <div class="tip-card">
         <van-icon name="info-o" size="16" color="#0071e3" />
-        <span>该中心研学参观采用预约方式，暂不对外收费。欢迎登记您的研学需求，我们将尽快与您联系安排。</span>
+        <span>{{ isPackageLocation ? '研学课程采用预约报名方式，请选择适合的套餐，我们将与您联系确认活动安排。' : '欢迎登记您的研学需求，我们将尽快与您联系安排。' }}</span>
       </div>
     </div>
 
     <div class="bottom-bar">
-      <van-button type="primary" block round @click="goToForm">
-        {{ loc.enterText || '登记需求' }}
+      <van-button type="primary" block round @click="goToNext">
+        {{ isPackageLocation ? '了解详情' : (loc.enterText || '登记需求') }}
       </van-button>
     </div>
   </div>
@@ -89,15 +89,16 @@ const defaultLoc = {
   name: '浙南低空飞行服务中心',
   subtitle: '集展示、宣传、体验于一体的低空经济科普平台',
   address: '浙江省温州市鹿城区七都街道温州金融科技文化中心A4号楼',
-  tag: '需求收集',
-  enterText: '登记需求',
+  tag: '课程报名',
+  enterText: '了解详情',
   cover: '',
-  action: 'demand',
+  action: 'intro',
   gallery: [],
   intro: '浙南低空飞行服务中心由温州低空经济发展有限公司下属浙南低空飞行服务管理（温州）有限公司建设，是温州市打造“全国一流、全省领先”的低空飞行服务平台，集展示、宣传、体验功能于一体，是呈现温州低空经济发展历程与成果的重要场所。\n中心设有低空经济科普体验区（低空经济启航介绍、国家战略历程、科普体验、VR体验等）与低空经济展示区（起降点布局、应用场景、产品展示、展望未来等），配备VR操作体验仓、VR体验设备及多台低空经济展示产品，带来沉浸式低空科普体验。\n面向政企、学校及普通访客，常态化开展低空知识宣讲、行业案例科普与研学沙龙，通过实景参观、图文展板、实物展品与VR互动，全方位普及无人机与通航飞行应用知识。\n开放时间：周一至周日 8:30-17:00（预约开放）；预约电话：0577-55558069。'
 }
 
 const loc = ref({ ...defaultLoc })
+const isPackageLocation = computed(() => locationKey.value === 'zhennan' || loc.value.action === 'intro')
 
 const normalizeUrl = (url) => {
   if (!url) return ''
@@ -154,8 +155,11 @@ onMounted(async () => {
   }
 })
 
-const goToForm = () => {
-  router.push(`/service-apply/9?location=${locationKey.value}`)
+const goToNext = () => {
+  router.push({
+    path: isPackageLocation.value ? '/study/packages' : '/service-apply/9',
+    query: { location: locationKey.value }
+  })
 }
 </script>
 

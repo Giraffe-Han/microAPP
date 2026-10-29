@@ -534,7 +534,12 @@
 
           <!-- 低空研学报名（服务 9） -->
           <template v-if="serviceId === '9'">
-            <!-- 浙南低空飞行服务中心：研学需求收集 -->
+            <van-cell title="研学场馆" :value="studyLocationName" />
+            <template v-if="studyPackageId">
+              <van-cell title="已选套餐" :value="selectedStudyPackage?.name || (studyPackageLoading ? '加载中...' : '套餐不存在或已下架')" />
+              <van-cell v-if="selectedStudyPackage" title="套餐单价" :value="`¥${selectedStudyPackage.price || 0}/人`" />
+            </template>
+            <!-- 兼容旧的飞服中心需求登记链接 -->
             <template v-if="isStudyDemand">
               <van-field
                 v-model="formData.studyOrg"
@@ -572,7 +577,7 @@
               />
             </template>
 
-            <!-- 牛山低空科创园：课程报名 -->
+            <!-- 牛山与飞服中心共用课程报名表单 -->
             <template v-else>
               <van-field
                 v-model="formData.studyOrg"
@@ -782,12 +787,13 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast, showDialog, showLoadingToast, closeToast, showFailToast } from 'vant'
 import axios from 'axios'
 import HomeFloatButton from '@/components/HomeFloatButton.vue'
 import { smartBack } from '@/utils/miniprogram'
+import { getStudyPackageLocation, getStudyLocationName } from '@/utils/study'
 
 const route = useRoute()
 const router = useRouter()
@@ -832,18 +838,37 @@ const serviceNames = {
 
 const serviceName = computed(() => serviceNames[serviceId.value] || '服务')
 
-// 低空研学点位（服务 9）：牛山课程报名 / 浙南需求收集
+const studyPackageId = computed(() => serviceId.value === '9' && typeof route.query.package === 'string' ? route.query.package : '')
+const selectedStudyPackage = ref(null)
+const studyPackageLoading = ref(false)
+watch(studyPackageId, async (id, _, onCleanup) => {
+  let cancelled = false
+  onCleanup(() => { cancelled = true })
+  selectedStudyPackage.value = null
+  studyPackageLoading.value = Boolean(id)
+  if (!id) return
+  try {
+    const res = await axios.get('/api/services/config')
+    if (cancelled) return
+    const packages = res?.data?.data?.['9']?.packages || {}
+    const pkg = Object.prototype.hasOwnProperty.call(packages, id) ? packages[id] : null
+    if (pkg && pkg.enabled !== false) selectedStudyPackage.value = pkg
+  } catch (error) {
+    console.warn('加载研学套餐失败:', error)
+  } finally {
+    if (!cancelled) studyPackageLoading.value = false
+  }
+}, { immediate: true })
+
+// 套餐配置决定场馆归属；未选套餐的旧链接继续支持需求登记。
 const studyLocationKey = computed(() => {
   if (serviceId.value !== '9') return ''
+  if (selectedStudyPackage.value) return getStudyPackageLocation(selectedStudyPackage.value)
   const loc = typeof route.query.location === 'string' ? route.query.location : ''
   return loc || 'niushan'
 })
-const studyLocationName = computed(() => {
-  const map = { niushan: '牛山低空科创园', zhennan: '浙南低空飞行服务中心' }
-  return map[studyLocationKey.value] || ''
-})
-// 浙南为需求收集（不对外收费）
-const isStudyDemand = computed(() => serviceId.value === '9' && studyLocationKey.value === 'zhennan')
+const studyLocationName = computed(() => getStudyLocationName(studyLocationKey.value))
+const isStudyDemand = computed(() => serviceId.value === '9' && studyLocationKey.value === 'zhennan' && !studyPackageId.value)
 
 // 页面显示的标题
 const pageDisplayTitle = computed(() => {
@@ -1177,6 +1202,10 @@ const formRef = ref(null)
 // pattern: /^1\d{10}$/
 
 const onSubmit = async () => {
+  if (studyPackageId.value && (studyPackageLoading.value || !selectedStudyPackage.value)) {
+    showFailToast(studyPackageLoading.value ? '套餐加载中，请稍后' : '套餐不存在或已下架，请重新选择');
+    return;
+  }
   // Check if user is logged in
   const userStr = localStorage.getItem('user');
   let user = null;
@@ -1237,8 +1266,11 @@ const onSubmit = async () => {
       submitData.studyLocationKey = studyLocationKey.value;
       submitData.studyLocation = studyLocationName.value;
       submitData.studyType = isStudyDemand.value ? '需求收集' : '课程报名';
-      const pkg = typeof route.query.package === 'string' ? route.query.package : '';
-      if (pkg) submitData.studyPackage = pkg;
+      if (studyPackageId.value && selectedStudyPackage.value) {
+        submitData.studyPackage = studyPackageId.value;
+        submitData.studyPackageName = selectedStudyPackage.value.name;
+        submitData.studyPackagePrice = selectedStudyPackage.value.price;
+      }
     }
 
     const res = await axios.post('/api/submit', submitData);

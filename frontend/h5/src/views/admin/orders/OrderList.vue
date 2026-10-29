@@ -65,7 +65,9 @@
             <van-cell title="联系电话" :value="v(currentItem.traineePhone)" />
           </template>
           <template v-else-if="currentItem.serviceId === '9'">
-            <van-cell title="研学点位" :value="studyLocationLabel(currentItem)" />
+            <van-cell title="研学场馆" :value="studyLocationLabel(currentItem)" />
+            <van-cell v-if="currentItem.studyPackage" title="研学套餐" :value="v(currentItem.studyPackageName || currentItem.studyPackage)" />
+            <van-cell v-if="currentItem.studyPackagePrice != null" title="套餐单价" :value="`¥${currentItem.studyPackagePrice}/人`" />
             <van-cell title="报名类型" :value="v(currentItem.studyType || '课程报名')" />
             <van-cell title="联系人" :value="v(currentItem.contactName)" />
             <van-cell title="联系电话" :value="v(currentItem.contactPhone)" />
